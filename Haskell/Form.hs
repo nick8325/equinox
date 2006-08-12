@@ -21,7 +21,7 @@ instance Show Type where
   showsPrec n (Type t) = showsPrec n t
 
 top, bool :: Type
-top  = Type (prim "Domain")
+top  = Type (prim "Top")
 bool = Type (prim "Bool")
 
 data Typing
@@ -36,6 +36,7 @@ commas :: Show a => [a] -> ShowS
 commas = opers ", "
 
 instance Show Typing where
+  showsPrec n (V t)       = showsPrec n t
   showsPrec n ([]  :-> t) = showsPrec n t
   showsPrec n ([s] :-> t) = showsPrec n s
                           . showString " -> "
@@ -91,7 +92,7 @@ instance Show Atom where
                         . showString " = "
                         . showsPrec n b
 truth :: Term
-truth = Fun (prim "truth" ::: ([] :-> bool)) []
+truth = Fun (tr ::: ([] :-> bool)) []
 
 prd :: Symbol -> [Term] -> Atom
 prd p ts = Fun p ts :=: truth
@@ -101,8 +102,9 @@ data Bind a
  deriving ( Eq, Ord )
 
 instance Show a => Show (Bind a) where
-  showsPrec n (Bind x a) = showsPrec n x
-                         . showString " . "
+  showsPrec n (Bind x a) = showString "["
+                         . showsPrec n x
+                         . showString "] : "
                          . showsPrec n a
 
 data Form
@@ -116,6 +118,14 @@ data Form
  deriving ( Eq, Ord )
 
 instance Show Form where
+  showsPrec n (Not (Atom (a :=: b))) | b /= truth
+                            = showsPrec n a
+                            . showString " != "
+                            . showsPrec n b
+
+  showsPrec n (Atom (a :=: t)) | t == truth
+                            = showsPrec n a
+
   showsPrec n (Atom a)      = showsPrec n a
   showsPrec n (And xs)      = showsOps "&" "$true" (S.toList xs)
   showsPrec n (Or xs)       = showsOps "|" "$false" (S.toList xs)
@@ -125,12 +135,10 @@ instance Show Form where
                             . showsPrec n y
                             . showString ")"
   showsPrec n (Not x)       = showString "~" . showsPrec n x
-  showsPrec n (ForAll b)    = showString "(all "
+  showsPrec n (ForAll b)    = showString "!"
                             . showsPrec n b
-                            . showString ")"
-  showsPrec n (Exists b)    = showString "(exi "
+  showsPrec n (Exists b)    = showString "?"
                             . showsPrec n b
-                            . showString ")"
 
 showsOps op unit []  = showString unit
 showsOps op unit [x] = shows x
@@ -176,30 +184,33 @@ Or as \/ b     = Or (b `S.insert` as)
 a     \/ Or bs = Or (a `S.insert` bs)
 a     \/ b     = Or (S.fromList [a,b])
 
+forAll, exists :: Symbol -> Form -> Form
+forAll x a = ForAll (Bind x a)
+exists x a = Exists (Bind x a)
+
 {-
-forAll, exists :: Name -> Form -> Form
 forAll v a = 
   case positive a of
     And as ->
       And (smap (forAll v) as)
     
-    ForAll ws w a ->
-      ForAll (v `delete` ws) w (forAll v a)
+    ForAll (Bind w a) ->
+      ForAll (Bind w (forAll v a))
     
     Or as -> yes \/ no
      where
-      avss      = [ (a, free a) | a <- elements as ]
-      (bs1,bs2) = partition ((v `member`) . snd) avss
+      avss      = [ (a, free a) | a <- S.toList as ]
+      (bs1,bs2) = partition ((v `S.member`) . snd) avss
       no        = orl [ b | (b,_) <- bs2 ]
-      vs        = v `delete` unionList [ vs | (_,vs) <- bs1 ]
+      vs        = v `S.delete` S.unionList [ vs | (_,vs) <- bs1 ]
       body      = orl [ b | (b,_) <- bs1 ]
       yes       = case bs1 of
                     []      -> orl []
                     [(b,_)] -> forAll v b
-                    _       -> ForAll vs v body
+                    _       -> ForAll (Bind v body)
 
       orl [a] = a
-      orl as  = Or (set as)
+      orl as  = Or (S.fromList as)
 
     a | v `member` vs -> ForAll (v `delete` vs) v a
       | otherwise     -> a
@@ -207,22 +218,16 @@ forAll v a =
       vs = free a    
 
 exists v a = nt (forAll v (nt a))
+-}
 
 positive :: Form -> Form
-positive (Not (And as))        = Or (smap nt as)
-positive (Not (Or as))         = And (smap nt as)
-positive (Not (a `Equiv` b))   = nt a `Equiv` b
-positive (Not (Not a))         = positive a
-positive (Not (ForAll vs v a)) = Exists vs v (nt a)
-positive (Not (Exists vs v a)) = ForAll vs v (nt a)
-positive a                     = a -- only atoms
-
-simple :: Form -> Form
-simple (Or as)         = nt (And (smap nt as))
-simple (Exists vs v a) = nt (ForAll vs v (nt a))
-simple (Not (Not a))   = simple a
-simple a               = a -- no Or, Exists on top-level
--}
+positive (Not (And as))            = Or (S.map nt as)
+positive (Not (Or as))             = And (S.map nt as)
+positive (Not (a `Equiv` b))       = nt a `Equiv` b
+positive (Not (Not a))             = positive a
+positive (Not (ForAll (Bind v a))) = Exists (Bind v (nt a))
+positive (Not (Exists (Bind v a))) = ForAll (Bind v (nt a))
+positive a                         = a -- only (negations of) atoms
 
 ----------------------------------------------------------------------
 -- substitution
@@ -253,13 +258,30 @@ look v t sub =
     Just t' -> t'
 
 ----------------------------------------------------------------------
+-- my own maybe type
+
+type Mybe r a = r -> (a -> r) -> r
+
+nothing :: Mybe r a
+nothing = \no yes -> no
+
+just :: a -> Mybe r a
+just x = \no yes -> yes x
+
+mlift1 :: (a -> b) -> Mybe r a -> Mybe r b
+mlift1 f m = \no yes -> m no (\x -> yes (f x))
+
+mlift2 :: (a -> b -> c) -> Mybe r a -> Mybe r b -> Mybe r c
+mlift2 f m1 m2 = \no yes -> m1 no (\x -> m2 no (\y -> yes (f x y)))
+
+----------------------------------------------------------------------
 -- destructors
 
 class Symbolic a where
   symbols :: a -> Set Symbol
   free    :: a -> Set Symbol
   subst   :: Subst -> a -> a
-  --todo: implement subst using continuations
+  subst'  :: Subst -> a -> Mybe r a
 
   symbols{| Unit |}    Unit      = S.empty
   symbols{| a :*: b |} (x :*: y) = symbols x `S.union` symbols y
@@ -270,11 +292,18 @@ class Symbolic a where
   free{| a :*: b |} (x :*: y) = free x `S.union` free y
   free{| a :+: b |} (Inl x)   = free x
   free{| a :+: b |} (Inr y)   = free y
-
+{-
   subst{| Unit |}    sub Unit      = Unit
   subst{| a :*: b |} sub (x :*: y) = subst sub x :*: subst sub y
   subst{| a :+: b |} sub (Inl x)   = Inl (subst sub x)
   subst{| a :+: b |} sub (Inr y)   = Inr (subst sub y)
+-}
+  subst sub a = subst' sub a a id
+
+  subst'{| Unit |}    sub Unit      = nothing
+  subst'{| a :*: b |} sub (x :*: y) = mlift2 (:*:) (subst' sub x) (subst' sub y)
+  subst'{| a :+: b |} sub (Inl x)   = mlift1 Inl (subst' sub x)
+  subst'{| a :+: b |} sub (Inr y)   = mlift1 Inr (subst' sub y)
 
 instance                             Symbolic ()
 instance (Symbolic a, Symbolic b) => Symbolic (a,b)
@@ -284,7 +313,8 @@ instance Symbolic a               => Symbolic (Signed a)
 instance (Ord a, Symbolic a) => Symbolic (Set a) where
   symbols s   = symbols (S.toList s)
   free s      = free (S.toList s)
-  subst sub s = S.map (subst sub) s
+  --subst sub s = S.map (subst sub) s
+  subst' sub  = mlift1 S.fromList . subst' sub . S.toList
 
 instance Symbolic Atom
 instance Symbolic Form
@@ -296,13 +326,49 @@ instance Symbolic Term where
   free (Fun _ xs) = free xs
   free (Var v)    = S.singleton v
 
-  subst sub (Fun f xs) = Fun f (subst sub xs)
-  subst sub x@(Var v)  = look v x sub
+  --subst sub (Fun f xs) = Fun f (subst sub xs)
+  --subst sub x@(Var v)  = look v x sub
+
+  subst' sub (Fun f xs) = mlift1 (Fun f) (subst' sub xs)
+  subst' sub x@(Var v)  =
+    case M.lookup v (mapp sub) of
+      Nothing -> nothing
+      Just t' -> just t'
 
 instance Symbolic a => Symbolic (Bind a) where
   symbols   (Bind v a) = v `S.insert` symbols a
   free      (Bind v a) = v `S.delete` free a
+{-
   subst sub (Bind v a) = Bind v' (subst (Subst vs' mp') a)
+   where
+    Subst vs mp = sub
+   
+    forbidden = vs `S.union` free a
+
+    allowed   = [ v'
+                | let n ::: t = v
+                , v' <- v
+                      : [ name [c] ::: t | c <- ['V'..'Z'] ]
+                     ++ [ (n % i) ::: t | i <- [0..] ]
+                , not (v' `S.member` forbidden) 
+                ]
+
+    v'        = head allowed
+
+    vs'       = v' `S.insert` vs
+
+    mp'       = M.fromList
+                ( [ (v, Var v')
+                  | v /= v'
+                  ]
+               ++ [ wx
+                  | wx@(w,_) <- M.toList mp
+                  , w /= v
+                  , w /= v'
+                  ]
+                )
+-}  
+  subst' sub (Bind v a) = mlift1 (Bind v') (subst' (Subst vs' mp') a)
    where
     Subst vs mp = sub
    

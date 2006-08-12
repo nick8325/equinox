@@ -401,8 +401,7 @@ instance Symbolic a => Symbolic (Bind a) where
 -- input clauses
 
 data Kind
-  = Axiom
-  | Hypothesis
+  = Assumption
   | NegatedConjecture
   | Conjecture
  deriving ( Eq, Ord, Show )
@@ -414,6 +413,17 @@ data Input a
   , what :: a
   }
  deriving ( Eq, Ord, Show )
+
+----------------------------------------------------------------------
+-- answers
+
+data Answer
+  = Satisfiable
+  | CounterSatisfiable
+  | Theorem
+  | Unsatisfiable
+  | Unknown
+ deriving ( Show, Eq, Ord )
 
 ----------------------------------------------------------------------
 -- the end.

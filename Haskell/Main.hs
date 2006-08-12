@@ -82,7 +82,9 @@ main' flags solveProblem =
                    
                    ans <- solveAll 1 obligs
                    putResult ans file'
-
+       | file <- files flags
+       ]
+        
 require :: Bool -> IO () -> IO ()
 require False m = do m; exitWith (ExitFailure 1)
 require True  m = do return ()

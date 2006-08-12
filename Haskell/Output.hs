@@ -1,5 +1,7 @@
 module Output where
 
+import Form( Answer )
+
 putInfo :: String -> IO ()
 putInfo s = putStrLn s
 

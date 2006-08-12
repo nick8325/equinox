@@ -425,5 +425,12 @@ data Answer
   | Unknown
  deriving ( Show, Eq, Ord )
 
+nega :: Answer -> Answer
+nega Satisfiable        = CounterSatisfiable
+nega CounterSatisfiable = Satisfiable
+nega Theorem            = Unsatisfiable
+nega Unsatisfiable      = Theorem
+nega Unknown            = Unknown
+
 ----------------------------------------------------------------------
 -- the end.

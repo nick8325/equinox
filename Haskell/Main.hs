@@ -4,13 +4,39 @@ import Form
 import Control.Concurrent
 import Control.Exception
 import System
-import Flags
-import ParseProblem
-import Clausify
+--import Flags
+--import ParseProblem
+--import Clausify
 import IO( hSetBuffering, stdout, BufferMode(..) )
+
+import Output
 
 ---------------------------------------------------------------------------
 -- main
+
+type Flags = ()
+
+time :: Flags -> Maybe Int
+time = undefined
+
+files :: Flags -> [FilePath]
+files = undefined
+
+roots :: Flags -> [FilePath]
+roots = undefined
+
+getFlags :: IO Flags
+getFlags = undefined
+
+type Clause = ()
+type Problem = ()
+
+readProblemWithRoots :: [FilePath] -> FilePath -> IO Problem
+readProblemWithRoots = undefined
+
+clausify :: Flags -> Problem -> ([Clause], [[Clause]])
+clausify = undefined
+
 
 main :: ([Clause] -> IO Answer) -> IO ()
 main solveProblem =
@@ -49,7 +75,7 @@ main' flags solveProblem =
             ins <- readProblemWithRoots ("" : map (++"/") (roots flags)) file
             let (theory,obligs) = clausify flags ins
                 n               = length obligs
-                file' | length files > 1 = file
+                file' | length (files flags) > 1 = file
                       | otherwise        = ""
             
             case obligs of

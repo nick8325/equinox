@@ -3,7 +3,9 @@ module Name
   , (%)        -- :: Name -> Int -> Name
   , name, prim -- :: String -> Name
   --, strip      -- :: Name -> Name
-  , eq, ap, sk, sp -- :: Name
+  
+  -- names
+  , eq, ap, sk, sp, tr
   )
  where
 

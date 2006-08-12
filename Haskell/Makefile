@@ -2,7 +2,7 @@
 #-- Variables
 
 MINISAT = ../minisat/current-base
-HFLAGS  = -lstdc++ -fglasgow-exts -I$(MINISAT) $(MINISAT)/Solver.or $(MINISAT)/Prop.or $(MINISAT)/csolver.or
+HFLAGS  = -optl -static -lstdc++ -fglasgow-exts -I$(MINISAT) $(MINISAT)/Solver.or $(MINISAT)/Prop.or $(MINISAT)/csolver.or
 GHC     = ghc
 
 #-- Main

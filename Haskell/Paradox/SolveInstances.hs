@@ -135,23 +135,20 @@ solveInstances flags predsPure minSize css =
               
               --simplify False False
               
-              c <- okay
-              if not c then
-                return Unsatisfiable
-               else
-                do r <- solve [ass]
-                   if r then
-                     do if printModel flags then
-                          printTheModel k ref predsPure
-                         else
-                          return ()
-                        return Satisfiable
+              r <- solve [ass]
+              if r then
+                do if printModel flags then
+                     printTheModel k ref predsPure
                     else
-                     do c <- okay
-                        if not c then
-                          return Unsatisfiable
-                         else
-                          domains rest
+                     return ()
+                   return Satisfiable
+               else
+                do c <- okay
+                   if not c then
+                     do return Unsatisfiable
+                    else
+                     do addClause [-ass]
+                        domains rest
 
      run $ domains css
 

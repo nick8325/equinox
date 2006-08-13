@@ -133,7 +133,7 @@ solveInstances flags predsPure minSize css =
               assumption <- getPredLoc assump >>= \l -> return (Pos (l :@ []))
               ass <- getLit assumption
               
-              simplify False False
+              --simplify False False
               
               r <- solve [ass]
               if r then
@@ -143,7 +143,11 @@ solveInstances flags predsPure minSize css =
                      return ()
                    return Satisfiable
                else
-                domains rest
+                do c <- okay
+                   if not c then
+                     return Unsatisfiable
+                    else
+                     domains rest
 
      run $ domains css
 

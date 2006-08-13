@@ -70,7 +70,7 @@ solveInstances flags predsPure minSize css =
          processClause k c =
            do ls' <- mapM processLit ls
               let args = [ isize t | v <- vs, let V t = typing v ]
-              lift $ print (args,ls')
+--              lift $ print (args,ls')
               addClauses args ls'
           where
            ls = c
@@ -126,7 +126,8 @@ solveInstances flags predsPure minSize css =
                   tot = length clauses'
               
               sequence_
-                [ processClauseSet k c
+                [ do lift $ print c
+                     processClauseSet k c
                 | (i,c) <- [1..] `zip` clauses' 
                 ]
               

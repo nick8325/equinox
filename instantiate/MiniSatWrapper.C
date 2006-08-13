@@ -171,6 +171,7 @@ extern "C" {
     // reading the value of a predicate (location)
     int solver_lit_read     (solver* w) { 
         // creates variables if they don't exists!! (fix?)
-        return toDimacs(Lit(w->loc->get(*w, w->args, w->dummy), !w->sig)); 
+        int lit = toDimacs(Lit(w->loc->get(*w, w->args, w->dummy), !w->sig));
+        return lit; 
     }
 }

@@ -63,14 +63,11 @@ addClauses_ d ls s =
 
 getLit :: Signed Atm -> S Lit
 getLit atom = MiniSatM $ \s -> do
-    withForeignPtr l (flip (solver_lit_begin s) (toCBool negated))
+    withForeignPtr l (flip (solver_lit_begin s) (toCBool (sign atom)))
     mapM_ (solver_lit_add_con s) [ fromIntegral d | ArgN d <- args ]
     solver_lit_read s
 
   where (Loc l :@ args) = the atom
-        negated         = case atom of
-                            Neg _ -> True
-                            Pos _ -> False
 
 ----------------------------------------------------------------------------------
 -- Monad
@@ -96,6 +93,7 @@ newtype Lit
  deriving (Eq, Num, Ord, Storable)
 
 newtype Loc = Loc (ForeignPtr ())
+ deriving ( Eq, Show )
 
 data Arg
   = ArgV Int

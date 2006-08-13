@@ -17,6 +17,20 @@ import Output
 import Paradox.AnalysisTypes
 import Monad
 
+-- {-
+data Loc = Loc
+
+newLoc = undefined
+
+addClauses = undefined
+
+data Arg = ArgV Int | ArgN Int
+
+data Atm = Loc :@ [Arg]
+
+getLit = undefined
+-- -}
+
 -------------------------------------------------------------------------
 -- solver
 
@@ -48,11 +62,14 @@ solveInstances flags predsPure minSize css =
            do sequence_ [ processClause k (subst (x |=> Fun (elt k') []) c)
                         | c <- cs
                         , x <- S.toList (free c)
+                        , case tdomain (typ (Var x)) of
+                            Just k  -> k >= k'
+                            Nothing -> True
                         ]
          
          processClause k c =
            do ls' <- mapM processLit ls
-              let args = [ k `min` isize t | v <- vs, let V t = typing v ]
+              let args = [ isize t | v <- vs, let V t = typing v ]
               addClauses args ls'
           where
            ls = c
@@ -81,7 +98,7 @@ solveInstances flags predsPure minSize css =
              xs' = map processTerm xs
            
            processAtom (a :=: b) =
-             do loc <- getPredLoc (prim "eq" ::: ([top,top] :-> bool))
+             do loc <- getPredLoc (eq ::: ([top,top] :-> bool))
                 return (loc :@ (map processTerm [a,b]))
            
            processTerm (Var v) =
@@ -98,7 +115,8 @@ solveInstances flags predsPure minSize css =
            do return Unknown
 
          domains ((k,check,assump,clauses):rest) =
-           do let clauses' = flat clauses
+           do lift $ putStrLn ("domain " ++ show k)
+              let clauses' = flat clauses
               
                   flat []                     = []
                   flat (ForAll cs       : ds) = map (\c -> ForAll [c])       cs ++ flat ds
@@ -118,11 +136,93 @@ solveInstances flags predsPure minSize css =
               
               r <- solve [ass]
               if r then
-                return Satisfiable
+                do if printModel flags then
+                     printTheModel k ref predsPure
+                    else
+                     return ()
+                   return Satisfiable
                else
                 domains rest
 
      run $ domains css
+
+printTheModel k ref predsPure =
+  do lift $ putOfficial "BEGIN MODEL"
+     lift $ putStrLn ("-- domain size is " ++ show k)
+     lift $ putStrLn ""
+     (tabf,tabp) <- lift $ readIORef ref
+     sequence_ $ intersperse (lift $ putStrLn "") $ map snd $ sortBy first $
+       [ (show f,
+            do sequence_
+                 [ do bs <- sequence [ do l <- getLit (loc :@ ([ ArgN i | i <- is ] ++ [ ArgN j ]))
+                                          getModelValue l
+                                     | j <- [1.. tdomain' t `min` k]
+                                     ]
+                      let c = length (takeWhile not bs) + 1
+                      lift $ print (Fun f [ Fun (elt i) [] | i <- is ] :=: Fun (elt c) [])
+                 | is <- count ms
+                 ]
+               sequence_
+                 [ lift $ print ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
+                                        | i <- [1..arity f]
+                                        ]
+                              :=: Fun f [ if i == j then Fun (elt n) [] else Fun (elt 1) []
+                                        | i <- [1..arity f]
+                                        ]
+                                )
+                 | (t,j) <- ts `zip` [1..]
+                 , n <- [tdomain' t+1..k]
+                 ]
+         )
+       | (f@(s ::: (ts :-> t)),loc) <- M.toList tabf
+       , isSimpleName s
+       , let ms = [ tdomain' t `min` k | t <- ts ]
+       ] ++
+       [ (show f,
+            do sequence_
+                 [ do l <- getLit (loc :@ [ ArgN i | i <- is ])
+                      b <- getModelValue l
+                      lift $ print $ (if b then Pos else Neg) $ (Fun f [ Fun (elt i) [] | i <- is ] :=: truth)
+                 | is <- count ms
+                 ]
+               sequence_
+                 [ lift $ print ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
+                                        | i <- [1..arity f]
+                                        ]
+                              :=: Fun f [ if i == j then Fun (elt n) [] else Fun (elt 1) []
+                                        | i <- [1..arity f]
+                                        ]
+                                )
+                 | (t,j) <- ts `zip` [1..]
+                 , n <- [tdomain' t+1..k]
+                 ]
+         )
+       | (f@(s ::: (ts :-> _)),loc) <- M.toList tabp
+       , isSimpleName s
+       , let ms = [ tdomain' t `min` k | t <- ts ]
+       ] ++
+       [ (show p,
+            lift $
+              print $
+                (if b then Pos else Neg) $
+                  p `prd` [ Var (name ("X" ++ show i) ::: V top) | i <- [1..arity p] ]
+         )
+       | (p,b) <- predsPure
+       ]
+     lift $ putOfficial "END MODEL"
+ where
+  (x,_) `first` (y,_) = x `compare` y
+
+  tdomain' t = case tdomain t of
+                 Nothing -> maxBound - 1
+                 Just k  -> k
+
+  count [] = [[]]
+  count (m:ms) =
+    [ i:is
+    | i <- [1..m]
+    , is <- count ms
+    ]
 
 -------------------------------------------------------------------------
 -- the end.

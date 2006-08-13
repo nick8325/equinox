@@ -55,7 +55,7 @@ tr = prim "truth"
 dm = prim "dm"
 un = prim "un"
 df = prim "df"
-el = prim ""
+el = name ""
 
 isName :: (Name -> Bool) -> Name -> Bool
 isName p n | p n  = True

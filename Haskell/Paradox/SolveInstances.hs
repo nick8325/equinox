@@ -34,7 +34,7 @@ getLit = undefined
 -------------------------------------------------------------------------
 -- solver
 
-solveInstances :: Flags -> [(Symbol,Bool)] -> Int -> [(Int,Bool,Symbol,[ClauseSet])] -> IO Answer
+solveInstances :: Flags -> [(Symbol,Bool)] -> Int -> [(Int,Bool,Symbol,[ClauseSet])] -> IO (Answer,Int)
 solveInstances flags predsPure minSize css =
   do line <- newIORef False
      ref  <- newIORef (M.empty,M.empty)
@@ -112,10 +112,10 @@ solveInstances flags predsPure minSize css =
              | x == y    = 1
              | otherwise = 1 + (x `ind` ys)             
          
-         domains [] =
-           do return Unknown
+         domains minSize [] =
+           do return (Unknown,minSize)
 
-         domains ((k,check,assump,clauses):rest) =
+         domains minSize ((k,check,assump,clauses):rest) =
            do lift $ putStrLn ("domain " ++ show k)
               let clauses' = flat clauses
               
@@ -141,16 +141,18 @@ solveInstances flags predsPure minSize css =
                      printTheModel k ref predsPure
                     else
                      return ()
-                   return Satisfiable
+                   return (Satisfiable,k)
                else
                 do c <- okay
                    if not c then
-                     do return Unsatisfiable
+                     do return (Unsatisfiable,k)
                     else
                      do addClause [-ass]
-                        domains rest
+                        let minSize' | k == minSize = k+1
+                                     | otherwise    = minSize
+                        domains minSize' rest
 
-     run $ domains css
+     run $ domains minSize css
 
 printTheModel k ref predsPure =
   do lift $ putOfficial "BEGIN MODEL"
@@ -164,8 +166,11 @@ printTheModel k ref predsPure =
                                           getModelValue l
                                      | j <- [1.. tdomain' t `min` k]
                                      ]
-                      let c = length (takeWhile not bs) + 1
-                      lift $ print (Fun f [ Fun (elt i) [] | i <- is ] :=: Fun (elt c) [])
+                      if or bs then
+                        do let c = length (takeWhile not bs) + 1
+                           lift $ print (Fun f [ Fun (elt i) [] | i <- is ] :=: Fun (elt c) [])
+                       else 
+                        do lift $ print (Fun f [ Fun (elt i) [] | i <- is ] :=: Fun (name "--" ::: ([] :-> top)) [])
                  | is <- count ms
                  ]
                sequence_

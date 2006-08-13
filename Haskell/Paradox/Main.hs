@@ -46,11 +46,16 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem csIn =    
-  solveInstances
-    flags
-    predsPure
-    minSize
-    (annotate [1..] ns' (instantiate flags predefs fcs qcs))
+  do (r,k) <- solveInstances
+                flags
+                predsPure
+                minSize
+                (annotate [1..] ns' (instantiate flags predefs fcs qcs))
+     return $
+       case r of
+         Satisfiable                              -> Satisfiable
+         Unknown | not isFinite || k <= maxDomain -> Unknown
+         _                                        -> Unsatisfiable
  where
   flags = ?flags
 

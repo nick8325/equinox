@@ -195,10 +195,15 @@ prove flags cs =
                ++ [ y | (y,x') <- xys, x == x' ]
 
   checkNonGoodCases true cons undef guess nonGroundCs =
-    do tryAll [ nonGoodCases [] defs neqs [] (S.delete trueX (free cl)) (M.singleton trueX true) $ \sub ->
-                  do put 1 (if undef then if guess then "G: " else "J: " else "I: ")
-                     addClauseSub true sub cl
-                     return True
+    do tryAll [ do --lift $ print ("==>",defs,neqs)
+                   r <- nonGoodCases [] defs neqs [] (S.delete trueX (free cl)) (M.singleton trueX true) $ \sub ->
+                     do --lift $ putStrLn "Adding..."
+                        put 1 (if undef then if guess then "G: " else "J: " else "I: ")
+                        addClauseSub true sub cl
+                        return True
+                   --lift $ putStrLn "OK"
+                   return r
+                   
               | cl <- nonGroundCs
               , let (defs,neqs) = cclause cl
               ]
@@ -223,14 +228,17 @@ prove flags cs =
       nonGoodCasesSub x c eqs defs neqs undefs still sub add
       
     nonGoodCases ((Fun f ts,c):eqs) defs neqs undefs still sub add =
-      do tab <- getModelTable f
+      do --lift $ print ((Fun f ts,c):eqs,defs,neqs,undefs,still)
+         tab <- getModelTable f
          tryAll [ nonGoodCases ((ts `zip` xs) ++ eqs) defs neqs undefs still sub add
                 | (xs,y) <- tab
                 , y == c
                 ]
 
     nonGoodCases [] ((Fun f ts,x):defs) neqs undefs still sub add =
-      do tab <- getModelTable f
+      do --lift $ print ("defs",(Fun f ts,x):defs,neqs,undefs,still)
+         tab <- getModelTable f
+         --lift $ print tab
          many $ [ nonGoodCasesSub x y (ts `zip` xs) defs neqs undefs still sub add
                 | (xs,y) <- tab
                 ]
@@ -250,7 +258,8 @@ prove flags cs =
 
     nonGoodCases [] [] neqs undefs still sub add
      | acyclic && (not undef || guess || S.size still == 0) =
-      do many [ instantiate undefs sub' add
+      do --lift $ print ("acyclic",neqs,undefs,still)
+         many [ instantiate undefs sub' add
               | sub' <- (sub `M.union`) `fmap` fairEnums (S.toList still)
               , all (\(x,y) -> (M.lookup x sub' :: Maybe Con) /= M.lookup y sub') neqs
               ]
@@ -264,18 +273,40 @@ prove flags cs =
       uns =
         S.fromList [ x | (_,x) <- undefs ]
       
-      deps x seen
-        | x `S.member` seen = seen
-        | otherwise         = depsList (S.toList xs) seen
+      acyclic = top degrees indeps
        where
-        Just t = M.lookup x unTab
-        xs     = free t `S.intersection` uns 
-      
-      depsList []     seen = seen
-      depsList (x:xs) seen = depsList xs (deps x seen)
-      
-      acyclic =
-        all (\x -> not (x `S.member` deps x S.empty)) (S.toList uns)
+        nodes =
+          [ (x, S.toList (free t `S.intersection` uns)) 
+          | (t,x) <- undefs
+          ]
+        
+        indeps =
+          [ x
+          | (x,_) <- nodes
+          , M.lookup x degrees == Nothing
+          ]
+        
+        graph =
+          M.fromList nodes
+        
+        degrees =
+          M.fromListWith (+)
+          [ (y,1)
+          | (x,ys) <- nodes
+          , y <- ys
+          ]
+        
+        top degrees []     = M.null degrees
+        top degrees (x:xs) =
+          case M.lookup x graph of
+            Just ys -> tops degrees ys xs
+        
+        tops degrees []     xs = top degrees xs
+        tops degrees (y:ys) xs =
+          case M.lookup y degrees of
+            Just k
+              | k == 1    -> tops (M.delete y degrees) ys (y:xs)
+              | otherwise -> tops (M.insert y (k-1) degrees) ys xs
       
       fairEnums xs =
         [ M.fromList (xs `zip` cs) | cs <- fair (length xs) cons ]

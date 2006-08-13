@@ -18,7 +18,7 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem cs =
-  do sequence_ [ print c | c <- cs ]
+  do sequence_ [ putStr (showClause c) | c <- cs ]
      return Unknown
 
 ---------------------------------------------------------------------------

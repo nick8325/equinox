@@ -14,15 +14,25 @@ import Name
 -- Type
 
 data Type
-  = Type Name -- todo: more info here
+  = Type
+  { typ :: Name
+  , dom :: Maybe Int
+  , equ :: Equality
+  }
+ deriving ( Eq, Ord )
+
+data Equality
+  = Full
+  | Half
+  | Safe
  deriving ( Eq, Ord )
 
 instance Show Type where
-  showsPrec n (Type t) = showsPrec n t
+  showsPrec n (Type t _ _) = showsPrec n t
 
 top, bool :: Type
-top  = Type (prim "Top")
-bool = Type (prim "Bool")
+top  = Type (prim "Top")  Nothing  Full
+bool = Type (prim "Bool") (Just 2) Safe
 
 data Typing
   = [Type] :-> Type

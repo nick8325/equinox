@@ -29,6 +29,10 @@
 #include "Prop.h"
 #include "MiniSatInstantiateClause.h"
 
+#ifndef uint
+#define uint unsigned int
+#endif
+
 struct solver : public PropSolver { 
     vec<Lit> tmp;
     int*     contr;

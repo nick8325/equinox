@@ -37,7 +37,7 @@ prove flags cs =
          then star `app` []
          else return true
 
-       solveAndPatch true 0 0 nonGroundCs
+       solveAndPatch False true 0 0 nonGroundCs
  where
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
@@ -133,7 +133,7 @@ prove flags cs =
       x = theX i
       (defs,neqs) = lits (i+1) ls
 
-  solveAndPatch true m n nonGroundCs =
+  solveAndPatch starred true m n nonGroundCs =
     do putLn 2  "==> FolSat: solving..."
        b <- solve flags []
        if b then
@@ -144,31 +144,24 @@ prove flags cs =
             let cons = S.toList conss
             b <- checkNonGoodCases true' cons False False nonGroundCs
             if b then
-              do solveAndPatch true m n nonGroundCs
+              do solveAndPatch starred true m n nonGroundCs
              else
               do putLn 2 "==> FolSat: checking (for defined non-true clauses)..."
                  b <- checkNonGoodCases true' cons True False nonGroundCs
                  if b && n <= strength flags then
-                   do solveAndPatch true m (n+1) nonGroundCs
+                   do solveAndPatch starred true m (n+1) nonGroundCs
                   else
-                   do {-
-                      case mfile flags of
-                        Just file -> do lift $ putStr ("(writing model in '" ++ file' ++ "' ...")
-                                        writeModel file' true' fs ps
-                                        lift $ putStrLn ")"
-                         where
-                          file' = dollard m file
-                        Nothing   -> return ()
-                      -}
-                      putLn 2 "==> FolSat: NO"
-                      return False
-                      {-
-                      b <- return True -- checkNonGoodCases true' cons True True nonGroundCs
-                      if b then
-                        do solveAndPatch true (m+1) 0 nonGroundCs
-                       else
-                        do return False
-                      -}
+                   if not starred then
+                     do putLn 2 "==> FolSat: instantiating with * ..."
+                        sequence_
+                          [ do s <- star `app` []
+                               addClauseSub true (M.fromList [ (x,s) | x <- S.toList (free c) ]) c
+                          | c <- nonGroundCs
+                          ]
+                        solveAndPatch True true m 0 nonGroundCs
+                    else
+                     do putLn 2 "==> FolSat: NO"
+                        return False
          else
           do return True
 

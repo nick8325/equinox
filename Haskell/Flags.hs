@@ -30,7 +30,7 @@ data Flags
   = Flags
   { time         :: Maybe Int
   , roots        :: [FilePath]
-  , model        :: Bool
+  , printModel   :: Bool
   , mfile        :: Maybe FilePath
   , splitting    :: Bool
   , sat          :: Bool
@@ -49,7 +49,7 @@ initFlags =
   Flags
   { time         = Nothing
   , roots        = []
-  , model        = False
+  , printModel   = False
   , mfile        = Nothing
   , splitting    = False
   , sat          = False
@@ -95,7 +95,7 @@ options =
 
   , Option
     { long    = "model"
-    , meaning = unit (\f -> f{ model = True })
+    , meaning = unit (\f -> f{ printModel = True })
     , help    = [ "Print the found model on the screen."
                 , "Default: (off)"
                 ]

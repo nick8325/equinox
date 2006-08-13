@@ -307,6 +307,7 @@ prove flags cs =
             Just k
               | k == 1    -> tops (M.delete y degrees) ys (y:xs)
               | otherwise -> tops (M.insert y (k-1) degrees) ys xs
+            Nothing       -> tops degrees ys xs
       
       fairEnums xs =
         [ M.fromList (xs `zip` cs) | cs <- fair (length xs) cons ]

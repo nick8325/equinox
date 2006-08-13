@@ -406,6 +406,7 @@ purify cs
     
     setPs = S.fromList [ p | (p,_) <- removePs ]
     isRemoveP (Fun p _ :=: b) = b == truth && p `S.member` setPs
+    isRemoveP _               = False
 
   pure tab (c:cs) = pure (M.unionWith S.union occurs tab) cs
    where

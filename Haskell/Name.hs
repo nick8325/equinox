@@ -5,7 +5,8 @@ module Name
   , strip      -- :: Name -> Name
   
   -- names
-  , vr, sk, dp, sp, tr, dm, un, df, el
+  , vr, sk, dp, sp, tr, dm, un, df, el, eq
+  , isSimpleName
   , isSkolemnName
   , isEltName
   , getIndex
@@ -46,6 +47,7 @@ strip n        = n
 -- internal names
 
 vr = prim "X"
+eq = prim "eq"
 sk = prim "sk"
 dp = prim "dp"
 sp = prim "sp"
@@ -59,6 +61,9 @@ isName :: (Name -> Bool) -> Name -> Bool
 isName p n | p n  = True
 isName p (n :% _) = isName p n
 isName p _        = False
+
+isSimpleName (Name _) = True
+isSimpleName _        = False
 
 isSkolemnName = isName (== sk)
 isEltName     = isName (== el)

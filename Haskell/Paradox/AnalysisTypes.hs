@@ -151,9 +151,9 @@ runT tm =
 
                 typesAndTypeIds =
                   [ ( Type
-                      { tname   = s
-                      , tdomain = n
-                      , tequal  = eq
+                      { tname  = s
+                      , tsize  = n
+                      , tequal = eq
                       }
                     , t
                     )

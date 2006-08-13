@@ -129,7 +129,7 @@ solveProblem csIn =
   
   (isFinite,maxDomain,maxDom,whyDom) = minn
     [ (numCons == numFuns, maximum (1 : [ n | t <- typs
-                                            , Just n <- [tdomain t]
+                                            , Just n <- [tsize t]
                                             ]), "epr")
     , case [ n | Just n <- map limited cs ] of
         [] -> (False, 0, "")

@@ -30,6 +30,7 @@ data Flags
   = Flags
   { time         :: Maybe Int
   , roots        :: [FilePath]
+  , model        :: Bool
   , mfile        :: Maybe FilePath
   , splitting    :: Bool
   , sat          :: Bool
@@ -48,8 +49,9 @@ initFlags =
   Flags
   { time         = Nothing
   , roots        = []
+  , model        = False
   , mfile        = Nothing
-  , splitting    = True
+  , splitting    = False
   , sat          = False
   , onlyClausify = False
   , strength     = 3
@@ -84,35 +86,17 @@ options =
     }
 
   , Option
-    { long    = "model"
-    , meaning = (\s f -> f{ mfile = Just s }) <$> argFile
-    , help    = [ "A file in which found approximation models are written."
-                , "Occurences of '%d' will be replaced by the model number."
-                , "Example: --model model-%d.txt"
+    { long    = "split"
+    , meaning = unit (\f -> f{ splitting = True })
+    , help    = [ "Split the conjecture into several sub-conjectures."
                 , "Default: (off)"
                 ]
     }
 
   , Option
-    { long    = "nosplit"
-    , meaning = unit (\f -> f{ splitting = False })
-    , help    = [ "Do not split the conjecture into several sub-conjectures."
-                , "Default: (off)"
-                ]
-    }
-{-
-  , Option
-    { long    = "sat"
-    , meaning = unit (\f -> f{ sat = True })
-    , help    = [ "Find a finite model (experimental)."
-                , "Default: (off)"
-                ]
-    }
--}
-  , Option
-    { long    = "onlyclausify"
-    , meaning = unit (\f -> f{ onlyClausify = True })
-    , help    = [ "Only perform clausification of the input problem."
+    { long    = "model"
+    , meaning = unit (\f -> f{ model = True })
+    , help    = [ "Print the found model on the screen."
                 , "Default: (off)"
                 ]
     }
@@ -130,12 +114,7 @@ options =
   , Option
     { long    = "verbose"
     , meaning = (\n f -> f{ verbose = verbose f `max` n }) <$> argNum
-    , help    = [ "Verbosity level:"
-                , "0: Clauses + Result"
-                , "1: Label clause-instances"
-                , "2: FOLSAT level"
-                , "3: TERMSAT level"
-                , "4: CONSAT level"
+    , help    = [ "Verbosity level."
                 , "Example: --verbose 2"
                 , "Default: --verbose 0"
                 ]

@@ -15,9 +15,9 @@ import Name
 
 data Type
   = Type
-  { tname   :: Name
-  , tdomain :: Maybe Int
-  , tequal  :: Equality
+  { tname  :: Name
+  , tsize  :: Maybe Int
+  , tequal :: Equality
   }
  deriving ( Eq, Ord )
 
@@ -29,6 +29,15 @@ data Equality
 
 instance Show Type where
   showsPrec n (Type t _ _) = showsPrec n t
+
+tdomain :: Type -> Maybe Int
+tdomain t =
+  case tsize t of
+    Nothing -> Nothing
+    Just n  -> case tequal t of
+                 Safe -> Just n
+                 Half -> Just (n+1)
+                 Full -> Nothing
 
 top, bool :: Type
 top  = Type (prim "Top")  Nothing  Full

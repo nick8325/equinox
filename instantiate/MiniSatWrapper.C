@@ -164,13 +164,13 @@ extern "C" {
         return w->clause.instantiate(*w, fresh) ? 1 : 0; }
 
     // setting a literal to be read or assumed during solving
-    void solver_lit_begin   (solver* w, Loc* l, uint sign)  { 
+    void solver_lit_begin   (solver* w, Loc* l, int sign)  { 
         w->args.clear(); w->loc = l; w->sig = sign; }
     void solver_lit_add_con (solver* w, int c)              { w->args.push(conArg(c-1)); }
 
     // reading the value of a predicate (location)
-    Var solver_lit_read     (solver* w) { 
+    int solver_lit_read     (solver* w) { 
         // creates variables if they don't exists!! (fix?)
-        return w->loc->get(*w, w->args, w->dummy); 
+        return toDimacs(Lit(w->loc->get(*w, w->args, w->dummy), !w->sig)); 
     }
 }

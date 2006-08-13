@@ -1,6 +1,8 @@
 module Sat
   ( S             -- :: * -> *; Functor, Monad
   , Lit           -- :: *; Eq, Ord, Show
+  , Arg(..)       -- :: *
+  , Atm(..)       -- :: *
   
   , run           -- :: S a -> IO a
   , okay          -- :: S Bool
@@ -13,18 +15,62 @@ module Sat
   , addClause     -- :: [Lit] -> S Bool
   , solve         -- :: [Lit] -> S Bool
   , simplify      -- :: Bool -> Bool -> S Bool
+
+  , newLoc        -- :: Int -> S Loc
+  , getLit        -- :: Signed Atm -> S Lit
+  , addClauses    -- :: [Int] -> [Signed Atm] -> S ()
   )
  where
 
 import Foreign.C.Types       ( CInt )
 import Foreign.C.String      ( CString, withCString )
-import Foreign.Ptr           ( Ptr, nullPtr )
+import Foreign.Ptr           ( Ptr, FunPtr, nullPtr )
+import Foreign.ForeignPtr    ( ForeignPtr, newForeignPtr, withForeignPtr )
 import Foreign.Storable      ( peek )
 import Foreign.Marshal.Array ( withArray0, peekArray0 )
 import Foreign.Marshal.Alloc ( malloc, free )
 import System.IO             ( FilePath )
 import Foreign.Storable      ( Storable )
 import Control.Exception     ( finally )
+
+
+import Form                  ( Signed(..), the, sign )
+
+
+newLoc :: Int -> S Loc
+newLoc p = lift $ do
+  ptr  <- loc_new (fromIntegral p)
+  fptr <- newForeignPtr loc_free ptr
+  return (Loc fptr)
+
+addClauses :: [Int] -> [Signed Atm] -> S ()
+addClauses d ls = MiniSatM (\s -> addClauses_ d ls s)
+
+addClauses_ d ls s = 
+  do solver_clause_begin s
+     mapM_ (signed addLit) ls
+     mapM_ (solver_clause_add_size s . fromIntegral) d
+     solver_clause_commit s 0
+
+ where addArg (ArgN i) = solver_clause_add_lit_con s (fromIntegral i)
+       addArg (ArgV i) = solver_clause_add_lit_var s (fromIntegral i)
+       addLit (Loc l :@ args) b = do
+         withForeignPtr l (flip (solver_clause_add_lit s) (toCBool b))
+	 mapM_ addArg args
+
+       signed f x = f (the x) (sign x)
+    
+
+getLit :: Signed Atm -> S Lit
+getLit atom = MiniSatM $ \s -> do
+    withForeignPtr l (flip (solver_lit_begin s) (toCBool negated))
+    mapM_ (solver_lit_add_con s) [ fromIntegral d | ArgN d <- args ]
+    solver_lit_read s
+
+  where (Loc l :@ args) = the atom
+        negated         = case atom of
+                            Neg _ -> True
+                            Pos _ -> False
 
 ----------------------------------------------------------------------------------
 -- Monad
@@ -48,6 +94,15 @@ instance Functor S where
 newtype Lit
   = Lit CInt
  deriving (Eq, Num, Ord, Storable)
+
+newtype Loc = Loc (ForeignPtr ())
+
+data Arg
+  = ArgV Int
+  | ArgN Int
+
+data Atm
+  = Loc :@ [Arg]
 
 neg :: Lit -> Lit
 neg x = -x
@@ -187,28 +242,43 @@ toCBool False = 0
 ----------------------------------------------------------------------------------------------------
 -- foreign imports
 
-foreign import ccall unsafe "static csolver.h"   s_new            :: CString -> IO Solver
-foreign import ccall unsafe "static csolver.h"   s_delete         :: Solver -> IO () 
-foreign import ccall unsafe "static csolver.h"   s_newlit         :: Solver -> IO Lit
-foreign import ccall unsafe "static csolver.h"   s_clause         :: Solver -> Ptr Lit -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_solve          :: Solver -> CInt -> Ptr Lit -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_simplify       :: Solver -> CInt -> CInt -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_freezelit      :: Solver -> Lit -> IO ()
-foreign import ccall unsafe "static csolver.h"   s_unfreezelit    :: Solver -> Lit -> IO ()
-foreign import ccall unsafe "static csolver.h"   s_setpolarity    :: Solver -> Lit -> IO ()
-foreign import ccall unsafe "static csolver.h"   s_setdecisionvar :: Solver -> Lit -> CInt -> IO ()
-foreign import ccall unsafe "static csolver.h"   s_value          :: Solver -> Lit -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_and            :: Solver -> Lit -> Lit -> IO Lit
-foreign import ccall unsafe "static csolver.h"   s_or             :: Solver -> Lit -> Lit -> IO Lit
-foreign import ccall unsafe "static csolver.h"   s_equ            :: Solver -> Lit -> Lit -> IO Lit
-foreign import ccall unsafe "static csolver.h"   s_xor            :: Solver -> Lit -> Lit -> IO Lit
-foreign import ccall unsafe "static csolver.h"   s_ite            :: Solver -> Lit -> Lit -> Lit -> IO Lit
-foreign import ccall unsafe "static csolver.h"   s_add            :: Solver -> Lit -> Lit -> Lit -> Ptr Lit -> Ptr Lit -> IO ()
-foreign import ccall unsafe "static csolver.h"   s_modelvalue     :: Solver -> Lit -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_contr          :: Solver -> IO (Ptr Lit)
-foreign import ccall unsafe "static csolver.h"   s_verbose        :: Solver -> CInt -> IO ()
-foreign import ccall unsafe "static csolver.h"   s_okay           :: Solver -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_nvars          :: Solver -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_nclauses       :: Solver -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_nconflicts     :: Solver -> IO CInt
-foreign import ccall unsafe "static csolver.h"   s_nremembered    :: Solver -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_new            :: CString -> IO Solver
+foreign import ccall unsafe "static Wrapper.h"   s_delete         :: Solver -> IO () 
+foreign import ccall unsafe "static Wrapper.h"   s_newlit         :: Solver -> IO Lit
+foreign import ccall unsafe "static Wrapper.h"   s_clause         :: Solver -> Ptr Lit -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_solve          :: Solver -> CInt -> Ptr Lit -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_simplify       :: Solver -> CInt -> CInt -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_freezelit      :: Solver -> Lit -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   s_unfreezelit    :: Solver -> Lit -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   s_setpolarity    :: Solver -> Lit -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   s_setdecisionvar :: Solver -> Lit -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   s_value          :: Solver -> Lit -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_and            :: Solver -> Lit -> Lit -> IO Lit
+foreign import ccall unsafe "static Wrapper.h"   s_or             :: Solver -> Lit -> Lit -> IO Lit
+foreign import ccall unsafe "static Wrapper.h"   s_equ            :: Solver -> Lit -> Lit -> IO Lit
+foreign import ccall unsafe "static Wrapper.h"   s_xor            :: Solver -> Lit -> Lit -> IO Lit
+foreign import ccall unsafe "static Wrapper.h"   s_ite            :: Solver -> Lit -> Lit -> Lit -> IO Lit
+foreign import ccall unsafe "static Wrapper.h"   s_add            :: Solver -> Lit -> Lit -> Lit -> Ptr Lit -> Ptr Lit -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   s_modelvalue     :: Solver -> Lit -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_contr          :: Solver -> IO (Ptr Lit)
+foreign import ccall unsafe "static Wrapper.h"   s_verbose        :: Solver -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   s_okay           :: Solver -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_nvars          :: Solver -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_nclauses       :: Solver -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_nconflicts     :: Solver -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_nremembered    :: Solver -> IO CInt
+
+foreign import ccall unsafe "static Wrapper.h"   loc_new          :: CInt -> IO (Ptr ())
+foreign import ccall unsafe "static Wrapper.h &loc_free"   loc_free         :: FunPtr ((Ptr ()) -> IO ())
+foreign import ccall unsafe "static Wrapper.h"   loc_arity        :: (Ptr ()) -> IO CInt
+
+foreign import ccall unsafe "static Wrapper.h"   solver_clause_begin       :: Solver -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   solver_clause_add_lit     :: Solver -> (Ptr ()) -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   solver_clause_add_lit_var :: Solver -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   solver_clause_add_lit_con :: Solver -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   solver_clause_add_size    :: Solver -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   solver_clause_commit      :: Solver -> CInt -> IO ()
+
+foreign import ccall unsafe "static Wrapper.h"   solver_lit_begin :: Solver -> (Ptr ()) -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   solver_lit_add_con :: Solver -> CInt -> IO ()
+foreign import ccall unsafe "static Wrapper.h"   solver_lit_read :: Solver -> IO Lit

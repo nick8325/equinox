@@ -197,6 +197,10 @@ the :: Signed a -> a
 the (Pos x) = x
 the (Neg x) = x
 
+sign :: Signed a -> Bool
+sign (Pos _) = True
+sign (Neg _) = False
+
 type Clause = [Signed Atom]
 
 showClause :: Clause -> String

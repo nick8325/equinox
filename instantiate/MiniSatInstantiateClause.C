@@ -105,12 +105,12 @@ bool FOClause::instantiate(Solver& s, int fresh) {
   }
   assert(fresh == 0 || fresh == maxe);
 
-//  cout << "(" << s.nClauses() << ") clause:    " << lits << endl;
-//  cout << "  lits:    " << lits.size() << endl;
-//  cout << "  vars:    " << sizes.size() << endl;
-//  cout << "  fresh:   " << fresh  << endl;
-//  cout << "  max:     " << maxe  << endl;
-//  cout << "  sizes:   " << sizes << endl;
+  //cout << "(" << s.nClauses() << ") clause:    " << lits << endl;
+  //cout << "  lits:    " << lits.size() << endl;
+  //cout << "  vars:    " << sizes.size() << endl;
+  //cout << "  fresh:   " << fresh  << endl;
+  //cout << "  max:     " << maxe  << endl;
+  //cout << "  sizes:   " << sizes << endl;
 
   schedule(lits,variables,chunksize);
 
@@ -147,16 +147,19 @@ bool FOClause::instantiate(Solver& s, int fresh) {
   // if whole clause is ground, add it and return
   if(variables.size() == 0) {
     //cout << bindings << " : " << cls << endl;
-    if(cls.size() == 0) { 
-	return false;
-    }
+//    fprintf(stderr, "ground clause: ");
+//    s.printClause(cls);
+//    fprintf(stderr, "\n");
+//    if(cls.size() == 0) { 
+//	return false;
+//    }
     //bool ret = s.addClause(cls,true);
     s.addClause(cls);
     bool ret = s.okay();
     assert(ret);
     for(i = 0; (int)i < cls.size(); i++) lset.del(cls[i]);
     //cout << "Done! " << s.get_nof_constraints() - count << endl; return ret;
-    //cout << "Done! " << s.get_nof_constraints() << endl; 
+    //cout << "Done! " << s.nClauses() << endl; 
     return ret;
   }
   
@@ -180,10 +183,10 @@ bool FOClause::instantiate(Solver& s, int fresh) {
     // full substitution constructed?
     if((int)i == sizes.size()) {
       // check if clause is empty
-      if(cls.size() == 0) {
-	  cout << "Contradictive clause: " << lits;
-	  return false;
-      }
+//      if(cls.size() == 0) {
+//	  cout << "Contradictive clause: " << lits;
+//	  return false;
+//      }
       
       //cout << bindings << " : " << cls << endl;
 //      {

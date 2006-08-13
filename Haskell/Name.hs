@@ -5,7 +5,7 @@ module Name
   , strip      -- :: Name -> Name
   
   -- names
-  , eq, ap, sk, sp, tr
+  , sk, sp, tr
   )
  where
 
@@ -42,11 +42,14 @@ strip n        = n
 
 -- internal names
 
-eq = prim "="
-ap = prim "@"
 sk = prim "sk"
 sp = prim "sp"
 tr = prim "truth"
+
+isSkolemnName :: Name -> Bool
+isSkolemnName (Name _) = False
+isSkolemnName (n :% _) = isSkolemnName n
+isSkolemnName n        = n == sk
 
 ---------------------------------------------------------------------------
 -- the end.

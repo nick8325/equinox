@@ -4,6 +4,7 @@ import Sat
 import qualified Main
 import Form
 import Flags
+import Equinox.FolSat
 
 ---------------------------------------------------------------------------
 -- main
@@ -19,7 +20,8 @@ main =
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem cs =
   do sequence_ [ print c | c <- cs ]
-     return Unknown
+     b <- prove ?flags cs
+     return (if b then Unsatisfiable else Unknown)
 
 ---------------------------------------------------------------------------
 -- the end.

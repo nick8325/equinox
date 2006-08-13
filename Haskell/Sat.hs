@@ -1,4 +1,20 @@
-module Sat where
+module Sat
+  ( S             -- :: * -> *; Functor, Monad
+  , Lit           -- :: *; Eq, Ord, Show
+  
+  , run           -- :: S a -> IO a
+  , okay          -- :: S Bool
+  , lift          -- :: IO a -> S a
+  , contradiction -- :: S ()
+  , newLit        -- :: S Lit
+  , neg           -- :: Lit -> Lit
+  , getValue      -- :: Lit -> S (Maybe Bool)
+  , getModelValue -- :: Lit -> S Bool -- use only after model has been found!
+  , addClause     -- :: [Lit] -> S Bool
+  , solve         -- :: [Lit] -> S Bool
+  , simplify      -- :: Bool -> Bool -> S Bool
+  )
+ where
 
 import Foreign.C.Types       ( CInt )
 import Foreign.C.String      ( CString, withCString )
@@ -8,35 +24,47 @@ import Foreign.Marshal.Array ( withArray0, peekArray0 )
 import Foreign.Marshal.Alloc ( malloc, free )
 import System.IO             ( FilePath )
 import Foreign.Storable      ( Storable )
+import Control.Exception     ( finally )
+
+----------------------------------------------------------------------------------
+-- Monad
+
+newtype Solver = Solver (Ptr ())
+newtype S a    = MiniSatM (Solver -> IO a)
+
+instance Monad S where
+  return x =
+    MiniSatM (const (return x))
+
+  MiniSatM f >>= g =
+    MiniSatM (\s -> f s >>= \x -> case g x of { MiniSatM m -> m s })
+
+instance Functor S where
+  fmap f (MiniSatM g) = MiniSatM (fmap f . g)
 
 ----------------------------------------------------------------------------------------------------
 -- types
 
-newtype Lit = Lit CInt deriving (Eq, Num, Ord, Storable)
+newtype Lit
+  = Lit CInt
+ deriving (Eq, Num, Ord, Storable)
+
+neg :: Lit -> Lit
+neg x = -x
 
 instance Show Lit where
-    showsPrec i (Lit l) = showsPrec i l
+  showsPrec i (Lit l) = showsPrec i l
 
 instance Read Lit where
-    readsPrec i = map (\ (x,r) -> (Lit x, r)) . readsPrec i
+  readsPrec i = map (\ (x,r) -> (Lit x, r)) . readsPrec i
 
-mkTrue     = Lit 1
-mkFalse    = -mkTrue
-
-newtype Solver     = Solver (Ptr ())
-newtype MiniSatM a = MiniSatM (Solver -> IO a)
-
-instance Monad MiniSatM where
-    return x = MiniSatM (const (return x))
-    (MiniSatM f) >>= g = MiniSatM (\s -> f s >>= \x -> case g x of { MiniSatM m -> m s })
-
-instance Functor MiniSatM where
-    fmap f (MiniSatM g) = MiniSatM (fmap f . g)
+mkTrue  = Lit 1
+mkFalse = -mkTrue
 
 ----------------------------------------------------------------------------------------------------
 -- MiniSatM functions
 
-lower :: MiniSatM a -> Solver -> IO a
+lower :: S a -> Solver -> IO a
 lower (MiniSatM f) = f
 
 withSolverLog :: FilePath -> (Solver -> IO a) -> IO a
@@ -48,9 +76,11 @@ withSolver = withSolverPrim nullPtr
 withSolverPrim :: CString -> (Solver -> IO a) -> IO a
 withSolverPrim log f =
     do s <- s_new log
-       r <- f s
-       s_delete s
+       r <- f s `finally` s_delete s
        return r
+
+run :: S a -> IO a
+run m = withSolver (lower m)
 
 {-
     mkLit       :: m Lit
@@ -97,15 +127,18 @@ withSolverPrim log f =
     mkAdd       = defAdd
 -}
 
-mkLit         = MiniSatM s_newlit
-clause ls     = fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . s_clause)
+solve = solve_ True
+
+newLit         = MiniSatM s_newlit
+addClause ls     = fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . s_clause)
 solve_ b ls   = fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . flip s_solve (toCBool b))
 
 freezeLit l   = MiniSatM (\s -> s_freezelit s l)
 unfreezeLit l = MiniSatM (\s -> s_unfreezelit s l)
-modelValue l  = fmap fromCBool $ MiniSatM (flip s_modelvalue l)
-value      l  = fmap fromLBool $ MiniSatM (flip s_value l)
-contr         = MiniSatM (\s -> s_contr s >>= peekArray0 (Lit 0))
+getModelValue l  = fmap fromCBool $ MiniSatM (flip s_modelvalue l)
+getValue      l  = fmap fromLBool $ MiniSatM (flip s_value l)
+reason   = MiniSatM (\s -> s_contr s >>= peekArray0 (Lit 0))
+contradiction = addClause [] >> return ()
 okay          = fmap fromCBool $ MiniSatM s_okay
 simplify elim  turnoffelim = fmap fromCBool $ MiniSatM (\s -> s_simplify s (toCBool elim) (toCBool turnoffelim))
 
@@ -128,7 +161,7 @@ mkAdd x y z = MiniSatM $ \s ->
 
 verbose n = MiniSatM (\s -> s_verbose s (fromIntegral n))
 
-nVars, nClauses, nConflicts, nRemembered :: MiniSatM Int
+nVars, nClauses, nConflicts, nRemembered :: S Int
 nVars       = fmap fromIntegral $ MiniSatM s_nvars
 nClauses    = fmap fromIntegral $ MiniSatM s_nclauses
 nConflicts  = fmap fromIntegral $ MiniSatM s_nconflicts

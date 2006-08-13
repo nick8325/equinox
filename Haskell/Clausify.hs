@@ -9,7 +9,7 @@ import qualified Form
 import Name
 import Data.Set( Set )
 import qualified Data.Set as S
-import List( minimumBy, partition )
+import List( minimumBy, partition, nub )
 import Control.Monad.State
 import Control.Monad.Reader
 import Flags
@@ -17,14 +17,7 @@ import Flags
 ----------------------------------------------------------------------
 -- clausify
 
--- TODO: Check that all combinations of:
---   * 0,1,2 negated_conjecture present
---   * 0,1,2 conjecture present
---   * trivial (true,false) conjecture
--- make sense!
-
 clausify :: (?flags :: Flags) => Problem -> ([Clause],[[Clause]])
---clausify :: Flags -> [Input Form] -> [[Input Fol.Clause]]
 clausify inps = run $ clausifyInputs nil nil inps
  where
   clausifyInputs theory obligs [] =
@@ -51,7 +44,7 @@ clausify inps = run $ clausifyInputs nil nil inps
   split' a                    = [a]
 
 clean :: Clause -> Clause
-clean cl = subst sub cl
+clean cl = nub (subst sub cl)
  where
   xs  = free cl
   sub = makeTab ids S.empty (S.toList xs)

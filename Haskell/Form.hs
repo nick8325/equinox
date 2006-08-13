@@ -88,9 +88,12 @@ data Atom
  deriving ( Eq, Ord )
 
 instance Show Atom where
-  showsPrec n (a :=: b) = showsPrec n a
-                        . showString " = "
-                        . showsPrec n b
+  showsPrec n (a :=: b)
+    | b == truth = showsPrec n a
+    | otherwise  = showsPrec n a
+                 . showString " = "
+                 . showsPrec n b
+
 truth :: Term
 truth = Fun (tr ::: ([] :-> bool)) []
 
@@ -156,9 +159,17 @@ instance Show a => Show (Signed a) where
   showsPrec n (Neg x) = showString "~"
                       . showsPrec n x
 
+instance Functor Signed where
+  fmap f (Pos x) = Pos (f x)
+  fmap f (Neg x) = Neg (f x)
+
 negat :: Signed a -> Signed a
 negat (Pos x) = Neg x
 negat (Neg x) = Pos x
+
+the :: Signed a -> a
+the (Pos x) = x
+the (Neg x) = x
 
 type Clause = [Signed Atom]
 
@@ -291,7 +302,6 @@ mlift2 f m1 m2 = \no yes -> m1 no (\x -> m2 no (\y -> yes (f x y)))
 class Symbolic a where
   symbols :: a -> Set Symbol
   free    :: a -> Set Symbol
-  subst   :: Subst -> a -> a
   subst'  :: Subst -> a -> Mybe r a
 
   symbols{| Unit |}    Unit      = S.empty
@@ -303,18 +313,19 @@ class Symbolic a where
   free{| a :*: b |} (x :*: y) = free x `S.union` free y
   free{| a :+: b |} (Inl x)   = free x
   free{| a :+: b |} (Inr y)   = free y
-{-
-  subst{| Unit |}    sub Unit      = Unit
-  subst{| a :*: b |} sub (x :*: y) = subst sub x :*: subst sub y
-  subst{| a :+: b |} sub (Inl x)   = Inl (subst sub x)
-  subst{| a :+: b |} sub (Inr y)   = Inr (subst sub y)
--}
-  subst sub a = subst' sub a a id
 
   subst'{| Unit |}    sub Unit      = nothing
-  subst'{| a :*: b |} sub (x :*: y) = mlift2 (:*:) (subst' sub x) (subst' sub y)
+  subst'{| a :*: b |} sub (x :*: y) = \no yes ->
+    subst' sub x (subst' sub y no (\y' -> yes (x :*: y'))) (\x' ->
+      subst' sub y (yes (x' :*: y)) (\y' -> yes (x' :*: y')))
   subst'{| a :+: b |} sub (Inl x)   = mlift1 Inl (subst' sub x)
   subst'{| a :+: b |} sub (Inr y)   = mlift1 Inr (subst' sub y)
+
+subst :: Symbolic a => Subst -> a -> a
+subst sub a = subst' sub a a id
+
+isGround :: Symbolic a => a -> Bool
+isGround x = S.null (free x)
 
 instance                             Symbolic ()
 instance (Symbolic a, Symbolic b) => Symbolic (a,b)

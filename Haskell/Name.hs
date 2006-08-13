@@ -5,8 +5,9 @@ module Name
   , strip      -- :: Name -> Name
   
   -- names
-  , sk, sp, tr
+  , vr, sk, dp, sp, tr, dm, un, df, el
   , isSkolemnName
+  , isEltName
   )
  where
 
@@ -43,14 +44,23 @@ strip n        = n
 
 -- internal names
 
+vr = prim "X"
 sk = prim "sk"
+dp = prim "dp"
 sp = prim "sp"
 tr = prim "truth"
+dm = prim "dm"
+un = prim "un"
+df = prim "df"
+el = prim ""
 
-isSkolemnName :: Name -> Bool
-isSkolemnName (Name _) = False
-isSkolemnName (n :% _) = isSkolemnName n
-isSkolemnName n        = n == sk
+isName :: (Name -> Bool) -> Name -> Bool
+isName p n | p n  = True
+isName p (n :% _) = isName p n
+isName p _        = False
+
+isSkolemnName = isName (== sk)
+isEltName     = isName (== el)
 
 ---------------------------------------------------------------------------
 -- the end.

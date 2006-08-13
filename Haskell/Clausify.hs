@@ -137,7 +137,7 @@ skolemn (_ ::: V t) vs =
 literal :: Set Symbol -> M Atom
 literal vs =
   do i <- next'
-     let p = (sp % i) ::: ([ t | _ ::: V t <- args ] :-> bool)
+     let p = (dp % i) ::: ([ t | _ ::: V t <- args ] :-> bool)
      return (prd p [ Var v | v <- args ])
  where
   args = S.toList vs

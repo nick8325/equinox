@@ -15,9 +15,9 @@ import Name
 
 data Type
   = Type
-  { typ :: Name
-  , dom :: Maybe Int
-  , equ :: Equality
+  { tname   :: Name
+  , tdomain :: Maybe Int
+  , tequal  :: Equality
   }
  deriving ( Eq, Ord )
 
@@ -70,6 +70,9 @@ arity :: Symbol -> Int
 arity (_ ::: (xs :-> _)) = length xs
 arity _                  = 0
 
+typing :: Symbol -> Typing
+typing (_ ::: tp) = tp
+
 isVarSymbol :: Symbol -> Bool
 isVarSymbol (_ ::: V _) = True
 isVarSymbol _           = False
@@ -82,6 +85,10 @@ data Term
   | Var Symbol
  deriving ( Eq, Ord )
 
+typ :: Term -> Type
+typ (Var (_ ::: V tp))         = tp
+typ (Fun (_ ::: (_ :-> tp)) _) = tp
+
 instance Show Term where
   showsPrec n (Fun f []) = showsPrec n f
   showsPrec n (Fun f xs) = showsPrec n f
@@ -91,7 +98,7 @@ instance Show Term where
   showsPrec n (Var x)    = showsPrec n x
 
 var :: Type -> Int -> Symbol
-var t i = (prim "X" % i) ::: V t
+var t i = (vr % i) ::: V t
 
 data Atom
   = Term :=: Term
@@ -187,7 +194,7 @@ showClause :: Clause -> String
 showClause [] = "$false"
 showClause c  = show (foldr1 (\/) ([ Atom a | Pos a <- c ] ++ [ Not (Atom a) | Neg a <- c ]))
 
-data QClause = Uniq Symbol Clause
+data QClause = Uniq (Bind Clause)
   deriving ( Eq, Ord, Show )
 
 ----------------------------------------------------------------------
@@ -317,9 +324,10 @@ mlift2 f m1 m2 = \no yes -> m1 no (\x -> m2 no (\y -> yes (f x y)))
 -- destructors
 
 class Symbolic a where
-  symbols :: a -> Set Symbol
-  free    :: a -> Set Symbol
-  subst'  :: Subst -> a -> Mybe r a
+  symbols  :: a -> Set Symbol
+  free     :: a -> Set Symbol
+  subterms :: a -> Set Term
+  subst'   :: Subst -> a -> Mybe r a
 
   symbols{| Unit |}    Unit      = S.empty
   symbols{| a :*: b |} (x :*: y) = symbols x `S.union` symbols y
@@ -330,6 +338,11 @@ class Symbolic a where
   free{| a :*: b |} (x :*: y) = free x `S.union` free y
   free{| a :+: b |} (Inl x)   = free x
   free{| a :+: b |} (Inr y)   = free y
+
+  subterms{| Unit |}    Unit      = S.empty
+  subterms{| a :*: b |} (x :*: y) = subterms x `S.union` subterms y
+  subterms{| a :+: b |} (Inl x)   = subterms x
+  subterms{| a :+: b |} (Inr y)   = subterms y
 
   subst'{| Unit |}    sub Unit      = nothing
   subst'{| a :*: b |} sub (x :*: y) = \no yes ->
@@ -353,9 +366,11 @@ instance (Ord a, Symbolic a) => Symbolic (Set a) where
   symbols s   = symbols (S.toList s)
   free s      = free (S.toList s)
   --subst sub s = S.map (subst sub) s
+  subterms s  = subterms (S.toList s)
   subst' sub  = mlift1 S.fromList . subst' sub . S.toList
 
 instance Symbolic Atom
+instance Symbolic QClause
 instance Symbolic Form
 
 instance Symbolic Term where
@@ -368,6 +383,11 @@ instance Symbolic Term where
   --subst sub (Fun f xs) = Fun f (subst sub xs)
   --subst sub x@(Var v)  = look v x sub
 
+  subterms t = t `S.insert`
+    case t of
+      Fun f xs -> subterms xs
+      _        -> S.empty
+
   subst' sub (Fun f xs) = mlift1 (Fun f) (subst' sub xs)
   subst' sub x@(Var v)  =
     case M.lookup v (mapp sub) of
@@ -377,6 +397,7 @@ instance Symbolic Term where
 instance Symbolic a => Symbolic (Bind a) where
   symbols   (Bind v a) = v `S.insert` symbols a
   free      (Bind v a) = v `S.delete` free a
+  subterms  (Bind v a) = subterms a
 {-
   subst sub (Bind v a) = Bind v' (subst (Subst vs' mp') a)
    where

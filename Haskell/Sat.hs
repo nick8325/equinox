@@ -96,13 +96,16 @@ newtype Lit
  deriving (Eq, Num, Ord, Storable)
 
 newtype Loc = Loc (ForeignPtr ())
+ deriving ( Eq, Show )
 
 data Arg
   = ArgV Int
   | ArgN Int
+ deriving ( Eq, Show )
 
 data Atm
   = Loc :@ [Arg]
+ deriving ( Eq, Show )
 
 neg :: Lit -> Lit
 neg x = -x

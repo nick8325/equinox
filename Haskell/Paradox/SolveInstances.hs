@@ -70,6 +70,7 @@ solveInstances flags predsPure minSize css =
          processClause k c =
            do ls' <- mapM processLit ls
               let args = [ isize t | v <- vs, let V t = typing v ]
+              lift $ print (args,ls')
               addClauses args ls'
           where
            ls = c
@@ -154,7 +155,7 @@ printTheModel k ref predsPure =
      sequence_ $ intersperse (lift $ putStrLn "") $ map snd $ sortBy first $
        [ (show f,
             do sequence_
-                 [ do bs <- sequence [ do l <- getLit (loc :@ ([ ArgN i | i <- is ] ++ [ ArgN j ]))
+                 [ do bs <- sequence [ do l <- getLit (Pos (loc :@ ([ ArgN i | i <- is ] ++ [ ArgN j ])))
                                           getModelValue l
                                      | j <- [1.. tdomain' t `min` k]
                                      ]
@@ -180,7 +181,7 @@ printTheModel k ref predsPure =
        ] ++
        [ (show f,
             do sequence_
-                 [ do l <- getLit (loc :@ [ ArgN i | i <- is ])
+                 [ do l <- getLit (Pos (loc :@ [ ArgN i | i <- is ]))
                       b <- getModelValue l
                       lift $ print $ (if b then Pos else Neg) $ (Fun f [ Fun (elt i) [] | i <- is ] :=: truth)
                  | is <- count ms

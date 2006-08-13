@@ -8,6 +8,7 @@ module Name
   , vr, sk, dp, sp, tr, dm, un, df, el
   , isSkolemnName
   , isEltName
+  , getIndex
   )
  where
 
@@ -61,6 +62,10 @@ isName p _        = False
 
 isSkolemnName = isName (== sk)
 isEltName     = isName (== el)
+
+getIndex :: Name -> Int
+getIndex (_ :% i) = i
+getIndex _        = 0
 
 ---------------------------------------------------------------------------
 -- the end.

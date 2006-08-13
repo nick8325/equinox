@@ -187,6 +187,9 @@ showClause :: Clause -> String
 showClause [] = "$false"
 showClause c  = show (foldr1 (\/) ([ Atom a | Pos a <- c ] ++ [ Not (Atom a) | Neg a <- c ]))
 
+data QClause = Uniq Symbol Clause
+  deriving ( Eq, Ord, Show )
+
 ----------------------------------------------------------------------
 -- constructors
 

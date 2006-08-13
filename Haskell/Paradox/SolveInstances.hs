@@ -17,26 +17,6 @@ import Output
 import Paradox.AnalysisTypes
 import Monad
 
--- external
-
-data Loc = Abstract_Loc
-
-newLoc :: Int -> S Loc
-newLoc = error "not implemented yet"
-
-data Arg
-  = ArgV Int
-  | ArgN Int
-
-data Atm
-  = Loc :@ [Arg]
-
-addClauses :: [Int] -> [Signed Atm] -> S ()
-addClauses = error "not implemented yet"
-
-getLit :: Signed Atm -> S Lit
-getLit = error "not implemented yet"
-
 -------------------------------------------------------------------------
 -- solver
 

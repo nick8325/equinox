@@ -2,12 +2,15 @@
 #-- Variables
 
 MINISAT = ../minisat/current-base
-HFLAGS  = -optl -static -lstdc++ -fglasgow-exts -I$(MINISAT) $(MINISAT)/Solver.or $(MINISAT)/Prop.or $(MINISAT)/csolver.or
+HFLAGS  = -optl -static -lstdc++ -fglasgow-exts -O3 -I$(MINISAT) $(MINISAT)/Solver.or $(MINISAT)/Prop.or $(MINISAT)/csolver.or
 GHC     = ghc
 
 #-- Main
 
 main: paradox.exe equinox.exe
+
+paradox: paradox.exe
+equinox: equinox.exe
 
 #-- Paradox
 

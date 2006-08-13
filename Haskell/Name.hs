@@ -2,7 +2,7 @@ module Name
   ( Name       -- :: *; Show, Eq, Ord, Hash
   , (%)        -- :: Name -> Int -> Name
   , name, prim -- :: String -> Name
-  --, strip      -- :: Name -> Name
+  , strip      -- :: Name -> Name
   
   -- names
   , eq, ap, sk, sp, tr

@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fgenerics #-}
+{-# OPTIONS -fgenerics #-}
 module Form where
 
 import Data.Set as S( Set )
@@ -33,7 +33,7 @@ opers :: Show a => String -> [a] -> ShowS
 opers op xs = foldr (.) id (intersperse (showString op) (map shows xs))
 
 commas :: Show a => [a] -> ShowS
-commas = opers ", "
+commas = opers ","
 
 instance Show Typing where
   showsPrec n (V t)       = showsPrec n t
@@ -156,6 +156,12 @@ instance Show a => Show (Signed a) where
   showsPrec n (Neg x) = showString "~"
                       . showsPrec n x
 
+negat :: Signed a -> Signed a
+negat (Pos x) = Neg x
+negat (Neg x) = Pos x
+
+type Clause = [Signed Atom]
+
 ----------------------------------------------------------------------
 -- constructors
 
@@ -228,6 +234,11 @@ positive (Not (Not a))             = positive a
 positive (Not (ForAll (Bind v a))) = Exists (Bind v (nt a))
 positive (Not (Exists (Bind v a))) = ForAll (Bind v (nt a))
 positive a                         = a -- only (negations of) atoms
+
+simple :: Form -> Form
+simple (Or as)             = Not (And (S.map nt as))
+simple (Exists (Bind v a)) = Not (ForAll (Bind v (nt a)))
+simple a                   = a
 
 ----------------------------------------------------------------------
 -- substitution
@@ -401,7 +412,7 @@ instance Symbolic a => Symbolic (Bind a) where
 -- input clauses
 
 data Kind
-  = Assumption
+  = Fact
   | NegatedConjecture
   | Conjecture
  deriving ( Eq, Ord, Show )
@@ -413,6 +424,8 @@ data Input a
   , what :: a
   }
  deriving ( Eq, Ord, Show )
+
+type Problem = [Input Form]
 
 ----------------------------------------------------------------------
 -- answers

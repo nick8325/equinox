@@ -19,7 +19,7 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem cs =
-  do sequence_ [ print c | c <- cs ]
+  do sequence_ [ putStrLn (showClause c) | c <- cs ]
      b <- prove ?flags cs
      return (if b then Unsatisfiable else Unknown)
 

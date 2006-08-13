@@ -6,6 +6,7 @@ module Name
   
   -- names
   , sk, sp, tr
+  , isSkolemnName
   )
  where
 

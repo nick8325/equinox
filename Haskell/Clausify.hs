@@ -236,7 +236,8 @@ claus mod a =
                x  <- iff neg (skolemn v vs')
                return ( defs
                       , subst (v |=> Var v') poss
-                      , subst (v |=> x)      negs
+                      , fmap (map (fmap (substSkAtom v x))) negs
+                      --, subst (v |=> x)      negs
                       )
           )
         | (vals,m) <- tries
@@ -264,6 +265,25 @@ claus mod a =
 
   iff True  m = m
   iff False _ = return (error "pos/neg violation")
+
+  substSkAtom v x (a :=: b) =
+    substSk v x a :=: substSk v x b
+  
+  substSk v x (Var w)
+    | v == w    = x
+    | otherwise = Var w
+
+  substSk v (Fun (f ::: (tsf :-> tf)) xsf) (Fun (g ::: (tsg :-> tg)) xsg)
+    | isSkolemnName g && Var v `elem` xsg && arf + arg - 1 <= arf `max` arg =
+      Fun (g ::: ((take i tsg ++ tsf ++ drop (i+1) tsg) :-> tg))
+        (take i xsg ++ xsf ++ drop (i+1) xsg)
+   where
+    i   = head [ i | (i,Var w) <- [0..] `zip` xsg, v == w ]
+    arf = length xsf
+    arg = length xsg
+    
+  substSk v x (Fun g xs) =
+    Fun g (map (substSk v x) xs)
 
 lc      ?. b       = if b then lc else (0,0)
 inc (l,c)          = (l+c,c)
@@ -350,6 +370,10 @@ foldr2 op xs  = foldr2 op (sweep xs)
 data Seq a = List [a] | Seq a `Cat` Seq a
 
 instance Symbolic a => Symbolic (Seq a)
+
+instance Functor Seq where
+  fmap f (List xs)   = List (map f xs)
+  fmap f (a `Cat` b) = fmap f a `Cat` fmap f b
 
 fromList :: [a] -> Seq a
 fromList xs = List xs

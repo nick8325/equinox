@@ -79,6 +79,7 @@ wapp ws = MkWeight (1 + maximum (0 : map depth ws)) (1 + sum (map siz ws))
 
 -- Debugging ON
 
+{-
 data Con
   = Con !Weight !Int String
 
@@ -96,10 +97,10 @@ instance Ord Con where
 
 instance Show Con where
   show (Con _ _ s) = s -- ++ "#" ++ show n
+-}
 
 -- Debugging OFF
 
-{-
 data Con
   = Con !Weight !Int
  deriving ( Ord )
@@ -115,7 +116,6 @@ con n w s = Con w n
 
 instance Show Con where
   show (Con _ n) = "#" ++ show n
--}
 
 data State
   = MkState
@@ -251,23 +251,23 @@ norm x          = return x
 
 addClause :: [Lit] -> C ()
 addClause xs =
-  do lift (putStr (showClause xs ++ "."))
+  do --lift (putStr (showClause xs ++ "."))
      xs' <- (filter (/= Bool False)) `fmap` sequence [ simp x | x <- xs ]
      case xs' of
        _ | Bool True `elem` xs' ->
-         do lift (putStrLn ("  [=> $true]"))
-            lift (hFlush stdout)
+         do --lift (putStrLn ("  [=> $true]"))
+            --lift (hFlush stdout)
             return ()
        
        [a :=: b] ->
-         do lift (putStrLn ("  [=> " ++ show b ++ " := " ++ show a ++ "]"))
-            lift (hFlush stdout)
+         do --lift (putStrLn ("  [=> " ++ show b ++ " := " ++ show a ++ "]"))
+            --lift (hFlush stdout)
             setRep a b
 
        _ ->
          do xs'' <- sequence [ norm x | x <- xs' ]
-            lift (putStrLn "")
-            lift (hFlush stdout)
+            --lift (putStrLn "")
+            --lift (hFlush stdout)
             liftS (Sat.addClause [ x | Lit x <- xs'' ])
             return ()
  where

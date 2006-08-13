@@ -173,6 +173,10 @@ the (Neg x) = x
 
 type Clause = [Signed Atom]
 
+showClause :: Clause -> String
+showClause [] = "$false"
+showClause c  = show (foldr1 (\/) ([ Atom a | Pos a <- c ] ++ [ Not (Atom a) | Neg a <- c ]))
+
 ----------------------------------------------------------------------
 -- constructors
 

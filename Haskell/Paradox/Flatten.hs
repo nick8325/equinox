@@ -171,6 +171,7 @@ definitions cs = ([ f | (_, Fun f _) <- list ], defCs, coreCs)
   deepTerms =
     [ t'
     | t <- S.toList (subterms cs)
+    , typ t /= bool
     , let (_,t') = normalize t
     , isOkTerm (t' `S.member` ts) t'
     ]

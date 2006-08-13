@@ -135,7 +135,7 @@ solveInstances flags predsPure minSize css =
               
               --simplify False False
               
-              r <- solve [ass]
+              r <- if minSize > k then return False else solve [ass]
               if r then
                 do if printModel flags then
                      printTheModel k ref predsPure

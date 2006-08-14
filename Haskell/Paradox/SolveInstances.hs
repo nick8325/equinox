@@ -63,7 +63,22 @@ solveInstances flags predsPure minSize css =
          processClause mn k c =
            do ls' <- mapM processLit ls
               let args = [ isize t | v <- vs, let V t = typing v ]
---              lift $ print (args,ls')
+{-
+              lift $ printStderr $ (++ "\n") $ unwords $
+                [ "==>"
+                ] ++
+                [ show n
+                | Just n <- [mn]
+                ] ++
+                [ show (vs `zip` args)
+                , "["
+                ] ++ (intersperse " | "
+                [ show l
+                | l <- c
+                ]) ++
+                [ "]"
+                ]
+-}
               addClauses mn args ls'
           where
            ls = c

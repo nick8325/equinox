@@ -147,9 +147,9 @@ bool FOClause::instantiate(Solver& s, int fresh) {
   // if whole clause is ground, add it and return
   if(variables.size() == 0) {
     //cout << bindings << " : " << cls << endl;
-//    fprintf(stderr, "ground clause (1): ");
-//    s.printClause(cls);
-//    fprintf(stderr, "\n");
+    //fprintf(stderr, "ground clause (1): [ ");
+    //s.printClause(cls);
+    //fprintf(stderr, " ]\n");
 //    if(cls.size() == 0) { 
 //	return false;
 //    }
@@ -213,9 +213,9 @@ bool FOClause::instantiate(Solver& s, int fresh) {
       s.addClause(cls);
       bool ret = s.okay();
       //bool ret = s.unsafe_add_clause(cs);
-      //fprintf(stderr, "ground clause (2): ");
+      //fprintf(stderr, "ground clause (2): [ ");
       //s.printClause(cls);
-      //fprintf(stderr, "\n");
+      //fprintf(stderr, " ]\n");
       //cout << "adding: " << cls << endl;
       if (!s.okay())
           return false;

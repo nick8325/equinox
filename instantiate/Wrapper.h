@@ -20,6 +20,7 @@ void    solver_lit_begin   (solver* w, loc* l, int sign);
 void    solver_lit_add_con (solver* w, int c);
 int     solver_lit_read    (solver* w);
 
+void solver_print_stderr       (char *s);
 
 #endif
 

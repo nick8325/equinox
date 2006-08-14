@@ -20,6 +20,9 @@ module Sat
   , newLoc        -- :: Int -> S Loc
   , getLit        -- :: Signed Atm -> S Lit
   , addClauses    -- :: [Int] -> [Signed Atm] -> S ()
+  
+  -- for debugging
+  , printStderr   -- :: String -> IO ()
   )
  where
 
@@ -183,6 +186,9 @@ run m = withSolver (lower m)
     mkAdd       = defAdd
 -}
 
+printStderr :: String -> IO ()
+printStderr s = withCString s solver_print_stderr
+
 solve = solve_ True
 
 newLit         = MiniSatM s_newlit
@@ -283,3 +289,5 @@ foreign import ccall unsafe "static Wrapper.h"   solver_clause_commit      :: So
 foreign import ccall unsafe "static Wrapper.h"   solver_lit_begin :: Solver -> (Ptr ()) -> CInt -> IO ()
 foreign import ccall unsafe "static Wrapper.h"   solver_lit_add_con :: Solver -> CInt -> IO ()
 foreign import ccall unsafe "static Wrapper.h"   solver_lit_read :: Solver -> IO Lit
+
+foreign import ccall unsafe "static Wrapper.h"   solver_print_stderr   :: CString -> IO ()

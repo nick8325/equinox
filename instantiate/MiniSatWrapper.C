@@ -152,6 +152,9 @@ extern "C" {
     void     loc_free   (Loc* l) { free(l); }
     int      loc_arity  (Loc* l) { return l->getArity(); }
 
+    // print something on stderr
+    void solver_print_stderr       (char *s)        { fprintf(stderr,"%s",s); fflush(stderr); }
+
     // build a clause
     void solver_clause_begin       (solver* w)                 { w->clause.clear();}
     void solver_clause_add_lit     (solver* w, Loc* l, int s)  { w->clause.addLit(l,(bool)s); }

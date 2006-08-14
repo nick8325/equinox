@@ -36,7 +36,6 @@ main solveProblem =
               then do killThread pid1
                       putInfo ""
                       putWarning ("TIMEOUT (" ++ show n ++ " seconds)")
-                      putResult Unknown "" 
               else do killThread pid2
 
        Nothing ->

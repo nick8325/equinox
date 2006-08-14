@@ -72,7 +72,7 @@ solveInstances flags predsPure minSize css =
                 ] ++
                 [ show (vs `zip` args)
                 , "["
-                ] ++ (intersperse " | "
+                ] ++ (intersperse "|"
                 [ show l
                 | l <- c
                 ]) ++

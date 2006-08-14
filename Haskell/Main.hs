@@ -49,6 +49,7 @@ main' solveProblem =
      sequence_
        [ do putHeader file
             ins <- readProblemWithRoots ("" : map (++"/") (roots ?flags)) file
+            --sequence_ [ print inp | inp <- ins ]
             let (theory,obligs) = clausify ins
                 n               = length obligs
                 file' | length (files ?flags) > 1 = file

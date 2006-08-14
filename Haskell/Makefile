@@ -21,7 +21,7 @@ paradox.exe: *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
         
 #-- Equinox
 
-equinox.exe: *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+equinox.exe: *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HFLAGS) -main-is Equinox.Main.main --make Equinox.Main -o equinox
         
 #-- Cleaning up

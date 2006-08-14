@@ -121,7 +121,7 @@ solveInstances flags predsPure minSize css =
                   tot = length clauses'
               
               sequence_
-                [ do lift $ print c
+                [ do --lift $ print c
                      processClauseSet k c
                 | (i,c) <- [1..] `zip` clauses' 
                 ]

@@ -15,6 +15,7 @@ module Sat
   , addClause     -- :: [Lit] -> S Bool
   , solve         -- :: [Lit] -> S Bool
   , simplify      -- :: Bool -> Bool -> S Bool
+  , verbose       -- :: Int -> S Bool
 
   , newLoc        -- :: Int -> S Loc
   , getLit        -- :: Signed Atm -> S Lit

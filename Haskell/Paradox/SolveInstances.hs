@@ -36,8 +36,7 @@ getLit = undefined
 
 solveInstances :: Flags -> [(Symbol,Bool)] -> Int -> [(Int,Bool,Symbol,[ClauseSet])] -> IO (Answer,Int)
 solveInstances flags predsPure minSize css =
-  do line <- newIORef False
-     ref  <- newIORef (M.empty,M.empty)
+  do ref  <- newIORef (M.empty,M.empty)
      
      let getFunLoc f =
            do (tabf,tabp) <- lift $ readIORef ref
@@ -129,7 +128,7 @@ solveInstances flags predsPure minSize css =
               assumption <- getPredLoc assump >>= \l -> return (Pos (l :@ []))
               ass <- getLit assumption
               
-              simplify True False
+              --simplify True False
               
               r <- if minSize > k then return False else solve [ass]
               if r then
@@ -148,7 +147,8 @@ solveInstances flags predsPure minSize css =
                                      | otherwise    = minSize
                         domains minSize' rest
 
-     run $ domains minSize css
+     run $ do Sat.verbose 1
+              domains minSize css
 
 printTheModel k ref predsPure =
   do lift $ putOfficial "BEGIN MODEL"

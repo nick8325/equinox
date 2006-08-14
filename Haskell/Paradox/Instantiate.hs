@@ -69,7 +69,7 @@ instantiate flags predefs cs qcs =
            ]
 
         -- predicate-symmetries
-        ++ [ \k -> [] | not (null allUnitPreds)]
+        ++ [ \k -> if k <= predef then error "predef???" else [] | not (null allUnitPreds)]
         ++ concat
            [ repeat $ \k ->
                [ [ Neg (p `prd` [con k])
@@ -125,8 +125,9 @@ instantiate flags predefs cs qcs =
 
       allUnitPreds =
         [ p
-        | p@(_ ::: ([_] :-> b)) <- S.toList syms
+        | p@(_ ::: ([tp'] :-> b)) <- S.toList syms
         , b == bool
+        , tp' == tp
         ]
 
   parts :: Int -> [Term] -> [[Bool]] -> [Clause] -> [(Symbol,[ClauseSet])]

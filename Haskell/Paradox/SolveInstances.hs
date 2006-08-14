@@ -63,8 +63,8 @@ solveInstances flags predsPure minSize css =
          processClause mn k c =
            do ls' <- mapM processLit ls
               let args = [ isize t | v <- vs, let V t = typing v ]
-{-
-              lift $ printStderr $ (++ "\n") $ unwords $
+              {-
+              lift $ putStr {- printStderr -} $ (++ "\n") $ unwords $
                 [ "==>"
                 ] ++
                 [ show n
@@ -78,7 +78,7 @@ solveInstances flags predsPure minSize css =
                 ]) ++
                 [ "]"
                 ]
--}
+              -}
               addClauses mn args ls'
           where
            ls = c
@@ -125,7 +125,7 @@ solveInstances flags predsPure minSize css =
            do return (Unknown,minSize)
 
          domains minSize ((k,check,assump,clauses):rest) =
-           do lift $ putStrLn ("domain " ++ show k)
+           do lift $ putStrLn ("domain size " ++ show k)
               let clauses' = flat clauses
               
                   flat []                     = []
@@ -162,12 +162,12 @@ solveInstances flags predsPure minSize css =
                                      | otherwise    = minSize
                         domains minSize' rest
 
-     run $ do Sat.verbose 1
+     run $ do --Sat.verbose 1
               domains minSize css
 
 printTheModel k ref predsPure =
   do lift $ putOfficial "BEGIN MODEL"
-     lift $ putStrLn ("-- domain size is " ++ show k)
+     lift $ putStrLn ("% domain size is " ++ show k)
      lift $ putStrLn ""
      (tabf,tabp) <- lift $ readIORef ref
      sequence_ $ intersperse (lift $ putStrLn "") $ map snd $ sortBy first $

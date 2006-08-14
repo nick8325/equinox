@@ -326,6 +326,7 @@ solve flags xs =
        
        let compares' = M.toList $ M.fromListWith (++) [ (ab,[x]) | (ab,x) <- comps ]
        
+       {-
        bs1 <- sequence
          [ or `fmap` if a /= b
              then sequence
@@ -357,6 +358,7 @@ solve flags xs =
                     ]
          | ((a,b),x:ys) <- compares'
          ]
+       -}
        
        s <- getState
        setState s{ compares = M.fromList [ (ab,x)
@@ -379,7 +381,7 @@ solve flags xs =
                       y' = rep eqTab y
                       p  = bfs graph x y
                 ]
-       if or bs1 || or bs2
+       if {- or bs1 || -} or bs2
          then do sat xs
          else do setState (s{ model = rep eqTab })
                  return True

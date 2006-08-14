@@ -18,7 +18,7 @@ import System.IO.Unsafe
 
 ---------------------------------------------------------------------------
 -- str spec
-{-
+-- {-
 newtype Str = Str String
   deriving ( Eq, Ord )
   
@@ -26,7 +26,7 @@ str = Str
 
 instance Show Str where
   show (Str s) = s
--}
+-- -}
 ---------------------------------------------------------------------------
 -- str spec that maintains same order
 {-
@@ -51,7 +51,7 @@ instance Ord Str where
 -}
 ---------------------------------------------------------------------------
 -- str
-
+{-
 data Str
   = MkAtom !Int [Int] String
 
@@ -96,7 +96,7 @@ str =
                      n' `seq` writeIORef cnt n'
                      writeIORef tab (M.insert s at t)
                      return at
-
+-}
 ---------------------------------------------------------------------------
 -- hash stuff
 

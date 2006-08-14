@@ -239,14 +239,13 @@ a     \/ Or bs = Or (a `S.insert` bs)
 a     \/ b     = Or (S.fromList [a,b])
 
 forAll, exists :: Symbol -> Form -> Form
-forAll x a = ForAll (Bind x a)
-exists x a = Exists (Bind x a)
+--forAll x a = ForAll (Bind x a)
+--exists x a = Exists (Bind x a)
 
-{-
 forAll v a = 
   case positive a of
     And as ->
-      And (smap (forAll v) as)
+      And (S.map (forAll v) as)
     
     ForAll (Bind w a) ->
       ForAll (Bind w (forAll v a))
@@ -256,7 +255,7 @@ forAll v a =
       avss      = [ (a, free a) | a <- S.toList as ]
       (bs1,bs2) = partition ((v `S.member`) . snd) avss
       no        = orl [ b | (b,_) <- bs2 ]
-      vs        = v `S.delete` S.unionList [ vs | (_,vs) <- bs1 ]
+      vs        = v `S.delete` S.unions [ vs | (_,vs) <- bs1 ]
       body      = orl [ b | (b,_) <- bs1 ]
       yes       = case bs1 of
                     []      -> orl []
@@ -266,13 +265,15 @@ forAll v a =
       orl [a] = a
       orl as  = Or (S.fromList as)
 
+    _ -> ForAll (Bind v a)
+{-
     a | v `member` vs -> ForAll (v `delete` vs) v a
       | otherwise     -> a
      where
       vs = free a    
+-}
 
 exists v a = nt (forAll v (nt a))
--}
 
 positive :: Form -> Form
 positive (Not (And as))            = Or (S.map nt as)

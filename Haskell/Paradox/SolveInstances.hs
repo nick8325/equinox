@@ -153,7 +153,7 @@ solveInstances flags predsPure minSize css =
                      return ()
                    return (Satisfiable,k)
                else
-                do c <- okay
+                do c <- solve [] -- okay
                    if not c then
                      do return (Unsatisfiable,k)
                     else

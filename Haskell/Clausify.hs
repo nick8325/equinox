@@ -236,8 +236,8 @@ claus mod a =
                x  <- iff neg (skolemn v vs')
                return ( defs
                       , subst (v |=> Var v') poss
-                      , fmap (map (fmap (substSkAtom v x))) negs
-                      --, subst (v |=> x)      negs
+                      --, fmap (map (fmap (substSkAtom v x))) negs
+                      , subst (v |=> x)      negs
                       )
           )
         | (vals,m) <- tries
@@ -275,12 +275,15 @@ claus mod a =
 
   substSk v (Fun (f ::: (tsf :-> tf)) xsf) (Fun (g ::: (tsg :-> tg)) xsg)
     | isSkolemnName g && Var v `elem` xsg && arf + arg - 1 <= arf `max` arg =
-      Fun (g ::: ((take i tsg ++ tsf ++ drop (i+1) tsg) :-> tg))
+      fun (g ::: ((take i tsg ++ tsf ++ drop (i+1) tsg) :-> tg))
         (take i xsg ++ xsf ++ drop (i+1) xsg)
    where
     i   = head [ i | (i,Var w) <- [0..] `zip` xsg, v == w ]
     arf = length xsf
     arg = length xsg
+    
+    fun f xs | arity f == length xs = Fun f xs
+             | otherwise = error ("oops: " ++ show (f, typing f, xs))
     
   substSk v x (Fun g xs) =
     Fun g (map (substSk v x) xs)

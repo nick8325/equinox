@@ -43,14 +43,14 @@ newLoc p = lift $ do
   fptr <- newForeignPtr loc_free ptr
   return (Loc fptr)
 
-addClauses :: [Int] -> [Signed Atm] -> S ()
-addClauses d ls = MiniSatM (\s -> addClauses_ d ls s)
+addClauses :: Maybe Int -> [Int] -> [Signed Atm] -> S ()
+addClauses mn d ls = MiniSatM (\s -> addClauses_ mn d ls s)
 
-addClauses_ d ls s = 
+addClauses_ mn d ls s = 
   do solver_clause_begin s
      mapM_ (signed addLit) ls
      mapM_ (solver_clause_add_size s . fromIntegral) d
-     solver_clause_commit s 0
+     solver_clause_commit s (fromIntegral (maybe 0 id mn))
 
  where addArg (ArgN i) = solver_clause_add_lit_con s (fromIntegral i)
        addArg (ArgV i) = solver_clause_add_lit_var s (fromIntegral i)

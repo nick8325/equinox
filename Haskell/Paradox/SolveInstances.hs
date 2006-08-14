@@ -56,22 +56,16 @@ solveInstances flags predsPure minSize css =
                 Just loc -> do return loc
      
          processClauseSet k (ForAll cs) =
-           do sequence_ [ do processClause k c | c <- cs ]
+           do sequence_ [ do processClause Nothing k c | c <- cs ]
          
          processClauseSet k (ForAllNew k' cs) =
-           do sequence_ [ processClause k (subst (x |=> Fun (elt k') []) c)
-                        | c <- cs
-                        , x <- S.toList (free c)
-                        , case tdomain (typ (Var x)) of
-                            Just k  -> k >= k'
-                            Nothing -> True
-                        ]
+           do sequence_ [ processClause (Just k') k c | c <- cs ]
          
-         processClause k c =
+         processClause mn k c =
            do ls' <- mapM processLit ls
               let args = [ isize t | v <- vs, let V t = typing v ]
 --              lift $ print (args,ls')
-              addClauses args ls'
+              addClauses mn args ls'
           where
            ls = c
            vs = S.toList (free c)
@@ -87,6 +81,7 @@ solveInstances flags predsPure minSize css =
            
            processAtom (Fun f xs :=: y) | y /= truth && not (isElt f) =
              do loc <- getFunLoc f
+                if arity f /= length xs then error ("arity fel! " ++ show (f,typing f)) else return ()
                 return (loc :@ (xs' ++ [y']))
             where
              xs' = map processTerm xs

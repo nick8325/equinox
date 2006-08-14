@@ -46,7 +46,8 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem csIn =    
-  do (r,k) <- solveInstances
+  do sequence_ [ putStrLn (showClause c) | c <- cs ]
+     (r,k) <- solveInstances
                 flags
                 predsPure
                 minSize

@@ -29,17 +29,13 @@
 #include "Prop.h"
 #include "MiniSatInstantiateClause.h"
 
-#ifndef uint
-#define uint unsigned int
-#endif
-
 struct solver : public PropSolver { 
     vec<Lit> tmp;
     int*     contr;
     vec<Lit> prefix;
     FOClause clause;
     Loc*     loc;
-    uint     sig;
+    int      sig;
     vec<int> args;
     vec<int> dummy;
 
@@ -158,13 +154,13 @@ extern "C" {
 
     // build a clause
     void solver_clause_begin       (solver* w)                 { w->clause.clear();}
-    void solver_clause_add_lit     (solver* w, Loc* l, uint s) { w->clause.addLit(l,(bool)s); }
+    void solver_clause_add_lit     (solver* w, Loc* l, int s)  { w->clause.addLit(l,(bool)s); }
     void solver_clause_add_lit_var (solver* w, int v)          {
         w->clause.lastLit().addArg(varArg(v-1));}
     void solver_clause_add_lit_con (solver* w, int c)          { 
         w->clause.lastLit().addArg(conArg(c-1));}
     void solver_clause_add_size    (solver* w, int s)          { w->clause.addSize(s); }
-    uint solver_clause_commit      (solver* w, int fresh)      { 
+    int  solver_clause_commit      (solver* w, int fresh)      { 
         return w->clause.instantiate(*w, fresh) ? 1 : 0; }
 
     // setting a literal to be read or assumed during solving

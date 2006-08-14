@@ -56,7 +56,7 @@ solveInstances flags predsPure minSize css =
                 Just loc -> do return loc
      
          processClauseSet k (ForAll cs) =
-           do sequence_ [ do processClause Nothing k c | c <- cs ]
+           do sequence_ [ processClause Nothing k c | c <- cs ]
          
          processClauseSet k (ForAllNew k' cs) =
            do sequence_ [ processClause (Just k') k c | c <- cs ]
@@ -129,7 +129,7 @@ solveInstances flags predsPure minSize css =
               assumption <- getPredLoc assump >>= \l -> return (Pos (l :@ []))
               ass <- getLit assumption
               
-              --simplify False False
+              simplify True False
               
               r <- if minSize > k then return False else solve [ass]
               if r then

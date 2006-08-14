@@ -46,7 +46,7 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem csIn =    
-  do sequence_ [ putStrLn (showClause c) | c <- cs ]
+  do --sequence_ [ putStrLn (showClause c) | c <- cs ]
      (r,k) <- solveInstances
                 flags
                 predsPure

@@ -50,7 +50,7 @@ addClauses_ mn d ls s =
   do solver_clause_begin s
      mapM_ (signed addLit) ls
      mapM_ (solver_clause_add_size s . fromIntegral) d
-     solver_clause_commit s (fromIntegral (maybe 0 id mn))
+     solver_clause_commit s (fromIntegral (maybe 0 (subtract 1) mn))
 
  where addArg (ArgN i) = solver_clause_add_lit_con s (fromIntegral i)
        addArg (ArgV i) = solver_clause_add_lit_var s (fromIntegral i)

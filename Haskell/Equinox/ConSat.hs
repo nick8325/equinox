@@ -79,7 +79,7 @@ wapp ws = MkWeight (1 + maximum (0 : map depth ws)) (1 + sum (map siz ws))
 
 -- Debugging ON
 
--- {-
+{-
 data Con
   = Con !Weight !Int String
 
@@ -97,11 +97,11 @@ instance Ord Con where
 
 instance Show Con where
   show (Con _ _ s) = s -- ++ "#" ++ show n
--- -}
+-}
 
 -- Debugging OFF
 
-{-
+-- {-
 data Con
   = Con !Weight !Int
  deriving ( Ord )
@@ -118,7 +118,7 @@ con n w s = Con w n
 instance Show Con where
   show (Con _ n) = "#" ++ show n
 
--}
+-- -}
 
 data State
   = MkState
@@ -269,8 +269,10 @@ addClause xs =
 
        _ ->
          do xs'' <- sequence [ norm x | x <- xs' ]
+            --lift (putStrLn ("  [" ++ show xs' ++ "]"))
             --lift (putStrLn "")
             --lift (hFlush stdout)
+            -- -- lift (putStrLn ("SAT: " ++ concat (intersperse " " (map show xs''))))
             liftS (Sat.addClause [ x | Lit x <- xs'' ])
             return ()
  where
@@ -326,7 +328,6 @@ solve flags xs =
        
        let compares' = M.toList $ M.fromListWith (++) [ (ab,[x]) | (ab,x) <- comps ]
        
-       {-
        bs1 <- sequence
          [ or `fmap` if a /= b
              then sequence
@@ -358,7 +359,6 @@ solve flags xs =
                     ]
          | ((a,b),x:ys) <- compares'
          ]
-       -}
        
        s <- getState
        setState s{ compares = M.fromList [ (ab,x)
@@ -381,7 +381,7 @@ solve flags xs =
                       y' = rep eqTab y
                       p  = bfs graph x y
                 ]
-       if {- or bs1 || -} or bs2
+       if or bs1 || or bs2
          then do sat xs
          else do setState (s{ model = rep eqTab })
                  return True
@@ -392,8 +392,9 @@ solve flags xs =
   getPeqs peqs ((ab,x):abxs) =
     do mb <- liftS (Sat.getValue x)
        case mb of
-         Just True -> getPeqs (ab:peqs) abxs
-         _         -> getPeqs peqs abxs
+         Just True -> do --lift (putStrLn ("top-true: " ++ show x ++ " " ++ show ab))
+                         getPeqs (ab:peqs) abxs
+         _         -> do getPeqs peqs abxs
        
   getEqNeq eqs neqs comps [] =
     do return (eqs,neqs,comps)

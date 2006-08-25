@@ -22,7 +22,7 @@ module Sat
   , addClauses    -- :: [Int] -> [Signed Atm] -> S ()
   
   -- for debugging
-  , printStderr   -- :: String -> IO ()
+  --, printStderr   -- :: String -> IO ()
   )
  where
 
@@ -139,7 +139,9 @@ withSolverPrim log f =
        return r
 
 run :: S a -> IO a
-run m = withSolver (lower m)
+run m = withSolver (lower (simplify False True >> m))
+--run m = withSolver (lower m)
+--run m = withSolverLog "minisat-log" (lower m)
 
 {-
     mkLit       :: m Lit
@@ -186,13 +188,15 @@ run m = withSolver (lower m)
     mkAdd       = defAdd
 -}
 
-printStderr :: String -> IO ()
-printStderr s = withCString s solver_print_stderr
+--printStderr :: String -> IO ()
+--printStderr s = withCString s solver_print_stderr
 
 solve = solve_ True
 
 newLit         = MiniSatM s_newlit
-addClause ls     = fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . s_clause)
+addClause ls     =
+  do --lift $ putStrLn ("Sat.addClause: " ++ show ls)
+     fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . s_clause)
 solve_ b ls   = fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . flip s_solve (toCBool b))
 
 freezeLit l   = MiniSatM (\s -> s_freezelit s l)
@@ -290,4 +294,4 @@ foreign import ccall unsafe "static Wrapper.h"   solver_lit_begin :: Solver -> (
 foreign import ccall unsafe "static Wrapper.h"   solver_lit_add_con :: Solver -> CInt -> IO ()
 foreign import ccall unsafe "static Wrapper.h"   solver_lit_read :: Solver -> IO Lit
 
-foreign import ccall unsafe "static Wrapper.h"   solver_print_stderr   :: CString -> IO ()
+--foreign import ccall unsafe "static Wrapper.h"   solver_print_stderr   :: CString -> IO ()

@@ -139,8 +139,8 @@ withSolverPrim log f =
        return r
 
 run :: S a -> IO a
-run m = withSolver (lower (simplify False True >> m))
---run m = withSolver (lower m)
+--run m = withSolver (lower (simplify False True >> m))
+run m = withSolver (lower m)
 --run m = withSolverLog "minisat-log" (lower m)
 
 {-

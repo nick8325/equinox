@@ -1,0 +1,23 @@
+%fof(axiom, axiom, (
+%  ?[Z] : (p(Z) | q(Z))
+%)).
+
+%fof(axiom, axiom, (
+%  ![A] : ?[Y] : (p(Y) | (q(Y) & r(Y,A)))
+%)).
+
+fof(conjecture, conjecture, (
+  ![X] : ( a(X) & b(X) & c(X) & d(X) & e(X) & (![Y] : (p(X,Y) | q(X,Y))))
+)).
+
+fof(axiom, axiom, (
+  ![X] : ( p(X) => ![Y] : q(X,Y) )
+)).
+
+fof(hypothesis, hypothesis, (
+  ![X] : ~q(a,b)
+)).
+
+fof(conjecture, conjecture, (
+  ~p(a)
+)).

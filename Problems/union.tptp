@@ -1,0 +1,12 @@
+
+cnf( axiom, axiom, elem(X,union(A,B)) | ~elem(X,A) ).
+
+cnf( axiom, axiom, elem(X,union(A,B)) | ~elem(X,B) ).
+
+cnf( axiom, axiom, ~elem(X,union(A,B)) | elem(X,A) | elem(X,B) ).
+
+cnf( axiom, axiom, A = B | ~elem(diff(A,B),A) | ~elem(diff(A,B),B) ).
+cnf( axiom, axiom, A = B |  elem(diff(A,B),A) |  elem(diff(A,B),B) ).
+
+cnf( negated_conjecture, negated_conjecture, union(a,b) != union(b,a) ).
+

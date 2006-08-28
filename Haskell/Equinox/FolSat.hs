@@ -19,9 +19,7 @@ import Control.Monad
 prove :: Flags -> [Clause] -> IO Bool
 prove flags cs =
   run $
-    do lift $ putStrLn "(with star)"
-    
-       true <- newCon "$true"
+    do true <- newCon "$true"
 
        sequence_
          [ do put 1 "P: "
@@ -139,8 +137,8 @@ prove flags cs =
     do putLn 2  "==> FolSat: solving..."
        b <- solve flags []
        if b then
-         do true' <- getModelRep true
-            putLn 2 "==> FolSat: checking (for all-false clauses)..."
+         do putLn 2 "==> FolSat: checking (for all-false clauses)..."
+            true' <- getModelRep true
             conss <- getModelCons
             putLn 2 ("(" ++ show (S.size conss) ++ " elements in domain)")
             let cons = S.toList conss
@@ -148,7 +146,7 @@ prove flags cs =
             if b then
               do solveAndPatch starred true m n nonGroundCs
              else
-              do putLn 2 "==> FolSat: checking (for defined non-true clauses)..."
+              do putLn 2 "==> FolSat: checking (for non-true clauses)..."
                  b <- checkNonGoodCases true' cons True False nonGroundCs
                  if b && n <= strength flags then
                    do solveAndPatch starred true m (n+1) nonGroundCs
@@ -162,8 +160,13 @@ prove flags cs =
                           ]
                         solveAndPatch True true m 0 nonGroundCs
                     else
-                     do putLn 2 "==> FolSat: NO"
-                        return False
+                     do putLn 2 "==> FolSat: checking (for liberal non-true clauses)..."
+                        b <- checkNonGoodCases true' cons True True nonGroundCs
+                        if b then
+                          do solveAndPatch starred true m 0 nonGroundCs
+                         else
+                          do putLn 2 "==> FolSat: NO"
+                             return False
          else
           do return True
 
@@ -189,7 +192,7 @@ prove flags cs =
   matches x xys = [ y | (x',y) <- xys, x == x' ]
                ++ [ y | (y,x') <- xys, x == x' ]
 
-  checkNonGoodCases true cons undef guess nonGroundCs =
+  checkNonGoodCases true cons undef liberal nonGroundCs =
     do tryAll [ do --lift $ print ("==>",cl,defs,neqs)
                    r <- nonGoodCases [] defs neqs [] (S.delete trueX (free cl)) (M.singleton trueX true) $ \sub ->
                      do --lift $ putStrLn "Adding..."
@@ -199,7 +202,7 @@ prove flags cs =
                              --lift $ print ("NO:",cl,sub)
                              return False
                          else
-                          do put 1 (if undef then if guess then "G: " else "J: " else "I: ")
+                          do put 1 (if undef then if liberal then "L: " else "J: " else "I: ")
                              --lift $ print (cl,sub)
                              addClauseSub true sub cl
                              return True
@@ -220,7 +223,7 @@ prove flags cs =
                        Just c' | c == s -> c'
                        _                -> c
           in case look_c of
-               Just c' | c' /= c && s /= c && s /= c' ->
+               Just c' | c' /= c && (not liberal || s /= c && s /= c') ->
                  do --lift (print "no 1")
                     return False
 
@@ -247,7 +250,7 @@ prove flags cs =
          tab <- getModelTable f
          tryAll [ nonGoodCases ((ts `zip` xs) ++ eqs) defs neqs undefs still sub add
                 | (xs,y) <- tab
-                , y == c || y == s || c == s
+                , y == c || liberal && (y == s || c == s)
                 ]
 
     nonGoodCases [] ((Fun f ts,x):defs) neqs undefs still sub add =
@@ -272,15 +275,15 @@ prove flags cs =
            | otherwise = findOne
 
     nonGoodCases [] [] neqs undefs still sub add
-     | acyclic && (not undef || guess || S.size still == 0) =
+     | acyclic && (not undef || S.size still == 0) =
       do --lift $ print ("acyclic",neqs,undefs,still)
          many [ instantiate undefs sub' add
               | sub' <- (sub `M.union`) `fmap` fairEnums (S.toList still)
               , all (\(x,y) -> (M.lookup x sub' :: Maybe Con) /= M.lookup y sub') neqs
               ]
      where
-      many | not guess = tryAll -- | not undef = tryAll
-           | otherwise = findOne
+      many = tryAll -- | not undef = tryAll
+           -- | otherwise = findOne
       
       unTab =
         M.fromList [ (x,t) | (t,x) <- undefs ]

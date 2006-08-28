@@ -19,7 +19,9 @@ import Control.Monad
 prove :: Flags -> [Clause] -> IO Bool
 prove flags cs =
   run $
-    do true <- newCon "$true"
+    do lift $ putStrLn "(with star)"
+    
+       true <- newCon "$true"
 
        sequence_
          [ do put 1 "P: "
@@ -188,12 +190,19 @@ prove flags cs =
                ++ [ y | (y,x') <- xys, x == x' ]
 
   checkNonGoodCases true cons undef guess nonGroundCs =
-    do tryAll [ do --lift $ print ("==>",defs,neqs)
+    do tryAll [ do --lift $ print ("==>",cl,defs,neqs)
                    r <- nonGoodCases [] defs neqs [] (S.delete trueX (free cl)) (M.singleton trueX true) $ \sub ->
                      do --lift $ putStrLn "Adding..."
-                        put 1 (if undef then if guess then "G: " else "J: " else "I: ")
-                        addClauseSub true sub cl
-                        return True
+                        b <- evalClauseSub true sub cl
+                        if b then
+                          do -- this substitution is already True
+                             --lift $ print ("NO:",cl,sub)
+                             return False
+                         else
+                          do put 1 (if undef then if guess then "G: " else "J: " else "I: ")
+                             --lift $ print (cl,sub)
+                             addClauseSub true sub cl
+                             return True
                    --lift $ putStrLn "OK"
                    return r
                    
@@ -202,30 +211,43 @@ prove flags cs =
               ]
    where
     nonGoodCasesSub x c eqs defs neqs undefs still sub add =
-      case M.lookup x sub of
-        Just c' | c' /= c ->
-          do return False
-          
-        _ | null [ x' | (_,x') <- undefs, x == x' ]
-              && and [ case M.lookup y sub of
-                         Just c' | c == c' -> False
-                         _                 -> True
-                     | y <- matches x neqs
-                     ] ->
-          do nonGoodCases eqs defs neqs undefs (S.delete x still) (M.insert x c sub) add
-        
-        _ ->
-          do return False
+      do --lift (print (x,c,eqs,sub))
+         st <- star `app` []
+         s <- getModelRep st
+         let look_c = M.lookup x sub
+
+             new_c = case look_c of
+                       Just c' | c == s -> c'
+                       _                -> c
+          in case look_c of
+               Just c' | c' /= c && s /= c && s /= c' ->
+                 do --lift (print "no 1")
+                    return False
+
+               _ | null [ x' | (_,x') <- undefs, x == x' ]
+                     && and [ case M.lookup y sub of
+                                Just c' | c == c' -> False
+                                _                 -> True
+                            | y <- matches x neqs
+                            ] ->
+                 do --lift (print "yes")
+                    nonGoodCases eqs defs neqs undefs (S.delete x still) (M.insert x new_c sub) add
+
+               _ ->
+                 do --lift (print "no 2")
+                    return False
     
     nonGoodCases ((Var x,c):eqs) defs neqs undefs still sub add =
       nonGoodCasesSub x c eqs defs neqs undefs still sub add
       
     nonGoodCases ((Fun f ts,c):eqs) defs neqs undefs still sub add =
       do --lift $ print ((Fun f ts,c):eqs,defs,neqs,undefs,still)
+         st <- star `app` []
+         s <- getModelRep st
          tab <- getModelTable f
          tryAll [ nonGoodCases ((ts `zip` xs) ++ eqs) defs neqs undefs still sub add
                 | (xs,y) <- tab
-                , y == c
+                , y == c || y == s || c == s
                 ]
 
     nonGoodCases [] ((Fun f ts,x):defs) neqs undefs still sub add =
@@ -370,6 +392,39 @@ prove flags cs =
     nonGoodCases [] [] neqs undefs still sub add =
       do return False
                      
+evalClauseSub :: Con -> Map Symbol Con -> Clause -> T Bool
+evalClauseSub true sub cl =
+  do ls <- sequence [ literal l | l <- cl ]
+     return (any (== Just True) ls)
+ where
+  term (Var x) =
+    do return (M.lookup x sub)
+  
+  term (Fun f ts) =
+    do as <- sequence [ term t | t <- ts ]
+       if all isJust as
+         then do tab <- getModelTable f
+                 case [ y | (xs,y) <- tab, xs == [ a | Just a <- as ] ] of
+                   []  -> return Nothing
+                   y:_ -> return (Just y)
+         else do return Nothing
+  
+  atom (s :=: t) | t == truth =
+    do a <- term s
+       return (a =?= Just true)
+  
+  atom (s :=: t) =
+    do a <- term s
+       b <- term t
+       return (a =?= b)
+  
+  Nothing =?= _       = Nothing
+  _       =?= Nothing = Nothing
+  Just x  =?= Just y  = Just (x == y)
+  
+  literal (Pos a) = atom a
+  literal (Neg a) = fmap not `fmap` atom a
+  
 addClauseSub :: Con -> Map Symbol Con -> Clause -> T ()
 addClauseSub true sub cl =
   do ls <- sequence [ literal l | l <- cl ]

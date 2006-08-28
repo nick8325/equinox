@@ -188,7 +188,7 @@ printTheModel k ref predsPure =
                  [ lift $ print ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
                                         | i <- [1..arity f]
                                         ]
-                              :=: Fun f [ if i == j then Fun (elt n) [] else Fun (elt 1) []
+                              :=: Fun f [ if i == j then Fun (elt n) [] else Fun (elt (n-1)) []
                                         | i <- [1..arity f]
                                         ]
                                 )

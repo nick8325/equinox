@@ -161,7 +161,7 @@ prove flags cs =
                         solveAndPatch True true m 0 nonGroundCs
                     else
                      do putLn 2 "==> FolSat: checking (for liberal non-true clauses)..."
-                        b <- checkNonGoodCases true' cons False {- True -} True nonGroundCs
+                        b <- checkNonGoodCases true' cons True True nonGroundCs
                         if b then
                           do solveAndPatch starred true m 0 nonGroundCs
                          else

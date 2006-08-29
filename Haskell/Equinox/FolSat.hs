@@ -147,7 +147,7 @@ prove flags cs =
               do solveAndPatch starred true m n nonGroundCs
              else
               do putLn 2 "==> FolSat: checking (for non-true clauses)..."
-                 b <- checkNonGoodCases true' cons True False nonGroundCs
+                 b <- return False -- checkNonGoodCases true' cons True False nonGroundCs
                  if b && n <= strength flags then
                    do solveAndPatch starred true m (n+1) nonGroundCs
                   else
@@ -161,7 +161,7 @@ prove flags cs =
                         solveAndPatch True true m 0 nonGroundCs
                     else
                      do putLn 2 "==> FolSat: checking (for liberal non-true clauses)..."
-                        b <- checkNonGoodCases true' cons True True nonGroundCs
+                        b <- checkNonGoodCases true' cons False {- True -} True nonGroundCs
                         if b then
                           do solveAndPatch starred true m 0 nonGroundCs
                          else
@@ -202,7 +202,7 @@ prove flags cs =
                              --lift $ print ("NO:",cl,sub)
                              return False
                          else
-                          do put 1 (if undef then if liberal then "L: " else "J: " else "I: ")
+                          do put 1 (if undef then if liberal then "L: " else "U: " else "I: ")
                              --lift $ print (cl,sub)
                              addClauseSub true sub cl
                              return True

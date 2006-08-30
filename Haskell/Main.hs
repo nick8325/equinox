@@ -47,7 +47,7 @@ main' solveProblem =
        putWarning "No input files specified! Try --help."
 
      sequence_
-       [ do putHeader file
+       [ do putOfficial ("PROBLEM: " ++ file)
             ins <- readProblemWithRoots ("" : map (++"/") (roots ?flags)) file
             --sequence_ [ print inp | inp <- ins ]
             let (theory,obligs) = clausify ins

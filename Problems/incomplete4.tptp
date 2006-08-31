@@ -1,0 +1,10 @@
+
+% Status : Unsatisfiable
+
+cnf( axiom, axiom, f(X) = X ).
+cnf( axiom, axiom, f(X) = a | f(X) = b ).
+
+cnf( axiom, axiom, p != q ).
+cnf( axiom, axiom, r != q ).
+cnf( axiom, axiom, r != p ).
+

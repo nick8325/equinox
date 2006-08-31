@@ -54,7 +54,7 @@ initFlags =
   , splitting    = False
   , sat          = False
   , onlyClausify = False
-  , strength     = 3
+  , strength     = 4
   , verbose      = 0
 
   -- primitive
@@ -107,7 +107,7 @@ options =
     , help    = [ "Maximum number of non-guessing quantifier instantations"
                 , "before starting to guess."
                 , "Example: --strength 7"
-                , "Default: 3"
+                , "Default: " ++ show (strength initFlags)
                 ]
     }
 

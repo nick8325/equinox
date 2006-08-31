@@ -163,7 +163,7 @@ prove flags cs =
                           ]
                         solveAndPatch True true m 0 nonGroundCs
                     else
-                      do putLn 2 "==> FolSat: checking (for liberal non-true clauses)..."
+                      do putLn 2 "==> FolSat: checking (for liberal false clauses)..."
                          b <- checkNonGoodCases true' cons False True nonGroundCs
                          if b then
                            do solveAndPatch starred true m 0 nonGroundCs
@@ -303,7 +303,7 @@ prove flags cs =
      
       neqs' = S.fromList [ z | (x,y) <- neqs, z <- [x,y] ]
      
-      many = tryAll -- findOne
+      many = findOne
       
       unTab =
         M.fromList [ (x,t) | (t,x) <- undefs ]

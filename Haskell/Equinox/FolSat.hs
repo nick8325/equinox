@@ -274,6 +274,7 @@ prove flags cs =
       many | not undef = tryAll
            | otherwise = findOne
 
+{-
     nonGoodCases [] [] neqs undefs still sub add
      | acyclic && (not undef || S.size still == 0) =
       do --lift $ print ("acyclic",neqs,undefs,still)
@@ -281,9 +282,25 @@ prove flags cs =
               | sub' <- (sub `M.union`) `fmap` fairEnums (S.toList still)
               , all (\(x,y) -> (M.lookup x sub' :: Maybe Con) /= M.lookup y sub') neqs
               ]
+-}
+    nonGoodCases [] [] neqs undefs still sub add
+     | acyclic
+         && ( S.size still == 0
+           || ( {- not undef
+             && -} all (`S.member` neqs') (S.toList still)
+              )
+            ) =
+      do --lift $ print ("acyclic",(neqs,undefs,still,sub,enums))
+         many [ do instantiate undefs sub' add
+              | sub' <- (sub `M.union`) `fmap` enums
+              , all (\(x,y) -> (M.lookup x sub' :: Maybe Con) /= M.lookup y sub') neqs
+              ]
      where
-      many = tryAll -- | not undef = tryAll
-           -- | otherwise = findOne
+      enums = fairEnums (S.toList still)
+     
+      neqs' = S.fromList [ z | (x,y) <- neqs, z <- [x,y] ]
+     
+      many = findOne
       
       unTab =
         M.fromList [ (x,t) | (t,x) <- undefs ]

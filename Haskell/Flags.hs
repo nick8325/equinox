@@ -54,7 +54,7 @@ initFlags =
   , splitting    = False
   , sat          = False
   , onlyClausify = False
-  , strength     = 4
+  , strength     = 3
   , verbose      = 0
 
   -- primitive

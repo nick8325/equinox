@@ -1,0 +1,54 @@
+
+fof( fun_equality, axiom,
+  ![F,G] :
+    ((![X] : (app(F,X) = app(G,X))) => F = G)
+).
+
+%fof( bottom_app, axiom,
+%  ![X] :
+%    (app(bottom,X) = bottom)
+%).
+
+%fof( pair_fst, axiom,
+%  ![X,Y] :
+%    (fst(pair(X,Y)) = X)
+%).
+
+%fof( pair_snd, axiom,
+%  ![X,Y] :
+%    (snd(pair(X,Y)) = Y)
+%).
+
+fof( def_return, axiom,
+  ![X,S0] :
+    (app(app(return,X),S0) = pair(X,S0))
+).
+
+fof( def_bind, axiom,
+  ![M,K,S0] :
+    (app(app(app(bind,M),K),S0) = bind_aux(app(M,S0),K))
+).
+
+fof( def_bind_aux_1, axiom,
+  ![X,S1,K] :
+    (bind_aux(pair(X,S1),K) = app(app(K,X),S1))
+).
+
+%fof( def_bind_aux_2, axiom,
+%  ![P,K] :
+%    (bind_aux(P,K) != bottom => P = pair(fst(P),snd(P)))
+%).
+
+fof( return_is_left_unit, conjecture,
+  ![X,K] :
+    (app(app(bind,app(return,X)),K) = app(K,X))
+).
+
+%fof( return_is_right_unit, conjecture,
+%  ![M] :
+%    app(app(bind,M),return) = M
+%).
+
+
+  
+  

@@ -146,9 +146,12 @@ prove flags cs =
             if b then
               do solveAndPatch starred true m n nonGroundCs
              else
-              do putLn 2 "==> FolSat: checking (for non-true clauses)..."
-                 b <- checkNonGoodCases true' cons True False nonGroundCs
-                 if b && n <= strength flags then
+              do b <- if n > strength flags then
+                        do return False
+                       else
+                        do putLn 2 "==> FolSat: checking (for non-true clauses)..."
+                           checkNonGoodCases true' cons True False nonGroundCs
+                 if b then
                    do solveAndPatch starred true m (n+1) nonGroundCs
                   else
                    if not starred then
@@ -160,13 +163,13 @@ prove flags cs =
                           ]
                         solveAndPatch True true m 0 nonGroundCs
                     else
-                     do putLn 2 "==> FolSat: checking (for liberal non-true clauses)..."
-                        b <- checkNonGoodCases true' cons False True nonGroundCs
-                        if b then
-                          do solveAndPatch starred true m 0 nonGroundCs
-                         else
-                          do putLn 2 "==> FolSat: NO"
-                             return False
+                      do putLn 2 "==> FolSat: checking (for liberal non-true clauses)..."
+                         b <- checkNonGoodCases true' cons False True nonGroundCs
+                         if b then
+                           do solveAndPatch starred true m 0 nonGroundCs
+                          else
+                           do putLn 2 "==> FolSat: NO"
+                              return False
          else
           do return True
 
@@ -202,7 +205,7 @@ prove flags cs =
                              --lift $ print ("NO:",cl,sub)
                              return False
                          else
-                          do put 1 (if undef then if liberal then "L: " else "U: " else "I: ")
+                          do put 1 (if liberal then "L: " else if undef then "U: " else "I: ")
                              --lift $ print (cl,sub)
                              addClauseSub true sub cl
                              return True
@@ -286,8 +289,8 @@ prove flags cs =
     nonGoodCases [] [] neqs undefs still sub add
      | acyclic
          && ( S.size still == 0
-           || ( {- not undef
-             && -} all (`S.member` neqs') (S.toList still)
+           || ( not liberal
+             && all (`S.member` neqs') (S.toList still)
               )
             ) =
       do --lift $ print ("acyclic",(neqs,undefs,still,sub,enums))
@@ -300,7 +303,7 @@ prove flags cs =
      
       neqs' = S.fromList [ z | (x,y) <- neqs, z <- [x,y] ]
      
-      many = findOne
+      many = tryAll -- findOne
       
       unTab =
         M.fromList [ (x,t) | (t,x) <- undefs ]

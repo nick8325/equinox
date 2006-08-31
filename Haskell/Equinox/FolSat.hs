@@ -303,7 +303,7 @@ prove flags cs =
      
       neqs' = S.fromList [ z | (x,y) <- neqs, z <- [x,y] ]
      
-      many = findOne
+      many = tryAll -- findOne
       
       unTab =
         M.fromList [ (x,t) | (t,x) <- undefs ]

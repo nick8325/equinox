@@ -38,7 +38,7 @@ import System
 
 main :: IO ()
 main =
-  do putStrLn "Paradox, version 2.0-alpha, 2006-08-13."
+  do putStrLn "Paradox, version 2.0-beta, 2006-09-06."
      Main.main solveProblem
   
 -------------------------------------------------------------------------
@@ -87,8 +87,8 @@ solveProblem csIn =
         x = (mn+mx) `div` 2
         y = f x
 
-    bigDom = if isFinite then maxDomain else 999999 -- max domain size
-    big    = 30000000  -- max #clauses
+    bigDom = if isFinite then maxDomain else 9999999 -- max domain size
+    big    = 999999999
   
     isize v = case tdomain t of
                 Nothing -> bigDom
@@ -166,7 +166,7 @@ solveProblem csIn =
           | x == y && not (x `S.member` free t) = lim x ls
         lim x _ = False
         
-        --n = length c
+        n = length c
     
 ---------------------------------------------------------------------------
 -- the end.

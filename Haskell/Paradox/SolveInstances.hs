@@ -126,6 +126,7 @@ solveInstances flags predsPure minSize css =
 
          domains minSize ((k,check,assump,clauses):rest) =
            do lift $ putStrLn ("domain size " ++ show k)
+              --lift $ sequence_ [ putStrLn s | c <- clauses, s <- showClauseSet c ]
               let clauses' = flat clauses
               
                   flat []                     = []
@@ -188,7 +189,7 @@ printTheModel k ref predsPure =
                  [ lift $ print ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
                                         | i <- [1..arity f]
                                         ]
-                              :=: Fun f [ if i == j then Fun (elt n) [] else Fun (elt (n-1)) []
+                              :=: Fun f [ if i == j then Fun (elt (n-1)) [] else Var (name ("X" ++ show i) ::: V top)
                                         | i <- [1..arity f]
                                         ]
                                 )
@@ -208,13 +209,13 @@ printTheModel k ref predsPure =
                  | is <- count ms
                  ]
                sequence_
-                 [ lift $ print ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
-                                        | i <- [1..arity f]
-                                        ]
-                              :=: Fun f [ if i == j then Fun (elt n) [] else Fun (elt 1) []
-                                        | i <- [1..arity f]
-                                        ]
-                                )
+                 [ lift $ putStrLn (show ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
+                                                 | i <- [1..arity f]
+                                                 ]) ++ " <=> " ++
+                                    show ( Fun f [ if i == j then Fun (elt (n-1)) [] else Var (name ("X" ++ show i) ::: V top)
+                                                 | i <- [1..arity f]
+                                                 ])
+                                   )
                  | (t,j) <- ts `zip` [1..]
                  , n <- [tdomain' t+1..k]
                  ]
@@ -245,6 +246,10 @@ printTheModel k ref predsPure =
     | i <- [1..m]
     , is <- count ms
     ]
+
+showClauseSet :: ClauseSet -> [String]
+showClauseSet (ForAll cs)      = [ show c | c <- cs ]
+showClauseSet (ForAllNew x cs) = [ "#" ++ show x ++ ". " ++ show c | c <- cs ]
 
 -------------------------------------------------------------------------
 -- the end.

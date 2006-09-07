@@ -22,10 +22,11 @@ data Type
  deriving ( Eq, Ord )
 
 data Equality
-  = Full
+  -- this order matters!
+  = Safe
   | Half
-  | Safe
- deriving ( Eq, Ord )
+  | Full
+ deriving ( Eq, Ord, Show )
 
 instance Show Type where
   showsPrec n (Type t _ _) = showsPrec n t
@@ -73,10 +74,14 @@ data Symbol
  deriving ( Eq, Ord )
 
 instance Show Symbol where
-  showsPrec n (x ::: _) = showsPrec n x
-  --showsPrec n (x ::: t) = showsPrec n x
-  --                      . showString ":"
-  --                      . showsPrec n t
+{-
+  showsPrec n (x ::: V t) | t /= top =
+      showsPrec n x
+    . showString ":"
+    . showsPrec n t
+-}
+  showsPrec n (x ::: _) =
+      showsPrec n x
 
 arity :: Symbol -> Int
 arity (_ ::: (xs :-> _)) = length xs
@@ -163,7 +168,7 @@ instance Show Form where
   showsPrec n (Or xs)       = showsOps "|" "$false" (S.toList xs)
   showsPrec n (x `Equiv` y) = showString "("
                             . showsPrec n x
-                            . showString " <-> "
+                            . showString " <=> "
                             . showsPrec n y
                             . showString ")"
   showsPrec n (Not x)       = showString "~" . showsPrec n x

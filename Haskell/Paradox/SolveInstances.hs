@@ -126,7 +126,7 @@ solveInstances flags predsPure minSize css =
 
          domains minSize ((k,check,assump,clauses):rest) =
            do lift $ putStrLn ("domain size " ++ show k)
-              --lift $ sequence_ [ putStrLn s | c <- clauses, s <- showClauseSet c ]
+              lift $ sequence_ [ putStrLn s | c <- clauses, s <- showClauseSet c ]
               let clauses' = flat clauses
               
                   flat []                     = []

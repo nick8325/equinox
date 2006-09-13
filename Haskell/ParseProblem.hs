@@ -3,6 +3,7 @@ module ParseProblem where
 import System
   ( exitWith
   , ExitCode(..)
+  , getEnv
   )
 
 import Char
@@ -18,6 +19,7 @@ import List
   ( intersperse
   , (\\)
   , tails
+  , nub
   )
 
 import IO
@@ -47,9 +49,21 @@ import Parsek as P
 
 readProblemWithRoots :: [FilePath] -> FilePath -> IO Problem
 readProblemWithRoots roots name =
-  do putStr ("Reading file '" ++ name ++ "' ... ")
+  do putStr ("Reading '" ++ name ++ "' ... ")
      hFlush stdout
-     mes <- findFile roots name
+     mtptp <- IO.try (getEnv "TPTP")
+     mes <- findFile [ rt ++ nm
+                     | rt <- roots
+                          ++ [ case reverse tptp of
+                                 '/':_ -> tptp
+                                 _     -> tptp ++ "/"
+                             | Right tptp <- [mtptp]
+                             ]
+                     , nm <- nub [ name, name_p ]
+                          ++ [ "Problems/" ++ name_p
+                             , "Problems/" ++ take 3 name ++ "/" ++ name_p
+                             ]
+                     ]
      case mes of
        Nothing ->
          do putStrLn "COULD NOT OPEN"
@@ -68,13 +82,16 @@ readProblemWithRoots roots name =
                 sets <- sequence [ readProblemWithRoots roots incl | incl <- includes ]
                 return (concat sets ++ clauses)
  where
-  findFile []     name =
+  name_p | '.' `elem` name = name
+         | otherwise       = name ++ ".p"
+ 
+  findFile [] =
     do return Nothing
   
-  findFile (r:rs) name =
-    do ees <- IO.try (readFile (r++name))
+  findFile (name:names) =
+    do ees <- IO.try (readFile name)
        case ees of
-         Left _  -> findFile rs name
+         Left _  -> findFile names
          Right s -> return (Just s)
 
 readProblem :: FilePath -> IO [Input Form]

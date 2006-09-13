@@ -153,6 +153,20 @@ type Try    = (Weight, M (Seq Clause, Seq Clause, Seq Clause))
 type Result = (Set Symbol, [Try])
 
 clausForm :: Form -> M [Clause]
+clausForm a | isClause a =
+  do return [toClause a]
+ where
+  isClause (ForAll (Bind _ p)) = isClause p
+  isClause (Or ps)             = all isClause (S.toList ps)
+  isClause (Atom _)            = True
+  isClause (Not (Atom _))      = True
+  isClause _                   = False
+
+  toClause (ForAll (Bind _ p)) = toClause p
+  toClause (Or ps)             = concatMap toClause (S.toList ps)
+  toClause (Atom a)            = [Form.Pos a]
+  toClause (Not (Atom a))      = [Form.Neg a]
+
 clausForm a =
   do (defs, poss, _) <- m
      return (toList (defs +++ poss))

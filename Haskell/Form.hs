@@ -23,9 +23,10 @@ data Type
 
 data Equality
   -- this order matters!
-  = Safe
+  -- changed to check unsoundness
+  = Full
   | Half
-  | Full
+  | Safe
  deriving ( Eq, Ord, Show )
 
 instance Show Type where

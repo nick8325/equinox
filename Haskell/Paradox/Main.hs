@@ -47,7 +47,8 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem csIn =    
-  do putStrLn "==> Input clauses"
+  do {-
+     putStrLn "==> Input clauses"
      sequence_ [ putStrLn (showClause c) | c <- csIn ]
      --print (length csIn)
      putStrLn "==> Simplified clauses"
@@ -67,6 +68,7 @@ solveProblem csIn =
      sequence_ [ putStrLn (show c) | c <- qcs ]
      print (length fcs + length qcs)
      putStrLn "==> Solving..."
+     -}
      (r,k) <- solveInstances
                 flags
                 predsPure

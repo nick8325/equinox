@@ -126,7 +126,7 @@ solveInstances flags predsPure minSize css =
 
          domains minSize ((k,check,assump,clauses):rest) =
            do lift $ putStrLn ("domain size " ++ show k)
-              lift $ sequence_ [ putStrLn s | c <- clauses, s <- showClauseSet c ]
+              --lift $ sequence_ [ putStrLn s | c <- clauses, s <- showClauseSet c ]
               let clauses' = flat clauses
               
                   flat []                     = []
@@ -205,7 +205,8 @@ printTheModel k ref predsPure =
             do sequence_
                  [ do l <- getLit (Pos (loc :@ [ ArgN i | i <- is ]))
                       b <- getModelValue l
-                      lift $ print $ (if b then Pos else Neg) $ (Fun f [ Fun (elt i) [] | i <- is ] :=: truth)
+                      lift $ putStrLn (show ( Fun f [ Fun (elt i) [] | i <- is ] ) ++ " <=> " ++
+                                       if b then "$true" else "$false")
                  | is <- count ms
                  ]
                sequence_

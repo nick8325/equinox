@@ -113,6 +113,13 @@ class LitSet {
   bool member(Lit l) { 
     return toInt(l) < (int)lset.size() && lset[toInt(l)]; 
   }
+
+  bool isCleared() const { 
+      for (int i = 0; i < lset.size(); i++)
+          if (lset[i])
+              return false;
+      return true;
+  }
 };
 
 
@@ -129,9 +136,11 @@ class Loc {
  public:
   Loc(int a) : myname(n), arity(a), mem(a), vmap(100, HashArgs(a), EqArgs(a)) { n++; }
 
-  Var get(Solver& s, const vec<int>& args, const vec<int>& bindings);
-  int getArity(void) { return arity; }
-  int name(void) { return myname; }
+  Var  get(Solver& s, const vec<int>& args, const vec<int>& bindings);
+  bool peek(const vec<int>& args, const vec<int>& bindings, Var& out);
+
+  int  getArity(void) { return arity; }
+  int  name(void) { return myname; }
 };
 
 /**************************************************************************************************/
@@ -151,6 +160,8 @@ class Literal {
   void setLoc(Loc* l) { loc = l; }; 
   void addArg(Arg a)  { args.push(a); };
   Var  get(Solver& s, const vec<int>& bindings) { return loc->get(s,args,bindings); }
+  bool peek(const vec<int>& args, const vec<int>& bindings, Var& out) { return loc->peek(args, bindings, out); }
+
   void vars(vec<Var>& vs) const {
     for(int i = 0; i < args.size(); i++) 
       if(isVar(args[i])) vs.push(getArg(args[i]));

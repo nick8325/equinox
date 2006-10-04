@@ -27,6 +27,25 @@ Var Loc::get(Solver& s, const vec<Arg>& args, const vec<int>& bindings) {
   return result;
 }
 
+
+bool Loc::peek(const vec<int>& args, const vec<int>& bindings, Var& out)
+{
+  assert(args.size() == (int)arity);
+  DomElem                argv[args.size()];
+
+  for (int i = 0; i < arity; i++)
+    argv[i] = isVar(args[i]) ? bindings[getArg(args[i])] : getArg(args[i]);
+
+  varMap::const_iterator i = vmap.find(argv);
+
+  if (i != vmap.end()){
+      out = (*i).second;
+      return true; }
+  else
+      return false;
+}
+
+
 int nvars(const Literal& l, const vec<bool>& vset) {
   vec<Var> vs; 
   l.vars(vs); 
@@ -87,6 +106,9 @@ int Loc::n = 0;
 
 // precondition: fresh >= max(sizes)-1
 bool FOClause::instantiate(Solver& s, int fresh) {
+
+    assert(lset.isCleared());
+    assert(s.okay());
 
   vec<int> bindings(sizes.size(), -1);
   vec<int> variables(sizes.size());
@@ -156,7 +178,7 @@ bool FOClause::instantiate(Solver& s, int fresh) {
     //bool ret = s.addClause(cls,true);
     s.addClause(cls);
     bool ret = s.okay();
-    assert(ret);
+    //assert(ret);
     for(i = 0; (int)i < cls.size(); i++) lset.del(cls[i]);
     //cout << "Done! " << s.get_nof_constraints() - count << endl; return ret;
     //cout << "Done! " << s.nClauses() << endl; 
@@ -210,17 +232,17 @@ bool FOClause::instantiate(Solver& s, int fresh) {
       int count2 = s.nClauses();
 #endif
       //bool ret = s.addClause(cls,true);
-      s.addClause(cls);
-      bool ret = s.okay();
-      //bool ret = s.unsafe_add_clause(cs);
       //fprintf(stderr, "ground clause (2): [ ");
       //s.printClause(cls);
       //fprintf(stderr, " ]\n");
+      s.addClause(cls);
+      bool ret = s.okay();
+      //bool ret = s.unsafe_add_clause(cs);
       //cout << "adding: " << cls << endl;
       if (!s.okay())
           return false;
       assert(ret);
-      assert(cls.size() == 1 || s.nClauses() == count2 + 1);
+      //assert(cls.size() == 1 || s.nClauses() == count2 + 1);
       i--;
       while(currsize[i] > 0) { Lit g = cls.last(); cls.pop(); lset.del(g); currsize[i]--; }
       lind -= chunksize[i];
@@ -283,6 +305,7 @@ bool FOClause::instantiate(Solver& s, int fresh) {
   //cout << "Done! " << s.get_nof_constraints() - count << endl;
   //cout << "Done! " << s.get_nof_constraints() << endl;
   for(i = 0; (int)i < cls.size(); i++) lset.del(cls[i]);
+
   return true;
 }
 

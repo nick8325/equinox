@@ -177,4 +177,20 @@ extern "C" {
         int lit = toDimacs(Lit(w->loc->get(*w, w->args, w->dummy), !w->sig));
         return lit; 
     }
+
+    int solver_lit_value     (solver* w) { 
+        Var v;
+        if (w->loc->peek(w->args, w->dummy, v))
+            return toInt(w->value(Lit(v, !w->sig)));
+        else
+            return w->sig ? l_false : l_true;;
+    }
+
+    int solver_lit_modelvalue(solver* w) { 
+        Var v;
+        if (w->loc->peek(w->args, w->dummy, v))
+            return (w->model[v] == l_True) ^ (!w->sig);
+        else
+            return w->sig ? l_false : l_true;;
+    }
 }

@@ -1,7 +1,7 @@
 module Equinox.FolSat where
 
 import Form
-import Name( prim )
+import Name( prim, tr )
 import List hiding ( union, insert, intersect, delete )
 import Maybe
 import Equinox.Fair
@@ -146,13 +146,16 @@ prove flags cs =
             if b then
               do solveAndPatch starred true m n nonGroundCs
              else
-              do b <- if n > strength flags then
+              do case dot flags of
+                   Just ds -> writeModel ("model-" ++ show m) true' syms ds
+                   Nothing -> return ()
+                 b <- if n > strength flags then
                         do return False
                        else
                         do putLn 2 "==> FolSat: checking (for non-true clauses)..."
                            checkNonGoodCases true' cons True False nonGroundCs
                  if b then
-                   do solveAndPatch starred true m (n+1) nonGroundCs
+                   do solveAndPatch starred true (m+1) (n+1) nonGroundCs
                   else
                    if not starred then
                      do putLn 2 "==> FolSat: instantiating with * ..."
@@ -161,12 +164,12 @@ prove flags cs =
                                addClauseSub true (M.fromList [ (x,s) | x <- S.toList (free c) ]) c
                           | c <- nonGroundCs
                           ]
-                        solveAndPatch True true m 0 nonGroundCs
+                        solveAndPatch True true (m+1) 0 nonGroundCs
                     else
                       do putLn 2 "==> FolSat: checking (for liberal false clauses)..."
                          b <- checkNonGoodCases true' cons False True nonGroundCs
                          if b then
-                           do solveAndPatch starred true m 0 nonGroundCs
+                           do solveAndPatch starred true (m+1) 0 nonGroundCs
                           else
                            do putLn 2 "==> FolSat: NO"
                               return False
@@ -491,32 +494,84 @@ addGroundAtom (a :=: b) =
          else do b <- f `app` [ a | Just a <- mas ]
                  return (Just b)
 
-{-
-writeModel :: FilePath -> Con -> Set (Name,Int) -> Set (Name,Int) -> T ()
-writeModel file true fs ps =
-  do h <- lift $ openFile file WriteMode
+--writeModel :: FilePath -> Con -> Set (Name,Int) -> Set (Name,Int) -> T ()
+writeModel file true fs ds =
+  do lift $ putStrLn ("(writing model in " ++ file ++ ")")
+     h <- lift $ openFile file WriteMode
+     lift $ hPutStrLn h "digraph G {"
+
+     -- nodes
+     nodess <-
+       sequence
+         [ do tab <- getModelTable f
+              return [ x | (xs,y) <- tab, x <- y:xs ]
+         | f <- S.toList fs
+         , show f `elem` interesting
+         ]
+     let nodes = nub (concat nodess)
+     
+     -- attributes
+     attrss <-
+       sequence
+         [ do tab <- getModelTable f
+              return $
+                [ (x,f)
+                | isPred f
+                , ([x],tr) <- tab
+                , tr == true
+                ] ++
+                [ (x,f)
+                | not (isPred f)
+                , ([],x) <- tab
+                ]
+         | f <- S.toList fs
+         , show f `elem` interesting
+         ]
+     let attrs = [(true,tr ::: ([] :-> bool))] ++ concat attrss
+     
      sequence_
-       [ do tab <- getModelTable f
-            sequence_
-              [ lift $ hPutStrLn h (showArgs f xs ++ " = " ++ show y)
-              | (xs,y) <- tab
-              ]
-            lift $ hPutStrLn h ""
-       | (f,_) <- S.toList fs
+       [ lift $ hPutStrLn h (shown x ++ " [label=\"" ++ lab ++ "\"];")
+       | x <- nodes
+       , let attr = [ p | (y,p) <- attrs, x == y ]
+             lab  | null attr = show x
+                  | otherwise = show x ++ "\\n" ++ concat (intersperse "," (map show attr))
        ]
+          
+     -- arrows
+     arrowss <-
+       sequence
+         [ do tab <- getModelTable f
+              return $
+                [ (x,y,f)
+                | isPred f
+                , ([x,y],tr) <- tab
+                , tr == true
+                ] ++
+                [ (x,y,f)
+                | not (isPred f)
+                , ([x],y) <- tab
+                ]
+         | f <- S.toList fs
+         , show f `elem` interesting
+         ]
+     let arrows = concat arrowss
+     
      sequence_
-       [ do tab <- getModelTable p
-            sequence_
-              [ lift $ hPutStrLn h (showArgs p xs ++ " : " ++
-                  (if y == true then "$true" else "$false"))
-              | (xs,y) <- tab
-              ]
-            lift $ hPutStrLn h ""
-       | (p,_) <- S.toList ps
-       , p /= eq
+       [ lift $ hPutStrLn h (shown x ++ " -> " ++ shown y ++ " [label=\"" ++ show f ++ "\"];")
+       | (x,y,f) <- arrows
        ]
+     lift $ hPutStrLn h "}"
      lift $ hClose h
  where
   showArgs f [] = show f
   showArgs f ts = show f ++ show ts
--}
+
+  --line f xs y = showArgs f xs ++ " = " ++ show y
+  
+  isPred (_ ::: (_ :-> t)) = t == bool
+  isPred _                 = False 
+  
+  shown n = tail (show n)
+  
+  interesting = words (map (\c -> if c == ',' then ' ' else c) ds)
+  

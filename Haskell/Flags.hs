@@ -31,6 +31,7 @@ data Flags
   { time         :: Maybe Int
   , roots        :: [FilePath]
   , printModel   :: Bool
+  , dot          :: Maybe String
   , mfile        :: Maybe FilePath
   , splitting    :: Bool
   , sat          :: Bool
@@ -50,6 +51,7 @@ initFlags =
   { time         = Nothing
   , roots        = []
   , printModel   = False
+  , dot          = Nothing
   , mfile        = Nothing
   , splitting    = False
   , sat          = False
@@ -102,12 +104,21 @@ options =
     }
 
   , Option
+    { long    = "dot"
+    , meaning = (\d f -> f{ dot = Just d }) <$> argDots
+    , help    = [ "Generate dot-files for each approximate model."
+                , "<dot-spec> specifies what symbols to show and how."
+                , "Default: (off)"
+                ]
+    }
+
+  , Option
     { long    = "strength"
     , meaning = (\n f -> f{ strength = n }) <$> argNum
     , help    = [ "Maximum number of non-guessing quantifier instantations"
                 , "before starting to guess."
                 , "Example: --strength 7"
-                , "Default: " ++ show (strength initFlags)
+                , "Default: --strength " ++ show (strength initFlags)
                 ]
     }
 
@@ -233,6 +244,12 @@ argFile = MkArg ["<file>"] $ \xs ->
   case xs of
     x:xs -> Right (x, xs)
     _    -> Left ["expected a file"]
+      
+argDots :: Arg FilePath
+argDots = MkArg ["<dot-spec>"] $ \xs ->
+  case xs of
+    x:xs -> Right (x, xs)
+    _    -> Left ["expected a dot-spec"]
       
 argNums :: Arg [Int]
 argNums = MkArg ["<nums>"] $ \xs ->

@@ -146,33 +146,33 @@ prove flags cs =
             if b then
               do solveAndPatch starred true m n nonGroundCs
              else
-              do case dot flags of
-                   Just ds -> writeModel ("model-" ++ show m) true' syms ds
-                   Nothing -> return ()
-                 b <- if n > strength flags then
+              do b <- if n > strength flags then
                         do return False
                        else
                         do putLn 2 "==> FolSat: checking (for non-true clauses)..."
                            checkNonGoodCases true' cons True False nonGroundCs
                  if b then
-                   do solveAndPatch starred true (m+1) (n+1) nonGroundCs
+                   do solveAndPatch starred true m (n+1) nonGroundCs
                   else
-                   if not starred then
-                     do putLn 2 "==> FolSat: instantiating with * ..."
-                        sequence_
-                          [ do s <- star `app` []
-                               addClauseSub true (M.fromList [ (x,s) | x <- S.toList (free c) ]) c
-                          | c <- nonGroundCs
-                          ]
-                        solveAndPatch True true (m+1) 0 nonGroundCs
-                    else
-                      do putLn 2 "==> FolSat: checking (for liberal false clauses)..."
-                         b <- checkNonGoodCases true' cons False True nonGroundCs
-                         if b then
-                           do solveAndPatch starred true (m+1) 0 nonGroundCs
-                          else
-                           do putLn 2 "==> FolSat: NO"
-                              return False
+                   do case dot flags of
+                        Just ds -> writeModel ("model-" ++ show m) true' syms ds
+                        Nothing -> return ()
+                      if not starred then
+                        do putLn 2 "==> FolSat: instantiating with * ..."
+                           sequence_
+                             [ do s <- star `app` []
+                                  addClauseSub true (M.fromList [ (x,s) | x <- S.toList (free c) ]) c
+                             | c <- nonGroundCs
+                             ]
+                           solveAndPatch True true (m+1) 0 nonGroundCs
+                       else
+                         do putLn 2 "==> FolSat: checking (for liberal false clauses)..."
+                            b <- checkNonGoodCases true' cons False True nonGroundCs
+                            if b then
+                              do solveAndPatch starred true (m+1) 0 nonGroundCs
+                             else
+                              do putLn 2 "==> FolSat: NO"
+                                 return False
          else
           do return True
 
@@ -508,7 +508,6 @@ writeModel file true fs ds =
          | f <- S.toList fs
          , show f `elem` interesting
          ]
-     let nodes = nub (concat nodess)
      
      -- attributes
      attrss <-
@@ -527,16 +526,8 @@ writeModel file true fs ds =
          | f <- S.toList fs
          , show f `elem` interesting
          ]
-     let attrs = [(true,tr ::: ([] :-> bool))] ++ concat attrss
+     let attrs = concat attrss
      
-     sequence_
-       [ lift $ hPutStrLn h (shown x ++ " [label=\"" ++ lab ++ "\"];")
-       | x <- nodes
-       , let attr = [ p | (y,p) <- attrs, x == y ]
-             lab  | null attr = show x
-                  | otherwise = show x ++ "\\n" ++ concat (intersperse "," (map show attr))
-       ]
-          
      -- arrows
      arrowss <-
        sequence
@@ -556,6 +547,18 @@ writeModel file true fs ds =
          ]
      let arrows = concat arrowss
      
+     let nodes = nub ( [ x | (x,_) <- attrs ]
+                    ++ [ z | (x,y,_) <- arrows, z <- [x,y] ]
+                     )
+     
+     sequence_
+       [ lift $ hPutStrLn h (shown x ++ " [label=\"" ++ lab ++ "\"];")
+       | x <- nodes
+       , let attr = [ p | (y,p) <- attrs, x == y ]
+             lab  | null attr = show x
+                  | otherwise = show x ++ "\\n" ++ concat (intersperse "," (map show attr))
+       ]
+          
      sequence_
        [ lift $ hPutStrLn h (shown x ++ " -> " ++ shown y ++ " [label=\"" ++ show f ++ "\"];")
        | (x,y,f) <- arrows

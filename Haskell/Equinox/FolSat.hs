@@ -146,18 +146,18 @@ prove flags cs =
             if b then
               do solveAndPatch starred true m n nonGroundCs
              else
-              do b <- if n > strength flags then
+              do case dot flags of
+                   Just ds -> writeModel ("model-" ++ show m) true' syms ds
+                   Nothing -> return ()
+                 b <- if n > strength flags then
                         do return False
                        else
                         do putLn 2 "==> FolSat: checking (for non-true clauses)..."
                            checkNonGoodCases true' cons True False nonGroundCs
                  if b then
-                   do solveAndPatch starred true m (n+1) nonGroundCs
+                   do solveAndPatch starred true (m+1) (n+1) nonGroundCs
                   else
-                   do case dot flags of
-                        Just ds -> writeModel ("model-" ++ show m) true' syms ds
-                        Nothing -> return ()
-                      if not starred then
+                   do if not starred then
                         do putLn 2 "==> FolSat: instantiating with * ..."
                            sequence_
                              [ do s <- star `app` []

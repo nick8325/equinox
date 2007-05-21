@@ -99,153 +99,152 @@ inferAndUnify s xs ts
 -- run
 
 runT :: (forall s . T s a) -> Either String ([Type], Clause -> Clause)
-runT tm =
-  runST (
-    do idfs  <- newSTRef 0
-       preds <- newSTRef M.empty
-       funs  <- newSTRef M.empty
-       vars  <- newSTRef M.empty
+runT tm = runST (runT' tm)
 
-       m idfs preds funs vars (\s -> return (Left s)) (\_ ->
-         do ps' <- readSTRef preds
-            fs' <- readSTRef funs
+runT' :: T s a -> ST s (Either String ([Type], Clause -> Clause))
+runT' (MkT m) =
+  do idfs  <- newSTRef 0
+     preds <- newSTRef M.empty
+     funs  <- newSTRef M.empty
+     vars  <- newSTRef M.empty
 
-            ps <- sequence
-                    [ do ts <- sequence [ do (_,t,_) <- typeInfo t'
-                                             return t
-                                        | t' <- ts'
-                                        ]
-                         return (p,ts)
-                    | (p,ts') <- M.toList ps'
-                    ]
+     m idfs preds funs vars (\s -> return (Left s)) (\_ ->
+       do ps' <- readSTRef preds
+          fs' <- readSTRef funs
 
-            fs <- sequence
-                    [ do ts <- sequence [ do (_,t,_) <- typeInfo t'
-                                             return t
-                                        | t' <- ts'
-                                        ]
-                         (_,t,_) <- typeInfo t'
-                         return (f,(ts,t))
-                    | (f,(ts',t')) <- M.toList fs'
-                    ]
-
-            typeIds' <- sequence
-                          [ do ((_,eq),t,_) <- typeInfo t' 
-                               return (t,eq)
-                          | t' <- [ t | (_,ts)      <- M.toList ps', t <- ts ]
-                               ++ [ t | (_,(ts,tr)) <- M.toList fs', t <- tr:ts ]
-                          ]
-
-            let typeIds = S.toList (S.fromList typeIds')
-
-                names =
-                  [ s
-                  | i <- [1..]
-                  , let s | i <= 26   = name [chr (ord 'A' + i - 1)]
-                          | otherwise = name "T" % (i-26)
+          ps <- sequence
+                  [ do ts <- sequence [ do (_,t,_) <- typeInfo t'
+                                           return t
+                                      | t' <- ts'
+                                      ]
+                       return (p,ts)
+                  | (p,ts') <- M.toList ps'
                   ]
 
-                typesAndTypeIds =
-                  [ ( Type
-                      { tname  = s
-                      , tsize  = n
-                      , tequal = eq
-                      }
-                    , t
-                    )
-                  | (s,(t,eq)) <- names `zip` typeIds
-                  , let fResT = [ (f,length ts) | (f,(ts,t')) <- fs, t == t' ]
-                        n = case [ ar | (f,ar) <- fResT, ar > 0 ] of
-                              [] -> Just (length fResT `max` 1)
-                              _  -> Nothing
+          fs <- sequence
+                  [ do ts <- sequence [ do (_,t,_) <- typeInfo t'
+                                           return t
+                                      | t' <- ts'
+                                      ]
+                       (_,t,_) <- typeInfo t'
+                       return (f,(ts,t))
+                  | (f,(ts',t')) <- M.toList fs'
                   ]
 
-                types =
-                  [ t | (t,_) <- typesAndTypeIds ]
+          typeIds' <- sequence
+                        [ do ((_,eq),t,_) <- typeInfo t' 
+                             return (t,eq)
+                        | t' <- [ t | (_,ts)      <- M.toList ps', t <- ts ]
+                             ++ [ t | (_,(ts,tr)) <- M.toList fs', t <- tr:ts ]
+                        ]
 
-                typeIdToType =
-                  M.fromList [ (tid,t)
-                             | (t,tid) <- typesAndTypeIds
-                             ]
+          let typeIds = S.toList (S.fromList typeIds')
 
-                typeOfId tid =
-                  case M.lookup tid typeIdToType of
-                    Just t  -> t
-                    Nothing -> error "Types: no type"
+              names =
+                [ s
+                | i <- [1..]
+                , let s | i <= 26   = name [chr (ord 'A' + i - 1)]
+                        | otherwise = name "T" % (i-26)
+                ]
 
-                predTable =
-                  M.fromList [ (n, map typeOfId ts :-> bool)
-                             | (n ::: _, ts) <- ps
-                             ]
+              typesAndTypeIds =
+                [ ( Type
+                    { tname  = s
+                    , tsize  = n
+                    , tequal = eq
+                    }
+                  , t
+                  )
+                | (s,(t,eq)) <- names `zip` typeIds
+                , let fResT = [ (f,length ts) | (f,(ts,t')) <- fs, t == t' ]
+                      n = case [ ar | (f,ar) <- fResT, ar > 0 ] of
+                            [] -> Just (length fResT `max` 1)
+                            _  -> Nothing
+                ]
 
-                funTable =
-                  M.fromList [ (n, map typeOfId ts :-> typeOfId t)
-                             | (n ::: _, (ts,t)) <- fs
-                             ]
+              types =
+                [ t | (t,_) <- typesAndTypeIds ]
 
-                typeOfPred (p ::: _) =
-                  case M.lookup p predTable of
-                    Just t  -> t
-                    Nothing -> error $ "Types: no pred type"
+              typeIdToType =
+                M.fromList [ (tid,t)
+                           | (t,tid) <- typesAndTypeIds
+                           ]
 
-                typeOfFun (f ::: _) =
-                  case M.lookup f funTable of
-                    Just t  -> t
-                    Nothing -> error "Types: no fun type"
+              typeOfId tid =
+                case M.lookup tid typeIdToType of
+                  Just t  -> t
+                  Nothing -> error "Types: no type"
 
-                trans c = map transLit c
+              predTable =
+                M.fromList [ (n, map typeOfId ts :-> bool)
+                           | (n ::: _, ts) <- ps
+                           ]
+
+              funTable =
+                M.fromList [ (n, map typeOfId ts :-> typeOfId t)
+                           | (n ::: _, (ts,t)) <- fs
+                           ]
+
+              typeOfPred (p ::: _) =
+                case M.lookup p predTable of
+                  Just t  -> t
+                  Nothing -> error $ "Types: no pred type"
+
+              typeOfFun (f ::: _) =
+                case M.lookup f funTable of
+                  Just t  -> t
+                  Nothing -> error "Types: no fun type"
+
+              trans c = map transLit c
+               where
+                ls = c
+
+                varsLit (Pos a) = varsAtom a
+                varsLit (Neg a) = varsAtom a
+
+                varsAtom (y :=: Fun f xs) =
+                  varsTerms ((y,t):(xs `zip` ts))
                  where
-                  ls = c
+                  ts :-> t = typeOfFun f
 
-                  varsLit (Pos a) = varsAtom a
-                  varsLit (Neg a) = varsAtom a
+                varsAtom (Fun f xs :=: y) =
+                  varsTerms ((y,t):(xs `zip` ts))
+                 where
+                  ts :-> t = typeOfFun f
 
-                  varsAtom (y :=: Fun f xs) =
-                    varsTerms ((y,t):(xs `zip` ts))
-                   where
-                    ts :-> t = typeOfFun f
+                varsAtom (x :=: y) =
+                  varsTerms [(x,top),(y,top)]
 
-                  varsAtom (Fun f xs :=: y) =
-                    varsTerms ((y,t):(xs `zip` ts))
-                   where
-                    ts :-> t = typeOfFun f
+                varsTerms [] = []
+                varsTerms ((Fun f xs,_):xts) = varsTerms ((xs `zip` ts)++xts)
+                 where
+                  ts :-> _ = typeOfFun f
 
-                  varsAtom (x :=: y) =
-                    varsTerms [(x,top),(y,top)]
+                varsTerms ((Var (n ::: _),t):xts)
+                  | t == top  = varsTerms xts
+                  | otherwise = (n,V t) : varsTerms xts
 
-                  varsTerms [] = []
-                  varsTerms ((Fun f xs,_):xts) = varsTerms ((xs `zip` ts)++xts)
-                   where
-                    ts :-> _ = typeOfFun f
+                varTable =
+                  M.fromList (concatMap varsLit ls)
 
-                  varsTerms ((Var (n ::: _),t):xts)
-                    | t == top  = varsTerms xts
-                    | otherwise = (n,V t) : varsTerms xts
+                transLit (Pos a) = Pos (transAtom a)
+                transLit (Neg a) = Neg (transAtom a)
 
-                  varTable =
-                    M.fromList (concatMap varsLit ls)
+                transAtom (x :=: y) = transTerm x :=: transTerm y
 
-                  transLit (Pos a) = Pos (transAtom a)
-                  transLit (Neg a) = Neg (transAtom a)
+                transTerm (Fun f@(n ::: (_ :-> t)) xs) = Fun f' (map transTerm xs)
+                 where
+                  ts :-> t' = typeOfFun f
+                  f' = n ::: (ts :-> (if t == bool then bool else t'))
 
-                  transAtom (x :=: y) = transTerm x :=: transTerm y
+                transTerm (Var v@(n ::: _)) = Var v'
+                 where
+                  v' = n ::: case M.lookup n varTable of
+                               Just t  -> t
+                               Nothing -> V top
 
-                  transTerm (Fun f@(n ::: (_ :-> t)) xs) = Fun f' (map transTerm xs)
-                   where
-                    ts :-> t' = typeOfFun f
-                    f' = n ::: (ts :-> (if t == bool then bool else t'))
-
-                  transTerm (Var v@(n ::: _)) = Var v'
-                   where
-                    v' = n ::: case M.lookup n varTable of
-                                 Just t  -> t
-                                 Nothing -> V top
-
-            return (Right (types, trans))
-        )
-  )
- where
-  MkT m = tm
+          return (Right (types, trans))
+      )
 
 -------------------------------------------------------------------------
 -- T monad

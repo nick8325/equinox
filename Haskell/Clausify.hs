@@ -9,6 +9,8 @@ import qualified Form
 import Name
 import Data.Set( Set )
 import qualified Data.Set as S
+import Data.Map( Map )
+import qualified Data.Map as M
 import List( minimumBy, partition, nub )
 import Control.Monad.State
 import Control.Monad.Reader
@@ -99,10 +101,10 @@ split p =
 ----------------------------------------------------------------------
 -- monad
 
-type M = ReaderT (Set Symbol) (State (Int,Int))
+type M = State (Int,Int)
 
 run :: M a -> a
-run m = evalState (runReaderT m S.empty) (0,0)
+run m = evalState m (0,0)
 
 next :: M Int
 next =
@@ -117,9 +119,6 @@ next' =
      let j' = j+1
      j' `seq` put (i,j')
      return j
-
-bind :: Symbol -> M a -> M a
-bind v m = withReaderT (S.insert v) m
 
 fresh :: Symbol -> M Symbol
 fresh (v ::: t) =
@@ -245,13 +244,13 @@ claus mod a =
     ForAll (Bind v a) ->
       ( vs'
       , [ ( vals
-          , do (defs, poss, negs) <- m -- if pos then bind v m else m
+          , do (defs, poss, negs) <- m
                v' <- iff pos (fresh v)
                x  <- iff neg (skolemn v vs')
                return ( defs
                       , subst (v |=> Var v') poss
-                      --, fmap (map (fmap (substSkAtom v x))) negs
-                      , subst (v |=> x)      negs
+                      , fmap (map (fmap (substSkAtom v x))) negs
+                      -- , subst (v |=> x)      negs
                       )
           )
         | (vals,m) <- tries
@@ -287,17 +286,19 @@ claus mod a =
     | v == w    = x
     | otherwise = Var w
 
-  substSk v (Fun (f ::: (tsf :-> tf)) xsf) (Fun (g ::: (tsg :-> tg)) xsg)
-    | isSkolemnName g && Var v `elem` xsg && arf + arg - 1 <= arf `max` arg =
-      fun (g ::: ((take i tsg ++ tsf ++ drop (i+1) tsg) :-> tg))
-        (take i xsg ++ xsf ++ drop (i+1) xsg)
+  substSk v x@(Fun (f ::: (tsf :-> tf)) xsf) (Fun (g ::: (tsg :-> tg)) xsg)
+    | isSkolemnName g && Var v `elem` xsg && length xsg' <= length xsg =
+      Fun (g ::: (tsg' :-> tg)) (map (substSk v x) xsg')
    where
-    i   = head [ i | (i,Var w) <- [0..] `zip` xsg, v == w ]
-    arf = length xsf
-    arg = length xsg
-    
-    fun f xs | arity f == length xs = Fun f xs
-             | otherwise = error ("oops: " ++ show (f, typing f, xs))
+    (xsg',tsg') = unzip $
+      [ (x,t)
+      | (x,t) <- xsg `zip` tsg
+      , x /= Var v
+      ] ++
+      [ (x,t)
+      | (x,t) <- xsf `zip` tsf
+      , x `notElem` xsg
+      ]
     
   substSk v x (Fun g xs) =
     Fun g (map (substSk v x) xs)

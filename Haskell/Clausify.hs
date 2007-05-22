@@ -249,8 +249,8 @@ claus mod a =
                x  <- iff neg (skolemn v vs')
                return ( defs
                       , subst (v |=> Var v') poss
-                     -- , fmap (map (fmap (substSkAtom v x))) negs
-                      , subst (v |=> x)      negs
+                      , fmap (map (fmap (substSkAtom v x))) negs
+                      -- , subst (v |=> x)      negs
                       )
           )
         | (vals,m) <- tries

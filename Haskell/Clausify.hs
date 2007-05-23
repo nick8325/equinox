@@ -42,7 +42,9 @@ clausify inps = run $ clausifyInputs nil nil inps
     do cs <- clausForm (nt a)
        clausifyObligs theory (obligs +++ fromList [cs]) as inps
 
-  split' a | splitting ?flags = split a
+  split' a | splitting ?flags = if null split_a then [true] else split_a
+   where
+    split_a = split a
   split' a                    = [a]
 
 clean :: Clause -> Clause

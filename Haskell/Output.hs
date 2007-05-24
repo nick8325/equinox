@@ -23,10 +23,10 @@ putFailure :: String -> IO a
 putFailure s = do putWarning s; exitWith (ExitFailure 1)
 
 putHeader :: String -> IO ()
-putHeader s = putStrLn ("== " ++ s ++ " " ++ replicate (74 - length s) '=')
+putHeader s = putStrLn ("=== " ++ s)
 
 putSubHeader :: String -> IO ()
-putSubHeader s = putStrLn ("-- " ++ s)
+putSubHeader s = putStrLn ("--- " ++ s)
 
 ---------------------------------------------------------------------------
 -- the end.

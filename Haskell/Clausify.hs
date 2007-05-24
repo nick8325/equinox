@@ -11,7 +11,7 @@ import Data.Set( Set )
 import qualified Data.Set as S
 import Data.Map( Map )
 import qualified Data.Map as M
-import List( minimumBy, partition, nub )
+import List( maximumBy, minimumBy, partition, nub )
 import Control.Monad.State
 import Control.Monad.Reader
 import Flags
@@ -80,6 +80,23 @@ split p =
     p `Equiv` q ->
       split (nt p \/ q) ++ split (p \/ nt q)
     
+    Or ps ->
+      snd $
+      maximumBy first
+      [ (length sq, [ Or (S.fromList (q':qs)) | q' <- sq ])
+      | (q,qs) <- select (S.toList ps)
+      , let sq = split q
+      ]
+
+    _ ->
+      [p]
+ where
+  select []     = []
+  select (x:xs) = (x,xs) : [ (y,x:ys) | (y,ys) <- select xs ]
+  
+  first (n,x) (m,y) = n `compare` m
+  
+{-  
     Or ps | S.size ps > 0 && n > 0 ->
       [ Or (S.fromList (p':ps')) | p' <- split p ]
      where
@@ -87,9 +104,6 @@ split p =
       ((p,n),pns') = getMax (head pns) [] (tail pns)
       ps' = [ p' | (p',_) <- pns' ]
     
-    _ ->
-      [p]
- where
   siz (And ps)            = S.size ps
   siz (ForAll (Bind _ p)) = siz p
   siz (_ `Equiv` _)       = 2
@@ -99,6 +113,7 @@ split p =
   getMax pn@(p,n) pns (qm@(q,m):qms)
     | m > n     = getMax qm (pn:pns) qms
     | otherwise = getMax pn (qm:pns) qms
+-}
 
 ----------------------------------------------------------------------
 -- monad

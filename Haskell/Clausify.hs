@@ -80,7 +80,6 @@ split p =
     p `Equiv` q ->
       split (nt p \/ q) ++ split (p \/ nt q)
 
-{-   
     Or ps ->
       snd $
       maximumBy first
@@ -88,7 +87,6 @@ split p =
       | (q,qs) <- select (S.toList ps)
       , let sq = split q
       ]
--}
 
     _ ->
       [p]

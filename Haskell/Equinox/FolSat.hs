@@ -257,6 +257,7 @@ prove flags cs =
          tryAll [ nonGoodCases ((ts `zip` xs) ++ eqs) defs neqs undefs still sub add
                 | (xs,y) <- tab
                 , y == c || liberal && (y == s || c == s)
+                -- , y == c -- STAR SUBST TEMP. REMOVED FOR EXPERIMENTAL REASONS
                 ]
 
     nonGoodCases [] ((Fun f ts,x):defs) neqs undefs still sub add =

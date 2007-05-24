@@ -83,7 +83,7 @@ split p =
     Or ps ->
       snd $
       maximumBy first
-      [ (length sq, [ Or (S.fromList (q':qs)) | q' <- sq ])
+      [ (siz q, [ Or (S.fromList (q':qs)) | q' <- sq ])
       | (q,qs) <- select (S.toList ps)
       , let sq = split q
       ]
@@ -96,6 +96,11 @@ split p =
   
   first (n,x) (m,y) = n `compare` m
   
+  siz (And ps)            = S.size ps
+  siz (ForAll (Bind _ p)) = siz p
+  siz (_ `Equiv` _)       = 2
+  siz _                   = 0
+
 {-  
     Or ps | S.size ps > 0 && n > 0 ->
       [ Or (S.fromList (p':ps')) | p' <- split p ]
@@ -104,11 +109,6 @@ split p =
       ((p,n),pns') = getMax (head pns) [] (tail pns)
       ps' = [ p' | (p',_) <- pns' ]
     
-  siz (And ps)            = S.size ps
-  siz (ForAll (Bind _ p)) = siz p
-  siz (_ `Equiv` _)       = 2
-  siz _                   = 0
-
   getMax pn@(p,n) pns [] = (pn,pns)
   getMax pn@(p,n) pns (qm@(q,m):qms)
     | m > n     = getMax qm (pn:pns) qms

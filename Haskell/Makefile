@@ -14,14 +14,17 @@ main: paradox.exe equinox.exe
 paradox: paradox.exe
 equinox: equinox.exe
 
+Sat.o: Sat.hs
+	$(GHC) -fglasgow-exts --make Sat.hs
+
 #-- Paradox
 
-paradox.exe: *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+paradox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HFLAGS) -main-is Paradox.Main.main --make Paradox.Main -o paradox
         
 #-- Equinox
 
-equinox.exe: *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+equinox.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HFLAGS) -main-is Equinox.Main.main --make Equinox.Main -o equinox
         
 #-- Cleaning up

@@ -7,7 +7,7 @@ HASKELL = Haskell
 
 #-- Add this when compiling on Cygwin
 
-export EXTRACFLAGS=-mno-cygwin
+#export EXTRACFLAGS=-mno-cygwin
 
 #-- Main
 

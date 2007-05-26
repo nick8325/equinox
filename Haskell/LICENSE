@@ -1,7 +1,4 @@
-module Equinox.Main where
-
-{-
-Equinox -- Copyright (c) 2003-2007, Koen Claessen
+Paradox/Equinox -- Copyright (c) 2003-2007, Koen Claessen, Niklas Sorensson
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -21,30 +18,3 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
--}
-
-import Sat
-import qualified Main
-import Form
-import Flags
-import Equinox.FolSat
-
----------------------------------------------------------------------------
--- main
-
-main :: IO ()
-main =
-  do putStrLn "Equinox, version 1.1, 2007-05-21."
-     Main.main solveProblem
-  
----------------------------------------------------------------------------
--- solve
-
-solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
-solveProblem cs =
-  do sequence_ [ putStrLn (showClause c) | c <- cs ]
-     b <- prove ?flags cs
-     return (if b then Unsatisfiable else Unknown)
-
----------------------------------------------------------------------------
--- the end.

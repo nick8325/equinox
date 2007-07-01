@@ -145,7 +145,7 @@ solveInstances flags predsPure minSize css =
              | otherwise = 1 + (x `ind` ys)             
          
          domains minSize [] =
-           do return (Unknown,minSize)
+           do return (GaveUp,minSize)
 
          domains minSize ((k,check,assump,clauses):rest) =
            do lift $ putStrLn ("domain size " ++ show k)
@@ -172,7 +172,7 @@ solveInstances flags predsPure minSize css =
               r <- if minSize > k then return False else solve [ass]
               if r then
                 do if printModel flags then
-                     printTheModel k ref predsPure
+                     printTheModel flags k ref predsPure
                     else
                      return ()
                    return (Satisfiable,k)
@@ -189,80 +189,143 @@ solveInstances flags predsPure minSize css =
      run $ do --Sat.verbose 1
               domains minSize css
 
-printTheModel k ref predsPure =
+printTheModel flags k ref predsPure =
   do lift $ putOfficial "BEGIN MODEL"
+     putStrLnTSTP ("SZS output start FiniteModel for " ++ thisFile flags)
      lift $ putStrLn ("% domain size is " ++ show k)
+     putStrLnTSTP "fof(domain, fi_domain,"
+     putStrLnTSTP ("  (![X] . (" ++ concat (intersperse " | " [ "X = " ++ dom i | i <- [1..k] ]) ++ "))")
+     putStrLnTSTP  ")."
+
      lift $ putStrLn ""
+
      (tabf,tabp) <- lift $ readIORef ref
-     sequence_ $ intersperse (lift $ putStrLn "") $ map snd $ sortBy first $
-       [ (show f,
-            do sequence_
+     let trans (f,mx) =
+           do x <- mx
+              return (f,x)
+     entries <- sequence $ map trans $ sortBy first $
+       [ (f,
+            do as <- sequence
                  [ do bs <- sequence [ do l <- getLit (Pos (loc :@ ([ ArgN i | i <- is ] ++ [ ArgN j ])))
                                           getModelValue l
                                      | j <- [1.. tdomain' t `min` k]
                                      ]
-                      if or bs then
-                        do let c = length (takeWhile not bs) + 1
-                           lift $ print (Fun f [ Fun (elt i) [] | i <- is ] :=: Fun (elt c) [])
-                       else 
-                        do lift $ print (Fun f [ Fun (elt i) [] | i <- is ] :=: Fun (name "--" ::: ([] :-> top)) [])
+                      let defd = or bs
+                          c    = length (takeWhile not bs) + 1
+                      return ( []
+                             , (show f `app` [ dom i | i <- is ])
+                            ++ " = "
+                            ++ dom (if defd then c else 0)
+                             )
                  | is <- count ms
                  ]
-               sequence_
-                 [ lift $ print ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
-                                        | i <- [1..arity f]
-                                        ]
-                              :=: Fun f [ if i == j then Fun (elt (n-1)) [] else Var (name ("X" ++ show i) ::: V top)
-                                        | i <- [1..arity f]
-                                        ]
-                                )
+               bs <- sequence
+                 [ return ( [ "X" ++ show i | i <- [1..arity f], i /= j ]
+                          , (show f `app` [ if i == j then dom n
+                                                      else "X" ++ show i
+                                          | i <- [1..arity f]
+                                          ])
+                         ++ " = "
+                         ++ (show f `app` [ if i == j then dom (n-1)
+                                                      else "X" ++ show i
+                                          | i <- [1..arity f]
+                                          ])
+                          )
                  | (t,j) <- ts `zip` [1..]
                  , n <- [tdomain' t+1..k]
                  ]
+               return (as ++ bs)
          )
        | (f@(s ::: (ts :-> t)),loc) <- M.toList tabf
        , isSimpleName s
        , let ms = [ tdomain' t `min` k | t <- ts ]
        ] ++
-       [ (show f,
-            do sequence_
+       [ (f,
+            do as <- sequence
                  [ do l <- getLit (Pos (loc :@ [ ArgN i | i <- is ]))
                       b <- getModelValue l
-                      lift $ putStrLn (show ( Fun f [ Fun (elt i) [] | i <- is ] ) ++ " <=> " ++
-                                       if b then "$true" else "$false")
+                      return ( []
+                             , (show f `app` [ dom i | i <- is ])
+                            ++ " <=> "
+                            ++ (if b then "$true" else "$false")
+                             )
                  | is <- count ms
                  ]
-               sequence_
-                 [ lift $ putStrLn (show ( Fun f [ if i == j then Fun (elt n) [] else Var (name ("X" ++ show i) ::: V top)
-                                                 | i <- [1..arity f]
-                                                 ]) ++ " <=> " ++
-                                    show ( Fun f [ if i == j then Fun (elt (n-1)) [] else Var (name ("X" ++ show i) ::: V top)
-                                                 | i <- [1..arity f]
-                                                 ])
-                                   )
+               bs <- sequence
+                 [ return ( [ "X" ++ show i | i <- [1..arity f], i /= j ]
+                          , (show f `app` [ if i == j then dom n
+                                                      else "X" ++ show i
+                                          | i <- [1..arity f]
+                                          ])
+                         ++ " <=> "
+                         ++ (show f `app` [ if i == j then dom (n-1)
+                                                      else "X" ++ show i
+                                          | i <- [1..arity f]
+                                          ])
+                          )
                  | (t,j) <- ts `zip` [1..]
                  , n <- [tdomain' t+1..k]
                  ]
+               return (as ++ bs)
          )
        | (f@(s ::: (ts :-> _)),loc) <- M.toList tabp
        , isSimpleName s
        , let ms = [ tdomain' t `min` k | t <- ts ]
        ] ++
-       [ (show p,
-            lift $
-              print $
-                (if b then Pos else Neg) $
-                  p `prd` [ Var (name ("X" ++ show i) ::: V top) | i <- [1..arity p] ]
+       [ (p,
+            return [( [ "X" ++ show i | i <- [1..arity p] ]
+                    , show p `app` [ "X" ++ show i | i <- [1..arity p] ]
+                   ++ " <=> "
+                   ++ (if b then "$true" else "$false")
+                    )]
          )
        | (p,b) <- predsPure
        ]
+     lift $ sequence_ $ intersperse (putStrLn "") $
+       [ if tstp flags then
+           do putStrLn ( "fof("
+                      ++ show f
+                      ++ ", fi_"
+                      ++ (if isPredSymbol f then "predicates" else "functors")
+                      ++ ","
+                       )
+              sequence_
+                [ putStrLn ( "  "
+                          ++ [c]
+                          ++ " "
+                          ++ (if null xs then ""
+                                         else "![" ++ concat (intersperse "," xs) ++ "] . ")
+                          ++ ent
+                           )
+                | (c,(xs,ent)) <- ('(' : repeat '&') `zip` tab
+                ]
+              putStrLn "  )"
+              putStrLn ")."
+         else
+           do sequence_
+                [ putStrLn ent
+                | (_,ent) <- tab
+                ]
+       | (f,tab) <- entries
+       ]
+     putStrLnTSTP ("SZS output end FiniteModel for " ++ thisFile flags)
      lift $ putOfficial "END MODEL"
  where
-  (x,_) `first` (y,_) = x `compare` y
+  putStrLnTSTP s
+    | tstp flags = lift $ putStrLn s
+    | otherwise  = return ()
+    
+  (x,_) `first` (y,_) = show x `compare` show y
 
   tdomain' t = case tdomain t of
                  Nothing -> maxBound - 1
                  Just k  -> k
+
+  f `app` [] = f
+  f `app` xs = f ++ "(" ++ concat (intersperse "," xs) ++ ")"
+
+  dom i | tstp flags = show (show i)
+        | otherwise  = '!' : show i
 
   count [] = [[]]
   count (m:ms) =

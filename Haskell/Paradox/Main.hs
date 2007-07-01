@@ -61,7 +61,7 @@ import System
 
 main :: IO ()
 main =
-  do putStrLn "Paradox, version 2.1, 2007-05-21."
+  do putStrLn "Paradox, version 2.2, 2007-07-02."
      --putStrLn "*** NOTE: THIS IS A NON-STANDARD, DELIBERATELY UNSOUND VERSION!"
      Main.main solveProblem
   
@@ -99,9 +99,9 @@ solveProblem csIn =
                 (annotate [1..] ns' (instantiate flags predefs fcs qcs))
      return $
        case r of
-         Satisfiable                              -> Satisfiable
-         Unknown | not isFinite || k <= maxDomain -> Unknown
-         _                                        -> Unsatisfiable
+         Satisfiable                             -> Satisfiable
+         GaveUp | not isFinite || k <= maxDomain -> GaveUp
+         _                                       -> Unsatisfiable
  where
   flags = ?flags
 

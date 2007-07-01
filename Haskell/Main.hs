@@ -59,12 +59,14 @@ main solveProblem =
               then do killThread pid1
                       putInfo ""
                       putWarning ("TIMEOUT (" ++ show n ++ " seconds)")
+                      let ?flags = ?flags{ thisFile = unwords (files ?flags) }
+                      putResult Timeout
               else do killThread pid2
 
        Nothing ->
          do main' solveProblem
 
-main' :: (?flags :: Flags) => ([Clause] -> IO Answer) -> IO ()
+main' :: (?flags :: Flags) => ((?flags :: Flags) => [Clause] -> IO Answer) -> IO ()
 main' solveProblem =
   do require (not (null (files ?flags))) $
        putWarning "No input files specified! Try --help."
@@ -75,19 +77,19 @@ main' solveProblem =
             --sequence_ [ print inp | inp <- ins ]
             let (theory,obligs) = clausify ins
                 n               = length obligs
-                file' | length (files ?flags) > 1 = file
-                      | otherwise                 = ""
+            let ?flags          = ?flags{ thisFile = file }
             
+            putOfficial ("SOLVING: " ++ file)
             case obligs of
               -- Satisfiable/Unsatisfiable
               [] ->
                 do ans <- solveProblem theory
-                   putResult ans file'
+                   putResult ans
               
               -- CounterSatisfiable/Theorem
               [oblig] ->
                 do ans <- solveProblem (theory ++ oblig)
-                   putResult (nega ans) file'
+                   putResult (nega ans)
               
               -- Unknown/Theorem
               obligs ->
@@ -100,10 +102,10 @@ main' solveProblem =
                             putOfficial ("PARTIAL (" ++ show i ++ "/" ++ show n ++ "): " ++ show ans)
                             case ans of
                               Unsatisfiable -> solveAll (i+1) obligs
-                              _             -> return Unknown
+                              _             -> return GaveUp
                    
                    ans <- solveAll 1 obligs
-                   putResult ans file'
+                   putResult ans
        | file <- files ?flags
        ]
         

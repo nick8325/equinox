@@ -24,6 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -}
 
 import System
+import Flags
 import Form( Answer )
 
 ---------------------------------------------------------------------------
@@ -35,9 +36,22 @@ putInfo s = putStrLn s
 putOfficial :: String -> IO ()
 putOfficial s = putStrLn ("+++ " ++ s)
 
-putResult :: Answer -> String -> IO ()
-putResult ans "" = putOfficial ("RESULT: " ++ show ans)
-putResult ans s  = putOfficial ("RESULT: " ++ show ans ++ " (" ++ s ++ ")")
+putResult :: (?flags :: Flags) => Answer -> IO ()
+putResult ans =
+  do putOfficial ( "RESULT: "
+                ++ show ans
+                ++ (case files ?flags of
+                     _:_:_ -> " (" ++ thisFile ?flags ++ ")"
+                     _     -> "")
+                 )
+     if tstp ?flags then
+       putInfo ( "SZS status "
+              ++ show ans
+              ++ " for "
+              ++ thisFile ?flags
+               )
+      else
+       return ()
 
 putWarning :: String -> IO ()
 putWarning s = putStrLn ("*** " ++ s)

@@ -61,10 +61,12 @@ data Flags
   , onlyClausify :: Bool
   , strength     :: Int
   , verbose      :: Int
+  , tstp         :: Bool
   
   -- primitive
-  , files :: [FilePath]
-  , start :: Integer
+  , thisFile     :: FilePath
+  , files        :: [FilePath]
+  , start        :: Integer
   }
  deriving (Eq, Show)
 
@@ -81,10 +83,12 @@ initFlags =
   , onlyClausify = False
   , strength     = 4
   , verbose      = 0
+  , tstp         = False
 
   -- primitive
-  , files = []
-  , start = error "starting time not properly initialized"
+  , thisFile     = ""
+  , files        = []
+  , start        = error "starting time not properly initialized"
   }
 
 -------------------------------------------------------------------------
@@ -151,6 +155,14 @@ options =
     , help    = [ "Verbosity level."
                 , "Example: --verbose 2"
                 , "Default: --verbose 0"
+                ]
+    }
+
+  , Option
+    { long    = "tstp"
+    , meaning = unit (\f -> f{ tstp = True })
+    , help    = [ "Generate output in TSTP format."
+                , "Default: (off)"
                 ]
     }
 

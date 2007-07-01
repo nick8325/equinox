@@ -117,6 +117,10 @@ isVarSymbol :: Symbol -> Bool
 isVarSymbol (_ ::: V _) = True
 isVarSymbol _           = False
 
+isPredSymbol :: Symbol -> Bool
+isPredSymbol (_ ::: (_ :-> t)) = t == bool
+isPredSymbol _                 = False
+
 ----------------------------------------------------------------------
 -- Term
 
@@ -527,7 +531,8 @@ data Answer
   | CounterSatisfiable
   | Theorem
   | Unsatisfiable
-  | Unknown
+  | Timeout
+  | GaveUp
  deriving ( Show, Eq, Ord )
 
 nega :: Answer -> Answer
@@ -535,7 +540,7 @@ nega Satisfiable        = CounterSatisfiable
 nega CounterSatisfiable = Satisfiable
 nega Theorem            = Unsatisfiable
 nega Unsatisfiable      = Theorem
-nega Unknown            = Unknown
+nega x                  = x
 
 ----------------------------------------------------------------------
 -- the end.

@@ -34,7 +34,7 @@ import Equinox.FolSat
 
 main :: IO ()
 main =
-  do putStrLn "Equinox, version 1.1, 2007-05-21."
+  do putStrLn "Equinox, version 1.2, 2007-07-02."
      Main.main solveProblem
   
 ---------------------------------------------------------------------------
@@ -42,9 +42,9 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem cs =
-  do sequence_ [ putStrLn (showClause c) | c <- cs ]
+  do -- sequence_ [ putStrLn (showClause c) | c <- cs ]
      b <- prove ?flags cs
-     return (if b then Unsatisfiable else Unknown)
+     return (if b then Unsatisfiable else GaveUp)
 
 ---------------------------------------------------------------------------
 -- the end.

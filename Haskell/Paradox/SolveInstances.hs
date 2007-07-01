@@ -200,10 +200,34 @@ printTheModel flags k ref predsPure =
      lift $ putStrLn ""
 
      (tabf,tabp) <- lift $ readIORef ref
-     let trans (f,mx) =
-           do x <- mx
-              return (f,x)
-     entries <- sequence $ map trans $ sortBy first $
+     let entry (f,mtab) =
+           do tab <- mtab
+              lift $
+                if tstp flags then
+                  do putStrLn ( "fof("
+                             ++ show f
+                             ++ ", fi_"
+                             ++ (if isPredSymbol f then "predicates" else "functors")
+                             ++ ","
+                              )
+                     sequence_
+                       [ putStrLn ( "  "
+                                 ++ [c]
+                                 ++ " "
+                                 ++ (if null xs then ""
+                                                else "![" ++ concat (intersperse "," xs) ++ "] . ")
+                                 ++ ent
+                                  )
+                       | (c,(xs,ent)) <- ('(' : repeat '&') `zip` tab
+                       ]
+                     putStrLn "  )"
+                     putStrLn ")."
+                else
+                  do sequence_
+                       [ putStrLn ent
+                       | (_,ent) <- tab
+                       ]
+     sequence_ $ intersperse (lift $ putStrLn "") $ map entry $ sortBy first $
        [ (f,
             do as <- sequence
                  [ do bs <- sequence [ do l <- getLit (Pos (loc :@ ([ ArgN i | i <- is ] ++ [ ArgN j ])))
@@ -280,33 +304,6 @@ printTheModel flags k ref predsPure =
                     )]
          )
        | (p,b) <- predsPure
-       ]
-     lift $ sequence_ $ intersperse (putStrLn "") $
-       [ if tstp flags then
-           do putStrLn ( "fof("
-                      ++ show f
-                      ++ ", fi_"
-                      ++ (if isPredSymbol f then "predicates" else "functors")
-                      ++ ","
-                       )
-              sequence_
-                [ putStrLn ( "  "
-                          ++ [c]
-                          ++ " "
-                          ++ (if null xs then ""
-                                         else "![" ++ concat (intersperse "," xs) ++ "] . ")
-                          ++ ent
-                           )
-                | (c,(xs,ent)) <- ('(' : repeat '&') `zip` tab
-                ]
-              putStrLn "  )"
-              putStrLn ")."
-         else
-           do sequence_
-                [ putStrLn ent
-                | (_,ent) <- tab
-                ]
-       | (f,tab) <- entries
        ]
      putStrLnTSTP ("SZS output end FiniteModel for " ++ thisFile flags)
      lift $ putOfficial "END MODEL"

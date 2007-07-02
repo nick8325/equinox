@@ -281,9 +281,11 @@ refine cons liberal unrestr cl = match False [] (sortW (defs cl ++ lits cl)) M.e
          [ match cheated [] ls assign
          | liberal
          ] ++
-         [ match True [] ls assign
+         [ match True [] ([ (x,t) | (x,t@(Fun _ _)) <- xs `zip` ts ] ++ ls) assign
          | not cheated
          , not liberal
+         , x `elem` (map fst (eqs cl) ++ map snd (eqs cl))
+         , let xs = [ (v % i) ::: V top | let v ::: _ = x, i <- [1..] ]
          ]
 
 matches :: Eq a => a -> [(a,a)] -> [a]

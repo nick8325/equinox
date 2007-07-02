@@ -99,7 +99,7 @@ options =
   [ Option
     { long    = "time"
     , meaning = (\n f -> f{ time = Just n }) <$> argNum
-    , help    = [ "Maximum running time in seconds. Is a soft limit."
+    , help    = [ "Maximum running time in seconds. Is a (very) soft limit."
                 , "Example: --time 300"
                 , "Default: (off)"
                 ]
@@ -129,7 +129,7 @@ options =
                 , "Default: (off)"
                 ]
     }
-
+{-
   , Option
     { long    = "dot"
     , meaning = (\d f -> f{ dot = Just d }) <$> argDots
@@ -138,7 +138,7 @@ options =
                 , "Default: (off)"
                 ]
     }
-
+-}
   , Option
     { long    = "strength"
     , meaning = (\n f -> f{ strength = n }) <$> argNum
@@ -161,7 +161,7 @@ options =
   , Option
     { long    = "tstp"
     , meaning = unit (\f -> f{ tstp = True })
-    , help    = [ "Generate output in TSTP format."
+    , help    = [ "Generate output in TSTP and SZS ontology format."
                 , "Default: (off)"
                 ]
     }

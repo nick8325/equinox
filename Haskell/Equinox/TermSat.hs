@@ -70,7 +70,7 @@ data State
 state0 :: State
 state0 = MkState
   { funtable = M.empty
-  , model    = error "model inspected before solve"
+  , model    = M.empty
   }
 
 newtype T a = MkT (State -> C.C (a, State))

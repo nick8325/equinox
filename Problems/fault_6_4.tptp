@@ -1,0 +1,272 @@
+cnf( bit_domain, axiom,
+  X = o | X = i
+).
+
+cnf( bit_inverse, axiom,
+  inv(X) != X
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(inv(X1), X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, inv(X2), X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, inv(X3), X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, inv(X4), X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, X4, inv(X5), X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, X4, X5, inv(X6), pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, X4, X5, X6, inv(pack1(X1, X2, X3, X4, X5, X6)), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), inv(pack2(X1, X2, X3, X4, X5, X6)), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), inv(pack3(X1, X2, X3, X4, X5, X6)), pack4(X1, X2, X3, X4, X5, X6)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), inv(pack4(X1, X2, X3, X4, X5, X6))) = X1
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(inv(X1), X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, inv(X2), X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, inv(X3), X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, inv(X4), X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, X4, inv(X5), X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, X4, X5, inv(X6), pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, X4, X5, X6, inv(pack1(X1, X2, X3, X4, X5, X6)), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), inv(pack2(X1, X2, X3, X4, X5, X6)), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), inv(pack3(X1, X2, X3, X4, X5, X6)), pack4(X1, X2, X3, X4, X5, X6)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), inv(pack4(X1, X2, X3, X4, X5, X6))) = X2
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(inv(X1), X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, inv(X2), X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, inv(X3), X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, inv(X4), X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, X4, inv(X5), X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, X4, X5, inv(X6), pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, X4, X5, X6, inv(pack1(X1, X2, X3, X4, X5, X6)), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), inv(pack2(X1, X2, X3, X4, X5, X6)), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), inv(pack3(X1, X2, X3, X4, X5, X6)), pack4(X1, X2, X3, X4, X5, X6)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), inv(pack4(X1, X2, X3, X4, X5, X6))) = X3
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(inv(X1), X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, inv(X2), X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, inv(X3), X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, inv(X4), X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, X4, inv(X5), X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, X4, X5, inv(X6), pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, X4, X5, X6, inv(pack1(X1, X2, X3, X4, X5, X6)), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), inv(pack2(X1, X2, X3, X4, X5, X6)), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), inv(pack3(X1, X2, X3, X4, X5, X6)), pack4(X1, X2, X3, X4, X5, X6)) = X4
+).
+
+cnf( unpack4, axiom, 
+  unpack4(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), inv(pack4(X1, X2, X3, X4, X5, X6))) = X4
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(inv(X1), X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, inv(X2), X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, inv(X3), X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, inv(X4), X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, X4, inv(X5), X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, X4, X5, inv(X6), pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, X4, X5, X6, inv(pack1(X1, X2, X3, X4, X5, X6)), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), inv(pack2(X1, X2, X3, X4, X5, X6)), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), inv(pack3(X1, X2, X3, X4, X5, X6)), pack4(X1, X2, X3, X4, X5, X6)) = X5
+).
+
+cnf( unpack5, axiom, 
+  unpack5(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), inv(pack4(X1, X2, X3, X4, X5, X6))) = X5
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(inv(X1), X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, inv(X2), X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, inv(X3), X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, inv(X4), X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, X4, inv(X5), X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, X4, X5, inv(X6), pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, X4, X5, X6, inv(pack1(X1, X2, X3, X4, X5, X6)), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), inv(pack2(X1, X2, X3, X4, X5, X6)), pack3(X1, X2, X3, X4, X5, X6), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), inv(pack3(X1, X2, X3, X4, X5, X6)), pack4(X1, X2, X3, X4, X5, X6)) = X6
+).
+
+cnf( unpack6, axiom, 
+  unpack6(X1, X2, X3, X4, X5, X6, pack1(X1, X2, X3, X4, X5, X6), pack2(X1, X2, X3, X4, X5, X6), pack3(X1, X2, X3, X4, X5, X6), inv(pack4(X1, X2, X3, X4, X5, X6))) = X6
+).
+

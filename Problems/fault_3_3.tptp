@@ -1,0 +1,92 @@
+cnf( bit_domain, axiom,
+  X = o | X = i
+).
+
+cnf( bit_inverse, axiom,
+  inv(X) != X
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(inv(X1), X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, inv(X2), X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, inv(X3), pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, inv(pack1(X1, X2, X3)), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, pack1(X1, X2, X3), inv(pack2(X1, X2, X3)), pack3(X1, X2, X3)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), inv(pack3(X1, X2, X3))) = X1
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(inv(X1), X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, inv(X2), X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, inv(X3), pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, inv(pack1(X1, X2, X3)), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, pack1(X1, X2, X3), inv(pack2(X1, X2, X3)), pack3(X1, X2, X3)) = X2
+).
+
+cnf( unpack2, axiom, 
+  unpack2(X1, X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), inv(pack3(X1, X2, X3))) = X2
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(inv(X1), X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, inv(X2), X3, pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, inv(X3), pack1(X1, X2, X3), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, inv(pack1(X1, X2, X3)), pack2(X1, X2, X3), pack3(X1, X2, X3)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, pack1(X1, X2, X3), inv(pack2(X1, X2, X3)), pack3(X1, X2, X3)) = X3
+).
+
+cnf( unpack3, axiom, 
+  unpack3(X1, X2, X3, pack1(X1, X2, X3), pack2(X1, X2, X3), inv(pack3(X1, X2, X3))) = X3
+).
+

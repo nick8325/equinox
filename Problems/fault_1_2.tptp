@@ -1,0 +1,24 @@
+cnf( bit_domain, axiom,
+  X = o | X = i
+).
+
+cnf( bit_inverse, axiom,
+  inv(X) != X
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, pack1(X1), pack2(X1)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(inv(X1), pack1(X1), pack2(X1)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, inv(pack1(X1)), pack2(X1)) = X1
+).
+
+cnf( unpack1, axiom, 
+  unpack1(X1, pack1(X1), inv(pack2(X1))) = X1
+).
+

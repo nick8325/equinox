@@ -1,0 +1,102 @@
+%----Kalman's axioms for set difference:
+cnf(set_difference_1,axiom,
+    ( difference(X,difference(Y,X)) = X )).
+
+cnf(set_difference_2,axiom,
+    ( difference(X,difference(X,Y)) = difference(Y,difference(Y,X)) )).
+
+%-- extra
+cnf(set_difference_2,axiom,
+    ( difference(a,difference(a,a)) = difference(a,difference(a,a)) )).
+
+cnf(set_difference_2,axiom,
+    ( difference(X,difference(X,Y)) != difference(Y,difference(Y,X))
+    | difference(X2,difference(X2,Y)) != difference(Y,difference(Y,X2))
+    | difference(X3,difference(X3,Y)) = difference(Y,difference(Y,X3))
+    | X3 != difference(X,X2)
+    )
+).
+
+%-- clause
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) = difference(difference(X,Z),difference(Y,Z)) )).
+
+%--- extra stuff
+cnf(set_difference_3,axiom,
+    ( difference(difference(a,a),a) = difference(difference(a,a),difference(a,a)) )).
+
+%-- X
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X2,Y),Z) != difference(difference(X2,Z),difference(Y,Z))
+    | difference(difference(X3,Y),Z) = difference(difference(X3,Z),difference(Y,Z))
+    | X3 != difference(X,X2)
+    )
+).
+
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X3,Y),Z) = difference(difference(X3,Z),difference(Y,Z))
+    | X3 != b
+    )
+).
+
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X3,Y),Z) = difference(difference(X3,Z),difference(Y,Z))
+    | X3 != c
+    )
+).
+
+%-- Y
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X,Y2),Z) != difference(difference(X,Z),difference(Y2,Z))
+    | difference(difference(X,Y3),Z) = difference(difference(X,Z),difference(Y3,Z))
+    | Y3 != difference(Y,Y2)
+    )
+).
+
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X,Y3),Z) = difference(difference(X,Z),difference(Y3,Z))
+    | Y3 != b
+    )
+).
+
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X,Y3),Z) = difference(difference(X,Z),difference(Y3,Z))
+    | Y3 != c
+    )
+).
+
+%-- Z
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X,Y),Z2) != difference(difference(X,Z2),difference(Y,Z2))
+    | difference(difference(X,Y),Z3) = difference(difference(X,Z3),difference(Y,Z3))
+    | Z3 != difference(Z,Z2)
+    )
+).
+
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X,Y),Z3) = difference(difference(X,Z3),difference(Y,Z3))
+    | Z3 != b
+    )
+).
+
+cnf(set_difference_3,axiom,
+    ( difference(difference(X,Y),Z) != difference(difference(X,Z),difference(Y,Z))
+    | difference(difference(X,Y),Z3) = difference(difference(X,Z3),difference(Y,Z3))
+    | Z3 != c
+    )
+).
+
+%----Denial of simplified third axiom:
+cnf(prove_set_difference_3_simplified,negated_conjecture,
+    (  difference(difference(a,c),b) != difference(difference(a,b),c) )).
+
+
+

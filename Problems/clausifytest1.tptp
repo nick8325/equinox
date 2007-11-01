@@ -23,7 +23,7 @@
 %)).
 
 fof(axiom, axiom, (
-  ![X] : ( ?[Y] : ( (?[Z] : p1(Y,Z)) & q1(X,Y) ) )
+  ![X] : ( ?[Y] : ( (?[Z] : 'p1(apa)'(Y,Z)) & q1(X,Y) ) )
 )).
 
 fof(axiom, axiom, (

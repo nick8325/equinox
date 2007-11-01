@@ -174,6 +174,12 @@ pname p =
     do c <- satisfy (\c -> p c && isIdfChar c)
        s <- munch isIdfChar
        return (c:s)
+   <|>
+    do if not (p '\'') then fail "name" else return ()
+       string "\'"
+       s <- munch (/= '\'')
+       string "\'"
+       return ("\'" ++ s ++ "\'")
 
 fname :: P Name
 fname =

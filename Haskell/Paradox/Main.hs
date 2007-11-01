@@ -61,7 +61,7 @@ import System
 
 main :: IO ()
 main =
-  do putStrLn "Paradox, version 2.2, 2007-07-02."
+  do putStrLn "Paradox, version 2.3, 2007-11-01."
      --putStrLn "*** NOTE: THIS IS A NON-STANDARD, DELIBERATELY UNSOUND VERSION!"
      Main.main solveProblem
   

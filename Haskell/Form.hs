@@ -52,7 +52,13 @@ data Equality
  deriving ( Eq, Ord, Show )
 
 instance Show Type where
-  showsPrec n (Type t _ _) = showsPrec n t
+  show (Type t s e) = show t ++ showSize s ++ showEq e
+   where
+    showEq Half = "?"
+    showEq Full = "!"
+    
+    showSize Nothing  = ""
+    showSize (Just n) = show n
 
 tdomain :: Type -> Maybe Int
 tdomain t =

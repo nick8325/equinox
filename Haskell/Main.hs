@@ -99,7 +99,7 @@ main' solveProblem =
                        solveAll i (oblig:obligs) =
                          do putSubHeader ("Part " ++ show i ++ "/" ++ show n)
                             ans <- solveProblem (theory ++ oblig)
-                            putOfficial ("PARTIAL (" ++ show i ++ "/" ++ show n ++ "): " ++ show ans)
+                            putOfficial ("PARTIAL (" ++ show i ++ "/" ++ show n ++ "): " ++ show (nega ans))
                             case ans of
                               Unsatisfiable -> solveAll (i+1) obligs
                               _             -> return GaveUp

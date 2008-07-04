@@ -9,14 +9,20 @@ GHC     = ghc
 
 #-- Main
 
-main: paradox.exe equinox.exe
+main: paradox.exe equinox.exe equiparadox.exe
 
 paradox: paradox.exe
 equinox: equinox.exe
+equiparadox: equiparadox.exe
 
 Sat.o: Sat.hs
 	$(GHC) -fglasgow-exts --make Sat.hs
 
+#-- EquiParadox
+
+equiparadox.exe: Sat.o *.hs Paradox/*.hs Equinox/*.hs EquiParadox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+	$(GHC) $(HFLAGS) -main-is EquiParadox.Main.main --make EquiParadox.Main -o equiparadox
+        
 #-- Paradox
 
 paradox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or

@@ -84,7 +84,7 @@ solveProblem csIn =
   syms                       = symbols cs
   
 -------------------------------------------------------------------------
--- instantiation functions
+-- instantiation
 
 instantiateDomains1 :: Con -> Clause -> T ()
 instantiateDomains1 d c =
@@ -150,44 +150,55 @@ loopDomainSizes flags tps (n,ds) cs =
        ++ ")"
      b <- solve flags [ leqk | (_,_,leqk:_) <- tps ]
      if b then
-       do return Satisfiable
+       do checkTotality flags tps (n,ds) cs
       else
        do cnf <- return [ neg leqk | (_,_,leqk:_) <- tps ] -- conflict
-          if null cnf
-            then return Unsatisfiable
-            else let tp@(t,k,leqs@(leqk:_)) =
-                       head (sortBy cmp [ tp | tp@(_,_,leqk:_) <- tps, neg leqk `elem` cnf ])
-                     
-                     (_,k1,_) `cmp` (_,k2,_) =
-                       k1 `compare` k2
-                  
-                  in do lift $ putStrLn $ 
-                          "instantiating... (" ++ show t ++ "++)"
-                        leqk' <- newLit
-                        addClause [neg leqk,leqk'] -- d<=k -> d<=k+1
-                        
-                        let tp' = 
-                              (t,k+1,leqk':leqs)
-                        
-                            tps' =
-                              [ if t2 == t
-                                  then tp'
-                                  else tp2
-                              | tp2@(t2,_,_) <- tps
-                              ]
-                              
-                            n' | k >= n    = k+1
-                               | otherwise = n
-                        
-                        ds' <- if n' > n
-                                 then do d' <- newCon (show n'); return (ds++[d'])
-                                 else do return ds
-                        
-                        -- clauses
-                        sequence_ [ instantiateDomains tps' (Just (t,k+1)) (n',ds') c | c <- cs ]
-                        -- function symbols
-                        
-                        loopDomainSizes flags tps' (n',ds') cs
+          if null cnf then
+            do return Unsatisfiable
+           else
+            let tp =
+                  head (sortBy cmp [ tp | tp@(_,_,leqk:_) <- tps, neg leqk `elem` cnf ])
+                
+                (_,k1,_) `cmp` (_,k2,_) =
+                  k1 `compare` k2
+             
+             in increaseDomain flags tp tps (n,ds) cs
+
+checkTotality :: Flags -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
+checkTotality =
+  do return Satisfiable
+
+increaseDomain :: Flags -> Type -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
+increaseDomain flags tp@(t,k,leqs@(leqk:_)) tps (n,ds) cs =
+  do cnf <- return [ neg leqk | (_,_,leqk:_) <- tps ] -- conflict
+     if null cnf then
+       do return Unsatisfiable
+      else
+       do lift $ putStrLn $ 
+            "instantiating... (" ++ show t ++ "++)"
+          
+          leqk' <- newLit
+          addClause [neg leqk,leqk'] -- d<=k -> d<=k+1
+
+          let tp' = 
+                (t,k+1,leqk':leqs)
+          
+              tps' =
+                [ if t2 == t
+                    then tp'
+                    else tp2
+                | tp2@(t2,_,_) <- tps
+                ]
+                
+              n' | k >= n    = k+1
+                 | otherwise = n
+          
+          ds' <- if n' > n
+                   then do d' <- newCon (show n'); return (ds++[d'])
+                   else do return ds
+                   
+          sequence_ [ instantiateDomains tps' (Just (t,k+1)) (n',ds') c | c <- cs ]
+          loopDomainSizes flags tps' (n',ds') cs
 
 ---------------------------------------------------------------------------
 -- the end.

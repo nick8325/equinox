@@ -73,9 +73,15 @@ main =
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem csIn = 
   run $
-    do d1 <- newCon "!1"
+    do lift $ putStrLn "Start!"
+       d1 <- newCon "!1"
+       lift $ putStrLn "Calculating types..."
+       lift $ putStrLn (show typs)
+       lift $ putStrLn "Instantiating for all domains {1}..."
        sequence_ [ instantiateDomains1 d1 c | c <- cs ]
+       lift $ putStrLn "Creating domain leq-literals..."
        leqs <- sequence [ newLit | t <- typs ]
+       lift $ putStrLn "Iterating over domain sizes..."
        loopDomainSizes flags syms [ (t,1,[leq]) | (t,leq) <- typs `zip` leqs ] (1,[d1]) cs
  where
   flags = ?flags

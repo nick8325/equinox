@@ -56,6 +56,7 @@ instance Show Type where
    where
     showEq Half = "?"
     showEq Full = "!"
+    showEq _    = ""
     
     showSize Nothing  = ""
     showSize (Just n) = show n

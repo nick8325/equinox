@@ -56,6 +56,9 @@ import System
   , ExitCode(..)
   )
 
+head' s [] = error ("head " ++ s)
+head' _ xs = head xs
+
 ---------------------------------------------------------------------------
 -- main
 
@@ -81,7 +84,8 @@ solveProblem csIn =
   mTypeResult                = types csSimp
   Right (typs,annotateTypes) = mTypeResult
   cs                         = map annotateTypes csSimp
-  syms                       = symbols cs
+  symsSet                    = symbols cs
+  syms                       = [ f | f <- S.toList symsSet, not (isVarSymbol f) ]
   
 -------------------------------------------------------------------------
 -- instantiation
@@ -103,12 +107,12 @@ instantiateDomains tps mtk (n,ds) c =
       d'            = last ds'
       
       insts oldVs []     = do return ()
-      insts oldVs (v:vs) = do instClauses (oldVs ++ [(v,[d'])] ++ [(v,init ds') | v <- newVs]) c
-                              insts ((v,ds'):oldVs) newVs
+      insts oldVs (v:vs) = do instClauses (oldVs ++ [(v,[d'])] ++ [(v,init ds') | v <- vs]) c
+                              insts ((v,ds'):oldVs) vs
  where      
   allVs         = S.toList (free c)
   pair x        = (x,take (typeSize x) ds)
-  typeSize x    = head [ k | (t,k,_) <- tps, typ (Var x) == t ]
+  typeSize x    = head' "112" [ k | (t,k,_) <- tps, typ (Var x) == t ]
   
 instClauses :: [(Symbol,[Con])] -> Clause -> T ()
 instClauses vars c = insts vars M.empty
@@ -142,42 +146,67 @@ instTerm mp (Fun f ts) =
 -------------------------------------------------------------------------
 -- looping through domain sizes
 
-loopDomainSizes :: Flags -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
-loopDomainSizes flags tps (n,ds) cs =
+loopDomainSizes :: Flags -> [Symbol] -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
+loopDomainSizes flags syms tps (n,ds) cs =
   do lift$ putStrLn $
           "solving... ("
        ++ unwords [ show t ++ "=" ++ show k | (t,k,_) <- tps ]
        ++ ")"
      b <- solve flags [ leqk | (_,_,leqk:_) <- tps ]
      if b then
-       do checkTotality flags tps (n,ds) cs
+       do checkTotality flags syms tps (n,ds) cs
       else
        do cnf <- return [ neg leqk | (_,_,leqk:_) <- tps ] -- conflict
           if null cnf then
             do return Unsatisfiable
            else
             let tp =
-                  head (sortBy cmp [ tp | tp@(_,_,leqk:_) <- tps, neg leqk `elem` cnf ])
+                  head' "161" (sortBy cmp [ tp | tp@(_,_,leqk:_) <- tps, neg leqk `elem` cnf ])
                 
                 (_,k1,_) `cmp` (_,k2,_) =
                   k1 `compare` k2
              
-             in increaseDomain flags tp tps (n,ds) cs
+             in increaseDomain flags syms tp tps (n,ds) cs
 
-checkTotality :: Flags -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
-checkTotality =
-  do return Satisfiable
+checkTotality :: Flags -> [Symbol] -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
+checkTotality flags syms tps (n,ds) cs =
+  do bs <- sequence [ checkTotalitySym f tps (n,ds) | f <- syms ]
+     if and bs then
+       do return Satisfiable
+      else
+       do loopDomainSizes flags syms tps (n,ds) cs
 
-increaseDomain :: Flags -> Type -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
-increaseDomain flags tp@(t,k,leqs@(leqk:_)) tps (n,ds) cs =
+checkTotalitySym :: Symbol -> [(Type,Int,[Lit])] -> (Int,[Con]) -> T Bool
+checkTotalitySym (f@(_ ::: (_ :-> t))) tps (n,ds) | t == bool =
+  do return True
+  
+checkTotalitySym (f@(_ ::: (_ :-> t))) tps (n,ds) =
+  do leqs' <- sequence [ getModelValue leq | leq <- leqs ]
+     let (k,leq) = head' "179" [ (k,leq) | (k,(leq,True)) <- [1..] `zip` reverse (leqs `zip` leqs') ]
+     ds' <- sequence [ getModelRep d | d <- take k ds ]
+     tab <- getModelTable f
+     bs  <- sequence [ do y <- f `app` xs
+                          addClause (neg leq : [ y Equinox.TermSat.:=: d | d <- take k ds ])
+                          {-
+                          lift $ putStrLn $
+                               show t ++ "<=" ++ show k ++ " ==> "
+                            ++ show [ (f,xs,d) | d <- take k ds ]
+                          -}
+                          return False
+                     | (xs,y) <- tab
+                     , y `notElem` ds'
+                     ]
+     return (and bs)
+ where
+  leqs = head' "193" [ leqs | (t',k,leqs) <- tps, t == t' ]
+
+increaseDomain :: Flags -> [Symbol] -> (Type,Int,[Lit]) -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
+increaseDomain flags syms tp@(t,k,leqs@(leqk:_)) tps (n,ds) cs =
   do cnf <- return [ neg leqk | (_,_,leqk:_) <- tps ] -- conflict
      if null cnf then
        do return Unsatisfiable
       else
-       do lift $ putStrLn $ 
-            "instantiating... (" ++ show t ++ "++)"
-          
-          leqk' <- newLit
+       do leqk' <- newLit
           addClause [neg leqk,leqk'] -- d<=k -> d<=k+1
 
           let tp' = 
@@ -197,8 +226,10 @@ increaseDomain flags tp@(t,k,leqs@(leqk:_)) tps (n,ds) cs =
                    then do d' <- newCon (show n'); return (ds++[d'])
                    else do return ds
                    
+          lift $ putStrLn $ 
+            "instantiating... (" ++ show t ++ "++)"         
           sequence_ [ instantiateDomains tps' (Just (t,k+1)) (n',ds') c | c <- cs ]
-          loopDomainSizes flags tps' (n',ds') cs
+          loopDomainSizes flags syms tps' (n',ds') cs
 
 ---------------------------------------------------------------------------
 -- the end.

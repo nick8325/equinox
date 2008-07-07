@@ -35,7 +35,7 @@ import qualified Data.Map as M
 import Data.Maybe( fromJust )
 
 import Paradox.AnalysisTypes
-import Paradox.Flatten( simplify )
+import Paradox.Flatten( simplify, splitAll )
 
 import Equinox.TermSat
 
@@ -77,16 +77,21 @@ solveProblem csIn =
        d1 <- newCon "!1"
        lift $ putStrLn "Calculating types..."
        lift $ putStrLn (show typs)
+       lift $ putStrLn "Creating domain leq-literals..."
+       leqs <- sequence
+                 [ case tdomain t of
+                     Just 1 -> return (Bool True)
+                     _      -> newLit
+                 | t <- typs
+                 ]
        lift $ putStrLn "Instantiating for all domains {1}..."
        sequence_ [ instantiateDomains1 d1 c | c <- cs ]
-       lift $ putStrLn "Creating domain leq-literals..."
-       leqs <- sequence [ newLit | t <- typs ]
        lift $ putStrLn "Iterating over domain sizes..."
        loopDomainSizes flags syms [ (t,1,[leq]) | (t,leq) <- typs `zip` leqs ] (1,[d1]) cs
  where
   flags = ?flags
 
-  csSimp                     = concatMap Paradox.Flatten.simplify csIn
+  csSimp                     = concatMap Paradox.Flatten.simplify (splitAll csIn)
   mTypeResult                = types csSimp
   Right (typs,annotateTypes) = mTypeResult
   cs                         = map annotateTypes csSimp
@@ -162,7 +167,7 @@ loopDomainSizes flags syms tps (n,ds) cs =
      if b then
        do checkTotality flags syms tps (n,ds) cs
       else
-       do cnf <- return [ neg leqk | (_,_,leqk:_) <- tps ] -- conflict
+       do cnf <- conflict
           if null cnf then
             do return Unsatisfiable
            else
@@ -208,11 +213,13 @@ checkTotalitySym (f@(_ ::: (_ :-> t))) tps (n,ds) =
 
 increaseDomain :: Flags -> [Symbol] -> (Type,Int,[Lit]) -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
 increaseDomain flags syms tp@(t,k,leqs@(leqk:_)) tps (n,ds) cs =
-  do cnf <- return [ neg leqk | (_,_,leqk:_) <- tps ] -- conflict
+  do cnf <- conflict
      if null cnf then
        do return Unsatisfiable
       else
-       do leqk' <- newLit
+       do leqk' <- case tdomain t of
+                     Just k' | k' <= k+1 -> return (Bool True)
+                     _                   -> newLit
           addClause [neg leqk,leqk'] -- d<=k -> d<=k+1
 
           let tp' = 
@@ -234,7 +241,10 @@ increaseDomain flags syms tp@(t,k,leqs@(leqk:_)) tps (n,ds) cs =
                    
           lift $ putStrLn $ 
             "instantiating... (" ++ show t ++ "++)"         
-          sequence_ [ instantiateDomains tps' (Just (t,k+1)) (n',ds') c | c <- cs ]
+          sequence_ [ do lift $ print c
+                         instantiateDomains tps' (Just (t,k+1)) (n',ds') c
+                    | c <- cs
+                    ]
           loopDomainSizes flags syms tps' (n',ds') cs
 
 ---------------------------------------------------------------------------

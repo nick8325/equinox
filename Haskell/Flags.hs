@@ -46,6 +46,8 @@ import Char
 
 import CPUTime
 
+import Control.Monad.Instances()
+
 -------------------------------------------------------------------------
 -- flags
 
@@ -241,9 +243,11 @@ unPico' = let c = 10^11 in (`div` c)
 
 data Arg a = MkArg [String] ([String] -> Either [String] (a, [String]))
 
+{- -- already defined in GHC 6.8
 instance Functor (Either a) where
   fmap f (Left x)  = Left x
   fmap f (Right y) = Right (f y)
+-}
 
 unit :: a -> Arg a
 unit x = MkArg [] (\s -> Right (x,s))

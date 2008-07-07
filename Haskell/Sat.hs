@@ -12,6 +12,7 @@ module Sat
   , neg           -- :: Lit -> Lit
   , getValue      -- :: Lit -> S (Maybe Bool)
   , getModelValue -- :: Lit -> S Bool -- use only after model has been found!
+  , conflict      -- :: S [Lit]       -- use only after solve has failed to find a model!
   , addClause     -- :: [Lit] -> S Bool
   , solve         -- :: [Lit] -> S Bool
   , simplify      -- :: Bool -> Bool -> S Bool
@@ -20,6 +21,13 @@ module Sat
   , newLoc        -- :: Int -> S Loc
   , getLit        -- :: Signed Atm -> S Lit
   , addClauses    -- :: [Int] -> [Signed Atm] -> S ()
+  
+  , nClauses      -- :: S Int
+  , nConflicts    -- :: S Int
+  , nVars         -- :: S Int
+  
+  , mkTrue
+  , mkFalse
   
   -- for debugging
   --, printStderr   -- :: String -> IO ()
@@ -162,7 +170,8 @@ withSolverPrim log f =
        return r
 
 run :: S a -> IO a
-run m = withSolver (lower (simplify False True >> m)) -- no simplification
+--run m = withSolver (lower (simplify False True >> m)) -- no simplification
+run m = withSolver (lower (simplify True True >> m)) -- with simplification
 --run m = withSolver (lower m)
 --run m = withSolverLog "minisat-log" (lower m)
 
@@ -225,6 +234,7 @@ solve_ b ls   = fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . flip s_solve 
 freezeLit l   = MiniSatM (\s -> s_freezelit s l)
 unfreezeLit l = MiniSatM (\s -> s_unfreezelit s l)
 getModelValue l  = fmap fromCBool $ MiniSatM (flip s_modelvalue l)
+conflict         = MiniSatM (\s -> s_contr s >>= peekArray0 (Lit 0))
 getValue      l  = fmap fromLBool $ MiniSatM (flip s_value l)
 reason   = MiniSatM (\s -> s_contr s >>= peekArray0 (Lit 0))
 contradiction = addClause [] >> return ()

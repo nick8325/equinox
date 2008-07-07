@@ -14,6 +14,7 @@ module Equinox.TermSat
   , getRep        -- :: Con -> T Con
   , getModelValue -- :: Lit -> T Bool -- use only after model has been found!
   , getModelRep   -- :: Con -> T Con  -- use only after model has been found!
+  , conflict      -- :: T [Lit]
   , getModelTable -- :: Symbol -> T [([Con],Con)]
   , addClause     -- :: [Lit] -> T ()
   , solve         -- :: Flags -> [Lit] -> T Bool
@@ -118,6 +119,9 @@ getValue x = liftC (C.getValue x)
 
 getModelValue :: Lit -> T Bool
 getModelValue x = liftC (C.getModelValue x)
+
+conflict :: T [Lit]
+conflict = liftC C.conflict
 
 getRep :: Con -> T Con
 getRep a = liftC (C.getRep a)

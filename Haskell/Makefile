@@ -33,6 +33,11 @@ paradox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base
 equinox.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HFLAGS) -main-is Equinox.Main.main --make Equinox.Main -o equinox
         
+#-- Roberto
+
+roberto.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+	$(GHC) $(HFLAGS) --make Roberto -o roberto
+        
 #-- Cleaning up
 
 clean:

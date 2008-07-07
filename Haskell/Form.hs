@@ -54,12 +54,12 @@ data Equality
 instance Show Type where
   show (Type t s e) = show t ++ showSize s ++ showEq e
    where
-    showEq Half = "?"
-    showEq Full = "!"
+    showEq Half = "_eq"
+    showEq Full = "_heq"
     showEq _    = ""
     
     showSize Nothing  = ""
-    showSize (Just n) = show n
+    showSize (Just n) = "_" ++ show n
 
 tdomain :: Type -> Maybe Int
 tdomain t =

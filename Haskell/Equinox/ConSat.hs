@@ -16,6 +16,7 @@ module Equinox.ConSat
   , getRep        -- :: Con -> C Con
   , getModelValue -- :: Lit -> C Bool -- use only after model has been found!
   , getModelRep   -- :: Con -> C Con  -- use only after model has been found!
+  , conflict      -- :: C [Lit]
   , addClause     -- :: [Lit] -> C ()
   , solve         -- :: Flags -> [Lit] -> C Bool
   , simplify      -- :: C ()
@@ -149,6 +150,7 @@ data State
   , compares :: Map (Con,Con) Sat.Lit
   , reps     :: Map Con Con
   , model    :: Con -> Con
+  , contr    :: [Lit]
   }
 
 state0 :: State
@@ -156,7 +158,8 @@ state0 = MkState
   { counter  = 0
   , compares = M.empty
   , reps     = M.empty
-  , model    = error "model inspected before solve"
+  , model    = error "model inspected too early"
+  , contr    = error "conflict clause inspected too early"
   }
 
 newtype C a = MkC (State -> Sat.S (a, State))
@@ -319,8 +322,18 @@ solve :: Flags -> [Lit] -> C Bool
 solve flags xs =
   do xs' <- sequence [ norm x | x <- xs ]
      if Bool False `elem` xs'
-       then return False
-       else sat [ x | Lit x <- xs' ]
+       then do s <- getState
+               setState s{ contr = take 1 [ neg x | (x,Bool False) <- xs `zip` xs' ] }
+               return False
+       else do let mp = [ (x,l) | (x,Lit l) <- xs `zip` xs' ]
+               b <- sat (map snd mp)
+               if b then
+                 do return True
+                else
+                 do s <- getState
+                    ls <- liftS Sat.conflict
+                    setState s{ contr = [ neg x | (x,l) <- mp, Sat.neg l `elem` ls ] }
+                    return False
  where
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
@@ -491,6 +504,11 @@ solve flags xs =
       | otherwise = case M.lookup y backs of
                       Just z  -> path backs ((z,y):p) z
                       Nothing -> error "bfs: no backwards path!"
-                      
+
+conflict :: C [Lit]
+conflict =
+  do s <- getState
+     return (contr s)
+
 simplify :: Bool -> Bool -> C Bool
 simplify a b = liftS (Sat.simplify a b)

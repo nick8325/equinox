@@ -172,7 +172,7 @@ solveInstances flags predsPure minSize css =
               
               --simplify True False
               
-              lift $ putStrLn ("solving...")
+              --lift $ putStrLn ("solving...")
               r <- if minSize > k then return False else solve [ass]
               if r then
                 do if printModel flags then

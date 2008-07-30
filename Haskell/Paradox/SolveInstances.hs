@@ -103,6 +103,8 @@ solveInstances flags predsPure minSize css =
                 ]
               -}
               addClauses mn args ls'
+              --n <- nClauses
+              --lift $ putStrLn (show n ++ " SAT clauses")
           where
            ls = c
            vs = S.toList (free c)
@@ -198,7 +200,7 @@ printTheModel flags k ref predsPure =
      putStrLnTSTP ("SZS output start FiniteModel for " ++ thisFile flags)
      lift $ putStrLn ("% domain size is " ++ show k)
      putStrLnTSTP "fof(domain, fi_domain,"
-     putStrLnTSTP ("  (![X] . (" ++ concat (intersperse " | " [ "X = " ++ dom i | i <- [1..k] ]) ++ "))")
+     putStrLnTSTP ("  (![X] : (" ++ concat (intersperse " | " [ "X = " ++ dom i | i <- [1..k] ]) ++ "))")
      putStrLnTSTP  ")."
 
      lift $ putStrLn ""

@@ -221,44 +221,51 @@ refines flags getCons mode cs =
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
 
 refine :: [Con] -> Mode -> C -> T Bool
-refine cons mode cl = match [] (defs cl) M.empty
+refine cons mode cl = match [] (defs cl) S.empty M.empty
  where
+  -- variable x must have a particular value c, but must also be undefined
+  match ((c,Var x):ass) defs undefs sub | x `S.member` undefs =
+    do return False
+
   -- variable x must have a particular value c
-  match ((c,Var x):ass) defs sub =
+  match ((c,Var x):ass) defs undefs sub =
     case M.lookup x sub of
       Nothing ->
         if and [ c /= c' | Just c' <- [ M.lookup y sub | y <- matches x (eqs cl) ] ]
-          then match ass defs (M.insert x c sub)
+          then match ass defs undefs (M.insert x c sub)
           else return False
       
       Just c' | c /= c' ->
         do return False
       
       _ ->
-        do match ass defs sub
+        do match ass defs undefs sub
 
   -- term t must have a particular value c
-  match ((c,Fun f ts):ass) defs sub =
+  match ((c,Fun f ts):ass) defs undefs sub =
     do tab <- getModelTable f
        tryAll
-         [ match (sortW (xs `zip` ts) `mergeW` ass) defs sub
+         [ match (sortW (xs `zip` ts) `mergeW` ass) defs undefs sub
          | (xs,y) <- tab
          , y == c
          ]
 
   -- process one definition
-  match [] ((x,Fun f ts):defs) sub =
+  match [] ((x,Fun f ts):defs) undefs sub =
     do tab <- getModelTable f
        tryAll $
-         [ match (sortW ((c,Var x):(as `zip` ts))) defs sub
+         [ match (sortW ((c,Var x):(as `zip` ts))) defs undefs sub
          | (as,c) <- tab
          ] ++
-         [ match [] defs sub
+         [ match [] defs (S.insert x undefs) sub
          | allowUndefinedTerms mode
+         , not (isGround ts)
+         , M.lookup x sub == Nothing
+         , not (x `S.member` quantVars cl)
          ]
   
   -- everything is processed; however some variables are still not defined
-  match [] [] sub
+  match [] [] undefs sub
     | not (null [ x
                 | x <- S.toList (quantVars cl)
                 , Nothing <- [M.lookup x sub]
@@ -266,14 +273,16 @@ refine cons mode cl = match [] (defs cl) M.empty
     do return False
 
   -- everything is processed; instantiate clause
-  match [] [] sub =
+  match [] [] undefs sub =
     instFree (S.toList (freeVars cl)) sub 
    where
-    instFree []     sub = instantiate sub cl
-    instFree (x:xs) sub = tryAll [ instFree xs (M.insert x c sub)
-                                 | c <- cons
-                                 , and [ c /= c' | Just c' <- [ M.lookup y sub | y <- matches x (eqs cl) ] ]
-                                 ]
+    instFree [] sub =
+      do instantiate sub cl
+    instFree (x:xs) sub =
+      do tryAll [ instFree xs (M.insert x c sub)
+                | c <- cons
+                , and [ c /= c' | Just c' <- [ M.lookup y sub | y <- matches x (eqs cl) ] ]
+                ]
 
 matches :: Eq a => a -> [(a,a)] -> [a]
 matches x xys = [ y | (x',y) <- xys, x == x' ]
@@ -298,7 +307,9 @@ sortW xs  = sortW (take n xs) `mergeW` sortW (drop n xs)
   n = length xs `div` 2
 
 instantiate :: Map Symbol Con -> C -> T Bool
-instantiate sub cl = inst sub (defs cl)
+instantiate sub cl =
+  do lift $ print (sub, defs cl, eqs cl)
+     inst sub (defs cl)
  where
   inst sub [] =
     do ls1 <- sequence [ do Just a <- term sub (Var x)
@@ -311,8 +322,12 @@ instantiate sub cl = inst sub (defs cl)
                             return (a T.:=: b)
                        | (x,y) <- eqs cl
                        ]
-       addClause (ls1 ++ ls2)
-       return True
+       --lift $ print (ls1++ls2)
+       mb <- evalClause (ls1++ls2)
+       case mb of
+         Just True -> do return False
+         Nothing   -> do addClause (ls1 ++ ls2)
+                         return True
   
   inst sub ((x,t):defs)
     | x `S.member` quantVars cl =
@@ -330,3 +345,13 @@ term sub (Fun f ts) =
      if any isNothing as
        then return Nothing
        else Just `fmap` (f `app` [ a | Just a <- as ])
+
+evalClause :: [T.Lit] -> T (Maybe Bool)
+evalClause ls =
+  do mbs <- sequence [ evalLit l | l <- ls ]
+     return (if Nothing `elem` mbs then Nothing
+                                   else or [ b | Just b <- mbs ])
+
+evalLit :: T.Lit -> T (Maybe Bool)
+evalLit a =
+  do 

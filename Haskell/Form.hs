@@ -280,6 +280,10 @@ Or as \/ b     = Or (b `S.insert` as)
 a     \/ Or bs = Or (a `S.insert` bs)
 a     \/ b     = Or (S.fromList [a,b])
 
+forAll_, exists_ :: Symbol -> Form -> Form
+forAll_ v a = ForAll (Bind v a)
+exists_ v a = Exists (Bind v a)
+
 forAll, exists :: Symbol -> Form -> Form
 --forAll x a = ForAll (Bind x a)
 --exists x a = Exists (Bind x a)

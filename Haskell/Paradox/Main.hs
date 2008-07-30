@@ -72,22 +72,22 @@ solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
 solveProblem csIn =    
   do {-
      putStrLn "==> Input clauses"
-     sequence_ [ putStrLn (showClause c) | c <- csIn ]
-     --print (length csIn)
+     --sequence_ [ putStrLn (showClause c) | c <- csIn ]
+     print (length csIn)
      putStrLn "==> Simplified clauses"
-     sequence_ [ putStrLn (showClause c) | c <- csSimp ]
-     --print (length csSimp)
+     --sequence_ [ putStrLn (showClause c) | c <- csSimp ]
+     print (length csSimp)
      putStrLn "==> Purified clauses"
-     sequence_ [ putStrLn (showClause c) | c <- csPure ]
+     --sequence_ [ putStrLn (showClause c) | c <- csPure ]
      sequence_ [ putStrLn ("pure: " ++ show p ++ " " ++ show b) | (p,b) <- predsPure ]
-     --print (length csPure)
+     print (length csPure)
      putStrLn "==> Types"
      sequence_ [ putStrLn (show t ++ maybe "" (\n -> " <= " ++ show n) (tsize t) ++ " -- " ++ show (tequal t)) | t <- typs ]
      sequence_ [ putStrLn (show f ++ " : " ++ show (typing f)) | f <- S.toList (symbols cs), not (isVarSymbol f) ]
      --print (length typs)
      putStrLn "==> Flattened clauses"
      sequence_ [ putStrLn (show c) | c <- predefs ]
-     sequence_ [ putStrLn ("[" ++ show (S.size (free c)) ++ "] " ++ showClause c) | c <- fcs ]
+     --sequence_ [ putStrLn ("[" ++ show (S.size (free c)) ++ "] " ++ showClause c) | c <- fcs ]
      sequence_ [ putStrLn (show c) | c <- qcs ]
      print (length fcs + length qcs)
      putStrLn "==> Solving..."

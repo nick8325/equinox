@@ -74,6 +74,8 @@ main' solveProblem =
      sequence_
        [ do putOfficial ("PROBLEM: " ++ file)
             ins <- readProblemWithRoots ("" : map (++"/") (roots ?flags)) file
+            --putStrLn "--> inputs"
+            --print (length ins, ins == ins)
             --sequence_ [ print inp | inp <- ins ]
             let (theory,obligs) = clausify ins
                 n               = length obligs

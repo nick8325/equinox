@@ -63,6 +63,7 @@ data Flags
   , onlyClausify :: Bool
   , strength     :: Int
   , verbose      :: Int
+  , progress     :: Bool
   , tstp         :: Bool
   
   -- primitive
@@ -85,6 +86,7 @@ initFlags =
   , onlyClausify = False
   , strength     = 4
   , verbose      = 0
+  , progress     = True
   , tstp         = False
 
   -- primitive
@@ -157,6 +159,14 @@ options =
     , help    = [ "Verbosity level."
                 , "Example: --verbose 2"
                 , "Default: --verbose 0"
+                ]
+    }
+
+  , Option
+    { long    = "no-progress"
+    , meaning = unit (\f -> f{ progress = False })
+    , help    = [ "Do not show progress during solving."
+                , "Default: (off)"
                 ]
     }
 

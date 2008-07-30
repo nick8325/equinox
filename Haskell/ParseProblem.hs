@@ -92,18 +92,20 @@ readProblemWithRoots roots name =
          do putStrLn "COULD NOT OPEN"
             putFailure "INPUT FILE ERROR"
 
-       Just s ->
-         case parseP s of
-           Left err ->
-             do putStrLn "PARSE ERROR:"
-                sequence [ putWarning s | s <- err ]
-                exitWith (ExitFailure 1)
-
-           Right (includes,clauses) ->
-             do putStrLn "OK"
-                hFlush stdout
-                sets <- sequence [ readProblemWithRoots roots incl | incl <- includes ]
-                return (concat sets ++ clauses)
+       Just (name',s) ->
+         do putStr (if name' /= name then "('" ++ name' ++ "') " else "")
+            hFlush stdout
+            case parseP s of
+              Left err ->
+                do putStrLn "PARSE ERROR:"
+                   sequence [ putWarning s | s <- err ]
+                   exitWith (ExitFailure 1)
+   
+              Right (includes,clauses) ->
+                do putStrLn "OK"
+                   hFlush stdout
+                   sets <- sequence [ readProblemWithRoots roots incl | incl <- includes ]
+                   return (concat sets ++ clauses)
  where
   name_p | '.' `elem` name = name
          | otherwise       = name ++ ".p"
@@ -112,10 +114,12 @@ readProblemWithRoots roots name =
     do return Nothing
   
   findFile (name:names) =
-    do ees <- IO.try (readFile name)
+    do -- on Cygwin, the variable TPTP expects Windows paths!
+       -- putStrLn ("(trying '" ++ name ++ "'...)")
+       ees <- IO.try (readFile name)
        case ees of
          Left _  -> findFile names
-         Right s -> return (Just s)
+         Right s -> return (Just (name,s))
 
 readProblem :: FilePath -> IO [Input Form]
 readProblem name = readProblemWithRoots [""] name
@@ -320,7 +324,7 @@ claus :: P Form
 claus =
   do ls <- lit `sepBy` token "|"
      let c = orl ls
-     return (foldr forAll c (S.toList (free c)))
+     return (foldr forAll_ c (S.toList (free c)))
  <|>
   do parens claus
  where

@@ -35,8 +35,7 @@ import qualified Data.Set as S
 import Data.Map( Map )
 import qualified Data.Map as M
 import List( maximumBy, minimumBy, partition, nub )
-import Control.Monad.State
-import Control.Monad.Reader
+import Control.Monad.State.Strict
 import Flags
 
 ----------------------------------------------------------------------
@@ -57,7 +56,7 @@ clausify inps = run $ clausifyInputs nil nil inps
 
   clausifyInputs theory obligs (inp:inps) =
     do clausifyObligs theory obligs (split' (what inp)) inps
-  
+
   clausifyObligs theory obligs [] inps =
     do clausifyInputs theory obligs inps
   
@@ -191,22 +190,24 @@ type Weight = (Value, Value, Value) -- (def, pos, neg)
 type Try    = (Weight, M (Seq Clause, Seq Clause, Seq Clause))
 type Result = (Set Symbol, [Try])
 
+isClause :: Form -> Bool
+isClause (ForAll (Bind _ p)) = isClause p
+isClause (Or ps)             = all isClause (S.toList ps)
+isClause (Atom _)            = True
+isClause (Not (Atom _))      = True
+isClause _                   = False
+
+toClause :: Form -> Clause
+toClause (ForAll (Bind _ p)) = toClause p
+toClause (Or ps)             = concatMap toClause (S.toList ps)
+toClause (Atom a)            = [Form.Pos a]
+toClause (Not (Atom a))      = [Form.Neg a]
+
 clausForm :: Form -> M [Clause]
 clausForm a | isClause a =
   do return [toClause a]
- where
-  isClause (ForAll (Bind _ p)) = isClause p
-  isClause (Or ps)             = all isClause (S.toList ps)
-  isClause (Atom _)            = True
-  isClause (Not (Atom _))      = True
-  isClause _                   = False
 
-  toClause (ForAll (Bind _ p)) = toClause p
-  toClause (Or ps)             = concatMap toClause (S.toList ps)
-  toClause (Atom a)            = [Form.Pos a]
-  toClause (Not (Atom a))      = [Form.Neg a]
-
-clausForm a =
+clausForm a = 
   do (defs, poss, _) <- m
      return (toList (defs +++ poss))
  where
@@ -441,12 +442,20 @@ nil = fromList []
 (+++) :: Seq a -> Seq a -> Seq a
 p +++ q = p `Cat` q
 
+{-
 toList :: Seq a -> [a]
 toList s = list [s]
  where
   list []                 = []
   list (List xs     : qs) = xs ++ list qs
   list ((p `Cat` q) : qs) = list (p:q:qs)
+-}
+
+toList :: Seq a -> [a]
+toList s = list s []
+ where
+  list (List xs)   ys = xs ++ ys
+  list (p `Cat` q) ys = list p (list q ys)
 
 ----------------------------------------------------------------------
 -- the end.

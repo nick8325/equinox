@@ -148,7 +148,10 @@ solveInstances flags predsPure minSize css =
            do return (GaveUp,minSize)
 
          domains minSize ((k,check,assump,clauses):rest) =
-           do lift $ putStrLn ("domain size " ++ show k)
+           do if progress flags then
+                lift $ putStrLn ("domain size " ++ show k)
+               else
+                return ()
               --lift $ sequence_ [ putStrLn s | c <- clauses, s <- showClauseSet c ]
               let clauses' = flat clauses
               
@@ -169,6 +172,7 @@ solveInstances flags predsPure minSize css =
               
               --simplify True False
               
+              --lift $ putStrLn ("solving...")
               r <- if minSize > k then return False else solve [ass]
               if r then
                 do if printModel flags then
@@ -194,7 +198,7 @@ printTheModel flags k ref predsPure =
      putStrLnTSTP ("SZS output start FiniteModel for " ++ thisFile flags)
      lift $ putStrLn ("% domain size is " ++ show k)
      putStrLnTSTP "fof(domain, fi_domain,"
-     putStrLnTSTP ("  (![X] . (" ++ concat (intersperse " | " [ "X = " ++ dom i | i <- [1..k] ]) ++ "))")
+     putStrLnTSTP ("  (![X] : (" ++ concat (intersperse " | " [ "X = " ++ dom i | i <- [1..k] ]) ++ "))")
      putStrLnTSTP  ")."
 
      lift $ putStrLn ""

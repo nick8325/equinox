@@ -9,7 +9,7 @@ GHC     = ghc
 
 #-- Main
 
-main: paradox.exe equinox.exe equiparadox.exe
+main: paradox.exe equinox.exe
 
 paradox: paradox.exe
 equinox: equinox.exe

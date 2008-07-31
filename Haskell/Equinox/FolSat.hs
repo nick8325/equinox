@@ -24,7 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -}
 
 import Form
-import Name( prim, tr, (%) )
+import Name( prim, tr )
 import List hiding ( union, insert, intersect, delete )
 import Maybe
 import Equinox.Fair
@@ -39,64 +39,35 @@ import IO
 import Flags
 import Control.Monad
 
-data C = C
-  { quantVars :: Set Symbol
-  , freeVars  :: Set Symbol
-  , defs      :: [(Symbol,Term)]
-  , eqs       :: [(Symbol,Symbol)]
-  }
- deriving ( Show, Eq )
-
-isGroundC :: C -> Bool
-isGroundC cl = S.null (quantVars cl) && S.null (freeVars cl)
-
 prove :: Flags -> [Clause] -> IO Bool
 prove flags cs =
   run $
-    do let (ground,clauses) =
-             partition isGroundC
-               [ cl | c <- cs, Just cl <- [convert c] ]
+    do true <- newCon "$true"
 
        sequence_
-         [ instantiate M.empty c
-         | c <- ground
+         [ do put 1 "P: "
+              addClauseSub true M.empty c
+         | c <- groundCs
          ]
 
        sequence_
-         [ term M.empty t
-         | cl <- clauses
-         , (_,t) <- defs cl
+         [ addGroundAtom (the l)
+         | c <- nonGroundCs
+         , l <- c
          ]
 
-       sequence_
-         [ star `app` []
-         | noConstants
-         ]
+       if noConstants
+         then star `app` []
+         else return true
 
-       let getModelCons =
-             do {-
-                sequence_
-                  [ do tab <- getModelTable f
-                       sequence [ lift $ print (f,xs,y) | (xs,y) <- tab ]
-                       return tab
-                  | f <- [ f | f@(_ ::: (_ :-> _)) <- S.toList syms ]
-                  ]
-                -}
-                tabs <- sequence [ getModelTable f | f <- S.toList fs ]
-                return (S.fromList [ c | tab <- tabs, (_,c) <- tab ])
-
-       let refineLitsNotTrue  = refines flags getModelCons Mode{ allowUndefinedTerms = True } clauses
-           refineLitsFalse    = refines flags getModelCons Mode{ allowUndefinedTerms = False } clauses
-
-       r <- cegar Nothing                 (return True) -- (createNewTerms clauses)
-          $ cegar (Just (strength flags)) refineLitsNotTrue
-          $ cegar Nothing                 refineLitsFalse
-          $ Just `fmap` solve flags []
-
-       return (r == Just False)
+       solveAndPatch False true 0 0 nonGroundCs
  where
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
+  
+  (groundCs,nonGroundCs') = partition isGround cs
+  
+  nonGroundCs = concatMap (norm []) nonGroundCs'
   
   syms = symbols cs
   
@@ -105,6 +76,8 @@ prove flags cs =
       _ ::: (_ :-> t) -> t /= bool
       _               -> False) syms
   
+  trueX = prim "True" ::: V bool
+
   star = prim "*" ::: ([] :-> top)
 
   noConstants =
@@ -113,245 +86,519 @@ prove flags cs =
   fs | noConstants = star `S.insert` fs'
      | otherwise   = fs'
 
-cegar :: Maybe Int -> T Bool -> T (Maybe Bool) -> T (Maybe Bool)
-cegar mk refine solve =
-  do mb <- solve
-     case mb of
-       Just True | mk /= Just 0 ->
-         do r <- refine
-            if r then
-              cegar (subtract 1 `fmap` mk) refine solve
-             else
-              return (Just True)
-       
-       _ ->
-         do return mb
-
---
-
-convert :: Clause -> Maybe C
-convert c = conv [ (prim "X" % i) ::: V top | i <- [1..] ] [] [] c'
- where
-  c' = norm c [] []
- 
-  norm (Neg (Var x :=: Var y) : ls) ns ps =
-    norm (subst (x |=> Var y) (ls ++ ns ++ ps)) [] []
-  norm (Neg (t :=: Var y):ls) ns ps =
-    norm ls (Neg (Var y :=: t):ns) ps
-  norm (Neg (Var y :=: t):ls) ns ps =
-    norm ls (Neg (Var y :=: t):ns) ps
-  norm (Pos (t@(Fun _ _) :=: Var y):ls) ns ps =
-    norm ls ns (Pos (Var y :=: t):ps)
-  norm (l:ls) ns ps =
-    norm ls ns (l:ps)
-  norm [] ns ps = ns ++ ps
-
-  conv _ defs eqs [] =
-    Just (C{ quantVars = quantVars
-           , freeVars  = freeVars
-           , defs      = defs'
-           , eqs       = eqs
-           })
-   where
-    freeVars = S.fromList [ z | (x,y) <- eqs, z <- [x,y] ] S.\\ (free (map snd defs) `S.union` S.fromList (map fst defs))
-    
-    (quantVars,defs') = topSort S.empty [] (sortBy siz [ (x,t,free t) | (x,t) <- defs ])
-    
-    (_,_,s1) `siz` (_,_,s2) = S.size s1 `compare` S.size s2
-    
-    topSort quantVars defs' [] =
-      (quantVars,reverse defs')
-    
-    topSort quantVars defs' ((x,t,ys):defs) =
-      topSort (quantVars `S.union` ys) ((x,t):defs') (sortBy siz [ (x,t,ys S.\\ new) | (x,t,ys) <- defs ])
-     where
-      new = S.insert x ys
-
-  conv zs defs eqs (Neg (Var x :=: t) : ls) =
-    conv zs ((x,t):defs) eqs ls
-
-  conv (z:zs) defs eqs (Neg (s :=: t) : ls) =
-    conv zs ((z,s):(z,t):defs) eqs ls
- 
-  conv zs defs eqs (Pos (s :=: t) : ls) | s == t =
-    Nothing
-
-  conv zs defs eqs (Pos (Var x :=: Var y) : ls) =
-    conv zs defs ((x,y):eqs) ls
-
-  conv (z:zs) defs eqs (Pos (Var x :=: t) : ls) =
-    conv zs ((z,t):defs) ((x,z):eqs) ls
-
-  conv (z1:z2:zs) defs eqs (Pos (s :=: t) : ls) =
-    conv zs ((z1,s):(z2,t):defs) ((z1,z2):eqs) ls
-
---
-
-tryAll :: Monad m => [m Bool] -> m Bool
-tryAll []     = do return False
-tryAll (m:ms) = do b  <- m
-                   b' <- tryAll ms
-                   return (b || b')
-
---
-
-createNewTerms :: [C] -> T Bool
-createNewTerms _ = undefined
-
---
-
-data Mode
-  = Mode
-  { allowUndefinedTerms :: Bool
-  }
- deriving ( Show )
-
-refines :: Flags -> T (Set Con) -> Mode -> [C] -> T Bool
-refines flags getCons mode cs =
-  do cons <- getCons
-     putLn 1 ( "--> Refining ("
-            ++ show mode
-            ++ "), with "
-            ++ show (S.size cons)
-            ++ " domain elements"
-             )
-     tryAll [ refine (S.toList cons) mode c | c <- cs ]
- where
-  put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
-  putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
-
-refine :: [Con] -> Mode -> C -> T Bool
-refine cons mode cl = match [] (defs cl) S.empty M.empty
- where
-  -- variable x must have a particular value c, but must also be undefined
-  match ((c,Var x):ass) defs undefs sub | x `S.member` undefs =
-    do return False
-
-  -- variable x must have a particular value c
-  match ((c,Var x):ass) defs undefs sub =
-    case M.lookup x sub of
-      Nothing ->
-        if and [ c /= c' | Just c' <- [ M.lookup y sub | y <- matches x (eqs cl) ] ]
-          then match ass defs undefs (M.insert x c sub)
-          else return False
-      
-      Just c' | c /= c' ->
-        do return False
-      
-      _ ->
-        do match ass defs undefs sub
-
-  -- term t must have a particular value c
-  match ((c,Fun f ts):ass) defs undefs sub =
-    do tab <- getModelTable f
-       tryAll
-         [ match (sortW (xs `zip` ts) `mergeW` ass) defs undefs sub
-         | (xs,y) <- tab
-         , y == c
-         ]
-
-  -- process one definition
-  match [] ((x,Fun f ts):defs) undefs sub =
-    do tab <- getModelTable f
-       tryAll $
-         [ match (sortW ((c,Var x):(as `zip` ts))) defs undefs sub
-         | (as,c) <- tab
-         ] ++
-         [ match [] defs (S.insert x undefs) sub
-         | allowUndefinedTerms mode
-         , not (isGround ts)
-         , M.lookup x sub == Nothing
-         , not (x `S.member` quantVars cl)
-         ]
+  norm ls' [] =
+    [reverse ls']
   
-  -- everything is processed; however some variables are still not defined
-  match [] [] undefs sub
-    | not (null [ x
-                | x <- S.toList (quantVars cl)
-                , Nothing <- [M.lookup x sub]
-                ]) =
-    do return False
+  norm ls' (Neg (Var x :=: Var y) : ls) =
+    norm [] (subst (x |=> Var y) (reverse ls' ++ ls))
+  
+  norm ls' (Pos (Var x :=: Fun f ts) : ls) =
+    norm (Pos (Fun f ts :=: Var x) : ls') ls
 
-  -- everything is processed; instantiate clause
-  match [] [] undefs sub =
-    instFree (S.toList (freeVars cl)) sub 
+  norm ls' (Neg (Var x :=: Fun f ts) : ls) =
+    norm (Neg (Fun f ts :=: Var x) : ls') ls
+
+  norm ls' (Pos (s :=: t) : ls) | s == t =
+    []
+
+  norm ls' (Neg (s :=: t) : ls) | s == t =
+    [[]]
+
+  norm ls' (l : ls) =
+    norm (l : ls') ls
+
+  cclause cl = (defs,neqs)
    where
-    instFree [] sub =
-      do instantiate sub cl
-    instFree (x:xs) sub =
-      do tryAll [ instFree xs (M.insert x c sub)
-                | c <- cons
-                , and [ c /= c' | Just c' <- [ M.lookup y sub | y <- matches x (eqs cl) ] ]
+    theX i = var top i
+    
+    (defs,neqs) = lits 1 cl
+    
+    lits i [] =
+      ([],[])
+    
+    lits i (Neg (s :=: Var x) : ls) =
+      ((s,x):defs,neqs)
+     where
+      (defs,neqs) = lits i ls
+
+    lits i (Neg (s :=: t) : ls) | t /= truth =
+      ((s,x):(t,x):defs,neqs)
+     where
+      x = theX i
+      (defs,neqs) = lits (i+1) ls
+
+    lits i (Pos (Var x :=: Var y) : ls) =
+      (defs,(x,y):neqs)
+     where
+      (defs,neqs) = lits i ls
+
+    lits i (Pos (s :=: Var y) : ls) =
+      ((s,x):defs,(x,y):neqs)
+     where
+      x = theX i
+      (defs,neqs) = lits (i+1) ls
+
+    lits i (Pos (s :=: t) : ls) | t /= truth =
+      ((s,x):(t,y):defs,(x,y):neqs)
+     where
+      x = theX i
+      y = theX (i+1)
+      (defs,neqs) = lits (i+2) ls
+
+    lits i (Neg (Fun p ts :=: t) : ls) | t == truth =
+      ((Fun p ts,trueX):defs,neqs)
+     where
+      (defs,neqs) = lits i ls
+
+    lits i (Pos (Fun p ts :=: t) : ls) | t == truth =
+      ((Fun p ts,x):defs,(x,trueX):neqs)
+     where
+      x = theX i
+      (defs,neqs) = lits (i+1) ls
+
+  solveAndPatch starred true m n nonGroundCs =
+    do putLn 2  "==> FolSat: solving..."
+       b <- solve flags []
+       if b then
+         do putLn 2 "==> FolSat: checking (for all-false clauses)..."
+            true' <- getModelRep true
+            conss <- getModelCons
+            putLn 2 ("(" ++ show (S.size conss) ++ " elements in domain)")
+            let cons = S.toList conss
+            b <- checkNonGoodCases true' cons False False nonGroundCs
+            if b then
+              do solveAndPatch starred true m n nonGroundCs
+             else
+              do case dot flags of
+                   Just ds -> writeModel ("model-" ++ show m) true' syms ds
+                   Nothing -> return ()
+                 b <- if n > strength flags then
+                        do return False
+                       else
+                        do putLn 2 "==> FolSat: checking (for non-true clauses)..."
+                           checkNonGoodCases true' cons True False nonGroundCs
+                 if b then
+                   do solveAndPatch starred true (m+1) (n+1) nonGroundCs
+                  else
+                   do if not starred then
+                        do putLn 2 "==> FolSat: instantiating with * ..."
+                           sequence_
+                             [ do s <- star `app` []
+                                  addClauseSub true (M.fromList [ (x,s) | x <- S.toList (free c) ]) c
+                             | c <- nonGroundCs
+                             ]
+                           solveAndPatch True true (m+1) 0 nonGroundCs
+                       else
+                         do putLn 2 "==> FolSat: checking (for liberal false clauses)..."
+                            b <- checkNonGoodCases true' cons False True nonGroundCs
+                            if b then
+                              do solveAndPatch starred true (m+1) 0 nonGroundCs
+                             else
+                              do putLn 2 "==> FolSat: NO"
+                                 return False
+         else
+          do return True
+
+  dollard m ('%':'d':s) = show m ++ dollard m s
+  dollard m (c:s)       = c : dollard m s
+  dollard m ""          = ""
+
+  getModelCons =
+    do tabs <- sequence [ getModelTable f | f <- S.toList fs ]
+       return (S.fromList [ c | tab <- tabs, (_,c) <- tab ])
+
+  tryAll []     = do return False
+  tryAll (m:ms) = do b  <- m
+                     b' <- tryAll ms
+                     return (b || b')
+
+  findOne []     = do return False
+  findOne (m:ms) = do b <- m
+                      if b
+                        then return True
+                        else findOne ms
+
+  matches x xys = [ y | (x',y) <- xys, x == x' ]
+               ++ [ y | (y,x') <- xys, x == x' ]
+
+  checkNonGoodCases true cons undef liberal nonGroundCs =
+    do tryAll [ do --lift $ print ("==>",cl,defs,neqs)
+                   r <- nonGoodCases [] defs neqs [] (S.delete trueX (free cl)) (M.singleton trueX true) $ \sub ->
+                     do --lift $ putStrLn "Adding..."
+                        b <- evalClauseSub true sub cl
+                        if b then
+                          do -- this substitution is already True
+                             --lift $ print ("NO:",cl,sub)
+                             return False
+                         else
+                          do put 1 (if liberal then "L: " else if undef then "U: " else "I: ")
+                             --lift $ print (cl,sub)
+                             addClauseSub true sub cl
+                             return True
+                   --lift $ putStrLn "OK"
+                   return r
+                   
+              | cl <- nonGroundCs
+              , let (defs,neqs) = cclause cl
+              ]
+   where
+    nonGoodCasesSub x c eqs defs neqs undefs still sub add =
+      do --lift (print (x,c,eqs,sub))
+         st <- star `app` []
+         s <- getModelRep st
+         let look_c = M.lookup x sub
+
+             new_c = case look_c of
+                       Just c' | c == s -> c'
+                       _                -> c
+          in case look_c of
+               Just c' | c' /= c && (not liberal || s /= c && s /= c') ->
+                 do --lift (print "no 1")
+                    return False
+
+               _ | null [ x' | (_,x') <- undefs, x == x' ]
+                     && and [ case M.lookup y sub of
+                                Just c' | c == c' -> False
+                                _                 -> True
+                            | y <- matches x neqs
+                            ] ->
+                 do --lift (print "yes")
+                    nonGoodCases eqs defs neqs undefs (S.delete x still) (M.insert x new_c sub) add
+
+               _ ->
+                 do --lift (print "no 2")
+                    return False
+    
+    nonGoodCases ((Var x,c):eqs) defs neqs undefs still sub add =
+      nonGoodCasesSub x c eqs defs neqs undefs still sub add
+      
+    nonGoodCases ((Fun f ts,c):eqs) defs neqs undefs still sub add =
+      do --lift $ print ((Fun f ts,c):eqs,defs,neqs,undefs,still)
+         st <- star `app` []
+         s <- getModelRep st
+         tab <- getModelTable f
+         tryAll [ nonGoodCases ((ts `zip` xs) ++ eqs) defs neqs undefs still sub add
+                | (xs,y) <- tab
+                , y == c || liberal && (y == s || c == s)
+               -- , y == c -- STAR SUBST TEMP. REMOVED FOR EXPERIMENTAL REASONS
                 ]
 
-matches :: Eq a => a -> [(a,a)] -> [a]
-matches x xys = [ y | (x',y) <- xys, x == x' ]
-             ++ [ y | (y,x') <- xys, x == x' ]
-
-mergeW :: [(Con,Term)] -> [(Con,Term)] -> [(Con,Term)]
-mergeW xs [] = xs
-mergeW [] ys = ys
-mergeW xs@(x@(_,s):xs') ys@(y@(_,t):ys')
-  | weight s <= weight t = x : mergeW xs' ys
-  | otherwise            = y : mergeW xs ys'
- where
-  weight (Var _)    = 1
-  weight (Fun _ []) = 0
-  weight (Fun _ ts) = length ts + 2
-
-sortW :: [(Con,Term)] -> [(Con,Term)]
-sortW []  = []
-sortW [x] = [x]
-sortW xs  = sortW (take n xs) `mergeW` sortW (drop n xs)
- where
-  n = length xs `div` 2
-
-instantiate :: Map Symbol Con -> C -> T Bool
-instantiate sub cl =
-  do lift $ print (sub, defs cl, eqs cl)
-     inst sub (defs cl)
- where
-  inst sub [] =
-    do ls1 <- sequence [ do Just a <- term sub (Var x)
-                            Just b <- term sub t
-                            return (a T.:/=: b)
-                       | (x,t) <- defs cl
+    nonGoodCases [] ((Fun f ts,x):defs) neqs undefs still sub add =
+      do --lift $ print ("defs",(Fun f ts,x):defs,neqs,undefs,still)
+         tab <- getModelTable f
+         --lift $ print tab
+         many $ [ nonGoodCasesSub x y (ts `zip` xs) defs neqs undefs still sub add
+                | (xs,y) <- tab
+                ]
+             ++ [ nonGoodCases [] defs neqs ((Fun f ts,x):undefs) (S.delete x still) sub add
+                | undef
+                , M.lookup x sub == Nothing
+                , not (x `S.member` free ts)
+                , null [ y
+                       | y <- matches x neqs
+                       , (_,y') <- undefs
+                       , y == y'
                        ]
-       ls2 <- sequence [ do Just a <- term sub (Var x)
-                            Just b <- term sub (Var y)
-                            return (a T.:=: b)
-                       | (x,y) <- eqs cl
-                       ]
-       --lift $ print (ls1++ls2)
-       mb <- evalClause (ls1++ls2)
-       case mb of
-         Just True -> do return False
-         Nothing   -> do addClause (ls1 ++ ls2)
-                         return True
-  
-  inst sub ((x,t):defs)
-    | x `S.member` quantVars cl =
-      do inst sub defs
-    | otherwise =    
-      do Just a <- term sub t
-         inst (M.insert x a sub) defs
+                ]
+     where
+      many | not undef = tryAll
+           | otherwise = findOne
+
+{-
+    nonGoodCases [] [] neqs undefs still sub add
+     | acyclic && (not undef || S.size still == 0) =
+      do --lift $ print ("acyclic",neqs,undefs,still)
+         many [ instantiate undefs sub' add
+              | sub' <- (sub `M.union`) `fmap` fairEnums (S.toList still)
+              , all (\(x,y) -> (M.lookup x sub' :: Maybe Con) /= M.lookup y sub') neqs
+              ]
+-}
+    nonGoodCases [] [] neqs undefs still sub add
+     | acyclic
+         && ( S.size still == 0
+           || ( not liberal
+             && all (`S.member` neqs') (S.toList still)
+              )
+            ) =
+      do --lift $ print ("acyclic",(neqs,undefs,still,sub,enums))
+         many [ do instantiate undefs sub' add
+              | sub' <- (sub `M.union`) `fmap` enums
+              , all (\(x,y) -> (M.lookup x sub' :: Maybe Con) /= M.lookup y sub') neqs
+              ]
+     where
+      enums = fairEnums (S.toList still)
      
-term :: Map Symbol Con -> Term -> T (Maybe Con)
-term sub (Var x) =
-  return (M.lookup x sub)
+      neqs' = S.fromList [ z | (x,y) <- neqs, z <- [x,y] ]
+     
+      many = findOne
+      
+      unTab =
+        M.fromList [ (x,t) | (t,x) <- undefs ]
+      
+      uns =
+        S.fromList [ x | (_,x) <- undefs ]
+      
+      acyclic = top degrees indeps
+       where
+        nodes =
+          [ (x, S.toList (free t `S.intersection` uns)) 
+          | (t,x) <- undefs
+          ]
+        
+        indeps =
+          [ x
+          | (x,_) <- nodes
+          , M.lookup x degrees == Nothing
+          ]
+        
+        graph =
+          M.fromList nodes
+        
+        degrees =
+          M.fromListWith (+)
+          [ (y,1)
+          | (x,ys) <- nodes
+          , y <- ys
+          ]
+        
+        top degrees []     = M.null degrees
+        top degrees (x:xs) =
+          case M.lookup x graph of
+            Just ys -> tops degrees ys xs
+        
+        tops degrees []     xs = top degrees xs
+        tops degrees (y:ys) xs =
+          case M.lookup y degrees of
+            Just k
+              | k == 1    -> tops (M.delete y degrees) ys (y:xs)
+              | otherwise -> tops (M.insert y (k-1) degrees) ys xs
+            Nothing       -> tops degrees ys xs
+      
+      fairEnums xs =
+        [ M.fromList (xs `zip` cs) | cs <- fair (length xs) cons ]
 
-term sub (Fun f ts) =
-  do as <- sequence [ term sub t | t <- ts ]
-     if any isNothing as
-       then return Nothing
-       else Just `fmap` (f `app` [ a | Just a <- as ])
+      instantiate undefs sub add =
+        do as <- sequence [ eval t | (t,_) <- undefs ]
+           if all isNothing as
+             then do sub' <- createSubList undefs sub
+                     add sub'
+             else do return False
+       where
+        createSubList [] sub =
+          do return sub
 
-evalClause :: [T.Lit] -> T (Maybe Bool)
-evalClause ls =
-  do mbs <- sequence [ evalLit l | l <- ls ]
-     return (if Nothing `elem` mbs then Nothing
-                                   else or [ b | Just b <- mbs ])
+        createSubList ((t,x):undefs) sub =
+          case M.lookup x sub of
+            Nothing ->
+              do (c,sub') <- createSubTerm t sub
+                 createSubList undefs (M.insert x c sub')
 
-evalLit :: T.Lit -> T (Maybe Bool)
-evalLit a =
-  do 
+            Just _ ->
+              do createSubList undefs sub
+
+        createSubTerm (Var x) sub =
+          case M.lookup x sub of
+            Nothing ->
+              case M.lookup x unTab of
+                Just t ->
+                  do (c,sub') <- createSubTerm t sub
+                     return (c,M.insert x c sub')
+
+                Nothing ->
+                  error "variable not defined: A"
+                  --do return (c0, M.insert x c0 sub)
+
+            Just c ->
+              do return (c,sub)
+
+        createSubTerm (Fun f ts) sub =
+          do (cs,sub') <- createSubTermList ts sub
+             c <- f `app` cs
+             return (c,sub')
+
+        createSubTermList [] sub =
+          do return ([],sub)
+
+        createSubTermList (t:ts) sub =
+          do (c,sub') <- createSubTerm t sub
+             (cs,sub'') <- createSubTermList ts sub'
+             return (c:cs,sub'')
+
+        eval (Var x) =
+          return $
+            case M.lookup x sub of
+              Just c               -> Just c
+              Nothing
+                | x `S.member` M.keysSet unTab -> Nothing
+                | otherwise          -> error "variable not defined: B"
+
+        eval (Fun f ts) =
+          do tab <- getModelTable f
+             mcs <- sequence [ eval t | t <- ts ]
+             if Nothing `elem` mcs
+               then return Nothing
+               else return (lookup [ c | Just c <- mcs ] tab)
+
+    nonGoodCases [] [] neqs undefs still sub add =
+      do return False
+                     
+evalClauseSub :: Con -> Map Symbol Con -> Clause -> T Bool
+evalClauseSub true sub cl =
+  do ls <- sequence [ literal l | l <- cl ]
+     return (any (== Just True) ls)
+ where
+  term (Var x) =
+    do return (M.lookup x sub)
+  
+  term (Fun f ts) =
+    do as <- sequence [ term t | t <- ts ]
+       if all isJust as
+         then do tab <- getModelTable f
+                 case [ y | (xs,y) <- tab, xs == [ a | Just a <- as ] ] of
+                   []  -> return Nothing
+                   y:_ -> return (Just y)
+         else do return Nothing
+  
+  atom (s :=: t) | t == truth =
+    do a <- term s
+       return (a =?= Just true)
+  
+  atom (s :=: t) =
+    do a <- term s
+       b <- term t
+       return (a =?= b)
+  
+  Nothing =?= _       = Nothing
+  _       =?= Nothing = Nothing
+  Just x  =?= Just y  = Just (x == y)
+  
+  literal (Pos a) = atom a
+  literal (Neg a) = fmap not `fmap` atom a
+  
+addClauseSub :: Con -> Map Symbol Con -> Clause -> T ()
+addClauseSub true sub cl =
+  do ls <- sequence [ literal l | l <- cl ]
+     addClause ls
+ where
+  term (Var x) =
+    do return (fromJust $ M.lookup x sub)
+  
+  term (Fun f ts) =
+    do as <- sequence [ term t | t <- ts ]
+       f `app` as
+  
+  atom (s :=: t) | t == truth =
+    do a <- term s
+       return (a T.:=: true)
+  
+  atom (s :=: t) =
+    do a <- term s
+       b <- term t
+       return (a T.:=: b)
+  
+  literal (Pos a) = atom a
+  literal (Neg a) = neg `fmap` atom a
+  
+addGroundAtom :: Atom -> T ()
+addGroundAtom (a :=: b) =
+  do term a
+     term b
+     return ()
+ where
+  term t | t == truth =
+    do return Nothing
+  
+  term (Var x) =
+    do return Nothing
+  
+  term (Fun f ts) =
+    do mas <- sequence [ term t | t <- ts ]
+       if any isNothing mas
+         then do return Nothing
+         else do b <- f `app` [ a | Just a <- mas ]
+                 return (Just b)
+
+--writeModel :: FilePath -> Con -> Set (Name,Int) -> Set (Name,Int) -> T ()
+writeModel file true fs ds =
+  do lift $ putStrLn ("(writing model in " ++ file ++ ")")
+     h <- lift $ openFile file WriteMode
+     lift $ hPutStrLn h "digraph G {"
+
+     -- nodes
+     nodess <-
+       sequence
+         [ do tab <- getModelTable f
+              return [ x | (xs,y) <- tab, x <- y:xs ]
+         | f <- S.toList fs
+         , show f `elem` interesting
+         ]
+     
+     -- attributes
+     attrss <-
+       sequence
+         [ do tab <- getModelTable f
+              return $
+                [ (x,f)
+                | isPred f
+                , ([x],tr) <- tab
+                , tr == true
+                ] ++
+                [ (x,f)
+                | not (isPred f)
+                , ([],x) <- tab
+                ]
+         | f <- S.toList fs
+         , show f `elem` interesting
+         ]
+     let attrs = concat attrss
+     
+     -- arrows
+     arrowss <-
+       sequence
+         [ do tab <- getModelTable f
+              return $
+                [ (x,y,f)
+                | isPred f
+                , ([x,y],tr) <- tab
+                , tr == true
+                ] ++
+                [ (x,y,f)
+                | not (isPred f)
+                , ([x],y) <- tab
+                ]
+         | f <- S.toList fs
+         , show f `elem` interesting
+         ]
+     let arrows = concat arrowss
+     
+     let nodes = nub ( [ x | (x,_) <- attrs ]
+                    ++ [ z | (x,y,_) <- arrows, z <- [x,y] ]
+                     )
+     
+     sequence_
+       [ lift $ hPutStrLn h (shown x ++ " [label=\"" ++ lab ++ "\"];")
+       | x <- nodes
+       , let attr = [ p | (y,p) <- attrs, x == y ]
+             lab  | null attr = show x
+                  | otherwise = show x ++ "\\n" ++ concat (intersperse "," (map show attr))
+       ]
+          
+     sequence_
+       [ lift $ hPutStrLn h (shown x ++ " -> " ++ shown y ++ " [label=\"" ++ show f ++ "\"];")
+       | (x,y,f) <- arrows
+       ]
+     lift $ hPutStrLn h "}"
+     lift $ hClose h
+ where
+  showArgs f [] = show f
+  showArgs f ts = show f ++ show ts
+
+  --line f xs y = showArgs f xs ++ " = " ++ show y
+  
+  isPred (_ ::: (_ :-> t)) = t == bool
+  isPred _                 = False 
+  
+  shown n = tail (show n)
+  
+  interesting = words (map (\c -> if c == ',' then ' ' else c) ds)
+  

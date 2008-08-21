@@ -102,7 +102,8 @@ prove flags cs =
     []
 
   norm ls' (Neg (s :=: t) : ls) | s == t =
-    [[]]
+    norm ls' ls
+    --[[]]
 
   norm ls' (l : ls) =
     norm (l : ls') ls

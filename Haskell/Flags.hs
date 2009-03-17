@@ -1,5 +1,6 @@
 module Flags
   ( Flags(..)
+  , Tool(..)
   , getFlags
   , getTimeLeft
   , getTimeSpent
@@ -51,6 +52,12 @@ import Control.Monad.Instances()
 -------------------------------------------------------------------------
 -- flags
 
+data Tool
+  = Paradox
+  | Equinox
+  | Infinox
+ deriving ( Eq, Show )
+
 data Flags
   = Flags
   { time         :: Maybe Int
@@ -65,13 +72,30 @@ data Flags
   , verbose      :: Int
   , progress     :: Bool
   , tstp         :: Bool
+  , temp         :: FilePath
+  
+  -- infinox
+  , elimit       :: Int
+  , plimit       :: Int
+  , zoom         :: Bool
+  , termdepth    :: Int
+  , function     :: String
+  , relation     :: Maybe String
+  , subset       :: Maybe String
+  , method       :: Method
   
   -- primitive
   , thisFile     :: FilePath
   , files        :: [FilePath]
   , start        :: Integer
   }
- deriving (Eq, Show)
+ deriving ( Eq, Show )
+
+data Method
+  = InjNotSurj
+  | SurjNotInj
+  | Serial
+ deriving ( Eq, Show, Read, Bounded, Enum )
 
 initFlags :: Flags
 initFlags =
@@ -88,7 +112,18 @@ initFlags =
   , verbose      = 0
   , progress     = True
   , tstp         = False
+  , temp         = "temp"
 
+  -- infinox
+  , elimit       = 2
+  , plimit       = 2
+  , zoom         = False
+  , termdepth    = 1
+  , function     = "-"
+  , relation     = Nothing
+  , subset       = Nothing
+  , method       = InjNotSurj
+  
   -- primitive
   , thisFile     = ""
   , files        = []
@@ -102,6 +137,7 @@ options :: [Option Flags]
 options =
   [ Option
     { long    = "time"
+    , tools   = [Paradox, Equinox, Infinox]
     , meaning = (\n f -> f{ time = Just n }) <$> argNum
     , help    = [ "Maximum running time in seconds. Is a (very) soft limit."
                 , "Example: --time 300"
@@ -111,6 +147,7 @@ options =
 
   , Option
     { long    = "root"
+    , tools   = [Paradox, Equinox, Infinox]
     , meaning = (\r f -> f{ roots = roots f ++ [r] }) <$> argFile
     , help    = [ "A directory in which included problems will be sought."
                 , "Example: --root TPTP-v3.0.0"
@@ -120,6 +157,7 @@ options =
 
   , Option
     { long    = "split"
+    , tools   = [Paradox, Equinox, Infinox]
     , meaning = unit (\f -> f{ splitting = True })
     , help    = [ "Split the conjecture into several sub-conjectures."
                 , "Default: (off)"
@@ -128,6 +166,7 @@ options =
 
   , Option
     { long    = "model"
+    , tools   = [Paradox, Equinox]
     , meaning = unit (\f -> f{ printModel = True })
     , help    = [ "Print the found model on the screen."
                 , "Default: (off)"
@@ -145,6 +184,7 @@ options =
 -}
   , Option
     { long    = "strength"
+    , tools   = [Equinox]
     , meaning = (\n f -> f{ strength = n }) <$> argNum
     , help    = [ "Maximum number of non-guessing quantifier instantations"
                 , "before starting to guess."
@@ -155,6 +195,7 @@ options =
 
   , Option
     { long    = "verbose"
+    , tools   = [Paradox, Equinox, Infinox]
     , meaning = (\n f -> f{ verbose = verbose f `max` n }) <$> argNum
     , help    = [ "Verbosity level."
                 , "Example: --verbose 2"
@@ -164,6 +205,7 @@ options =
 
   , Option
     { long    = "no-progress"
+    , tools   = [Paradox, Equinox, Infinox]
     , meaning = unit (\f -> f{ progress = False })
     , help    = [ "Do not show progress during solving."
                 , "Default: (off)"
@@ -171,7 +213,91 @@ options =
     }
 
   , Option
+    { long    = "elimit"
+    , tools   = [Infinox]
+    , meaning = (\n f -> f{ elimit = n }) <$> argNum
+    , help    = [ "Time-out for E-prover (as a subprocedure) in seconds."
+                , "Default: --elimit 2"
+                ]
+    }
+
+  , Option
+    { long    = "plimit"
+    , tools   = [Infinox]
+    , meaning = (\n f -> f{ plimit = n }) <$> argNum
+    , help    = [ "Time-out for Paradox (as a subprocedure) in seconds."
+                , "Default: --plimit 2"
+                ]
+    }
+
+  , Option
+    { long    = "zoom"
+    , tools   = [Infinox]
+    , meaning = unit (\f -> f{ zoom = True })
+    , help    = [ "Use 'zooming' to reduce the size of the problem."
+                , "Default: (off)"
+                ]
+    }
+
+  , Option
+    { long    = "termdepth"
+    , tools   = [Infinox]
+    , meaning = (\n f -> f{ termdepth = n }) <$> argNum
+    , help    = [ "Maximum depth for terms."
+                , "Default: --termdepth 1"
+                ]
+    }
+
+  , Option
+    { long    = "method"
+    , tools   = [Infinox]
+    , meaning = (\m f -> f{ method = read m })
+            <$> argOption (map show [(minBound :: Method) .. maxBound])
+    , help    = [ "Method to use."
+                , "Default: --method InjNotSurj"
+                ]
+    }
+
+  , Option
+    { long    = "function"
+    , tools   = [Infinox]
+    , meaning = (\s f -> f{ function = s }) <$> argName
+    , help    = [ "Use a specified function; use - for any function."
+                , "Default: (off)"
+                ]
+    }
+
+  , Option
+    { long    = "relation"
+    , tools   = [Infinox]
+    , meaning = (\s f -> f{ relation = Just s }) <$> argName
+    , help    = [ "Generalize the method to use a specified relation; use - for any relation."
+                , "Default: (off)"
+                ]
+    }
+
+  , Option
+    { long    = "subset"
+    , tools   = [Infinox]
+    , meaning = (\s f -> f{ subset = Just s }) <$> argName
+    , help    = [ "Generalize the method to use a specified subset; use - for any subset."
+                , "Default: (off)"
+                ]
+    }
+
+  , Option
+    { long    = "verbose"
+    , tools   = [Paradox, Equinox, Infinox]
+    , meaning = (\n f -> f{ verbose = verbose f `max` n }) <$> argNum
+    , help    = [ "Verbosity level."
+                , "Example: --verbose 2"
+                , "Default: --verbose 0"
+                ]
+    }
+
+  , Option
     { long    = "tstp"
+    , tools   = [Paradox, Equinox, Infinox]
     , meaning = unit (\f -> f{ tstp = True })
     , help    = [ "Generate output in TSTP and SZS ontology format."
                 , "Default: (off)"
@@ -180,6 +306,7 @@ options =
 
   , Option
     { long    = "help"
+    , tools   = [Paradox, Equinox, Infinox]
     , meaning = unit id
     , help    = [ "Displays this help message."
                 ]
@@ -191,6 +318,7 @@ options =
 data Option a
   = Option
   { long    :: String
+  , tools   :: [Tool]
   , meaning :: Arg (a -> a)
   , help    :: [String]
   }
@@ -198,13 +326,13 @@ data Option a
 -------------------------------------------------------------------------
 -- getFlags
 
-getFlags :: IO Flags
-getFlags =
+getFlags :: Tool -> IO Flags
+getFlags tool =
   do as    <- getArgs
      picoT <- getCPUTime
-     case parseFlags initFlags as of
+     case parseFlags tool initFlags as of
        Left [] ->
-         do putStr (unlines helpMessage)
+         do putStr (unlines (helpMessage tool))
             exitWith ExitSuccess
 
        Left err ->
@@ -294,6 +422,12 @@ argFile = MkArg ["<file>"] $ \xs ->
     x:xs -> Right (x, xs)
     _    -> Left ["expected a file"]
       
+argName :: Arg FilePath
+argName = MkArg ["<name>"] $ \xs ->
+  case xs of
+    x:xs -> Right (x, xs)
+    _    -> Left ["expected a name"]
+      
 argDots :: Arg FilePath
 argDots = MkArg ["<dot-spec>"] $ \xs ->
   case xs of
@@ -334,26 +468,26 @@ argList as = MkArg ["<" ++ concat (intersperse " | " as) ++ ">*"] $ \xs ->
     
       elts _ = Left ["argument list garbled"]
 
-parseFlags :: Flags -> [String] -> Either [String] Flags
-parseFlags f []               = Right f
-parseFlags f ("--help":xs)    = Left []
-parseFlags f (('-':'-':x):xs) =
-  case [ opt | opt <- options, x == long opt ] of
+parseFlags :: Tool -> Flags -> [String] -> Either [String] Flags
+parseFlags tool f []               = Right f
+parseFlags tool f ("--help":xs)    = Left []
+parseFlags tool f (('-':'-':x):xs) =
+  case [ opt | opt <- options, tool `elem` tools opt, x == long opt ] of
     opt:_  -> case h xs of
                 Left err      -> Left err
-                Right (g,xs') -> parseFlags (g f) xs'
+                Right (g,xs') -> parseFlags tool (g f) xs'
      where
       MkArg _ h = meaning opt
     []     -> Left ["Unrecognized option: '--" ++ x ++ "'"]
 
-parseFlags f (x:xs)           = parseFlags (f{files = files f ++ [x]}) xs
+parseFlags tool f (x:xs)           = parseFlags tool (f{files = files f ++ [x]}) xs
 
 -------------------------------------------------------------------------
 -- help message
 
-helpMessage :: [String]
-helpMessage =
-  [ "Usage: <option>* <file>*"
+helpMessage :: Tool -> [String]
+helpMessage tool =
+  [ "Usage: " ++ small (show tool) ++ " <option>* <file>*"
   , ""
   , "<file> should be in TPTP format."
   , ""
@@ -364,7 +498,11 @@ helpMessage =
     , "  --" ++ long opt ++ " " ++ unwords (args (meaning opt))
     ] ++ map ("    "++) (help opt)
   | opt <- options
+  , tool `elem` tools opt
   ]
+ where
+  small (c:s) = toLower c : s
+  small s     = s
 
 -------------------------------------------------------------------------
 -- the end.

@@ -1,4 +1,4 @@
-{-# OPTIONS -fgenerics #-}
+{-# OPTIONS -XGenerics #-}
 module Form where
 
 {-
@@ -248,6 +248,12 @@ type Clause = [Signed Atom]
 showClause :: Clause -> String
 showClause [] = "$false"
 showClause c  = show (foldr1 (\/) ([ Atom a | Pos a <- c ] ++ [ Not (Atom a) | Neg a <- c ]))
+
+toForm :: Clause -> Form
+toForm ls = forAllVars (free ls) (Or (S.fromList (map sign ls)))
+ where
+  sign (Pos x) = Atom x
+  sign (Neg x) = Not (Atom x)
 
 data QClause = Uniq (Bind Clause)
   deriving ( Eq, Ord, Show )
@@ -537,21 +543,42 @@ type Problem = [Input Form]
 ----------------------------------------------------------------------
 -- answers
 
-data Answer
-  = Satisfiable
-  | CounterSatisfiable
-  | Theorem
-  | Unsatisfiable
-  | Timeout
-  | GaveUp
- deriving ( Show, Eq, Ord )
+data ConjectureAnswer
+  = CounterSatisfiable
+  | Theorem -- CounterUnsatisfiable :-)
+  | FinitelyCounterUnsatisfiable
+  | NoAnswerConjecture NoAnswerReason
+ deriving ( Eq )
 
-nega :: Answer -> Answer
-nega Satisfiable        = CounterSatisfiable
-nega CounterSatisfiable = Satisfiable
-nega Theorem            = Unsatisfiable
-nega Unsatisfiable      = Theorem
-nega x                  = x
+instance Show ConjectureAnswer where
+  show CounterSatisfiable           = "CounterSatisfiable"
+  show Theorem                      = "Theorem"
+  show FinitelyCounterUnsatisfiable = "FinitelyCounterUnsatisfiable"
+  show (NoAnswerConjecture r)       = show r
+
+data ClauseAnswer
+  = Satisfiable
+  | Unsatisfiable
+  | FinitelyUnsatisfiable
+  | NoAnswerClause NoAnswerReason
+ deriving ( Eq )
+
+instance Show ClauseAnswer where
+  show Satisfiable           = "Satisfiable"
+  show Unsatisfiable         = "Unsatisfiable"
+  show FinitelyUnsatisfiable = "FinitelyUnsatisfiable"
+  show (NoAnswerClause r)    = show r
+
+data NoAnswerReason
+  = GaveUp
+  | Timeout
+ deriving ( Show, Eq )
+
+toConjectureAnswer :: ClauseAnswer -> ConjectureAnswer
+toConjectureAnswer Satisfiable           = CounterSatisfiable
+toConjectureAnswer Unsatisfiable         = Theorem
+toConjectureAnswer FinitelyUnsatisfiable = FinitelyCounterUnsatisfiable
+toConjectureAnswer (NoAnswerClause r)    = NoAnswerConjecture r
 
 ----------------------------------------------------------------------
 -- the end.

@@ -37,17 +37,17 @@ import Output
 ---------------------------------------------------------------------------
 -- main
 
-main :: ((?flags :: Flags) => [Clause] -> IO Answer) -> IO ()
-main solveProblem =
+main :: Tool -> ((?flags :: Flags) => [Clause] -> IO ClauseAnswer) -> IO ()
+main tool solveProblem =
   do hSetBuffering stdout LineBuffering
-     theFlags <- getFlags
+     theFlags <- getFlags tool
      let ?flags = theFlags
      case time ?flags of
        Just n ->
          do timeoutVar <- newEmptyMVar
 
             pid1 <- forkIO $
-              do try (main' solveProblem)
+              do try (main' solveProblem) :: IO (Either IOError ())
                  putMVar timeoutVar False
 
             pid2 <- forkIO $
@@ -60,13 +60,13 @@ main solveProblem =
                       putInfo ""
                       putWarning ("TIMEOUT (" ++ show n ++ " seconds)")
                       let ?flags = ?flags{ thisFile = unwords (files ?flags) }
-                      putResult Timeout
+                      putResult (show Timeout)
               else do killThread pid2
 
        Nothing ->
          do main' solveProblem
 
-main' :: (?flags :: Flags) => ((?flags :: Flags) => [Clause] -> IO Answer) -> IO ()
+main' :: (?flags :: Flags) => ((?flags :: Flags) => [Clause] -> IO ClauseAnswer) -> IO ()
 main' solveProblem =
   do require (not (null (files ?flags))) $
        putWarning "No input files specified! Try --help."
@@ -86,12 +86,12 @@ main' solveProblem =
               -- Satisfiable/Unsatisfiable
               [] ->
                 do ans <- solveProblem theory
-                   putResult ans
+                   putResult (show ans)
               
               -- CounterSatisfiable/Theorem
               [oblig] ->
                 do ans <- solveProblem (theory ++ oblig)
-                   putResult (nega ans)
+                   putResult (show (toConjectureAnswer ans))
               
               -- Unknown/Theorem
               obligs ->
@@ -101,13 +101,13 @@ main' solveProblem =
                        solveAll i (oblig:obligs) =
                          do putSubHeader ("Part " ++ show i ++ "/" ++ show n)
                             ans <- solveProblem (theory ++ oblig)
-                            putOfficial ("PARTIAL (" ++ show i ++ "/" ++ show n ++ "): " ++ show (nega ans))
+                            putOfficial ("PARTIAL (" ++ show i ++ "/" ++ show n ++ "): " ++ show (toConjectureAnswer ans))
                             case ans of
                               Unsatisfiable -> solveAll (i+1) obligs
-                              _             -> return GaveUp
+                              _             -> return (NoAnswerConjecture GaveUp)
                    
                    ans <- solveAll 1 obligs
-                   putResult ans
+                   putResult (show ans)
        | file <- files ?flags
        ]
         

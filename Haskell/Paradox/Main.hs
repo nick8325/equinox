@@ -63,12 +63,12 @@ main :: IO ()
 main =
   do putStrLn "Paradox, version 3.0, 2008-07-29."
      --putStrLn "*** NOTE: THIS IS A NON-STANDARD, DELIBERATELY UNSOUND VERSION!"
-     Main.main solveProblem
+     Main.main Paradox solveProblem
   
 -------------------------------------------------------------------------
 -- problem
 
-solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
+solveProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
 solveProblem csIn =    
   do {-
      putStrLn "==> Input clauses"
@@ -99,9 +99,10 @@ solveProblem csIn =
                 (annotate [1..] ns' (instantiate flags predefs fcs qcs))
      return $
        case r of
-         Satisfiable                             -> Satisfiable
-         GaveUp | not isFinite || k <= maxDomain -> GaveUp
-         _                                       -> Unsatisfiable
+         Satisfiable                        -> Satisfiable
+         NoAnswerClause GaveUp
+           | not isFinite || k <= maxDomain -> NoAnswerClause GaveUp
+         _                                  -> Unsatisfiable
  where
   flags = ?flags
 

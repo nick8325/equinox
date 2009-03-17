@@ -25,7 +25,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import System
 import Flags
-import Form( Answer )
 
 ---------------------------------------------------------------------------
 -- outputs
@@ -36,17 +35,17 @@ putInfo s = putStrLn s
 putOfficial :: String -> IO ()
 putOfficial s = putStrLn ("+++ " ++ s)
 
-putResult :: (?flags :: Flags) => Answer -> IO ()
+putResult :: (?flags :: Flags) => String -> IO ()
 putResult ans =
   do putOfficial ( "RESULT: "
-                ++ show ans
+                ++ ans
                 ++ (case files ?flags of
                      _:_:_ -> " (" ++ thisFile ?flags ++ ")"
                      _     -> "")
                  )
      if tstp ?flags then
        putInfo ( "SZS status "
-              ++ show ans
+              ++ ans
               ++ " for "
               ++ thisFile ?flags
                )

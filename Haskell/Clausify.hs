@@ -1,4 +1,4 @@
-{-# OPTIONS -fgenerics #-}
+{-# OPTIONS -XGenerics #-}
 module Clausify
   ( clausify
   )

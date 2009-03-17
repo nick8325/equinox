@@ -35,16 +35,16 @@ import Equinox.FolSat
 main :: IO ()
 main =
   do putStrLn "Equinox, version 2.0, 2008-07-29."
-     Main.main solveProblem
+     Main.main Equinox solveProblem
   
 ---------------------------------------------------------------------------
 -- solve
 
-solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
+solveProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
 solveProblem cs =
   do -- sequence_ [ putStrLn (showClause c) | c <- cs ]
      b <- prove ?flags cs
-     return (if b then Unsatisfiable else GaveUp)
+     return (if b then Unsatisfiable else NoAnswerClause GaveUp)
 
 ---------------------------------------------------------------------------
 -- the end.

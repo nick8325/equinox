@@ -57,7 +57,7 @@ getLit = undefined
 -------------------------------------------------------------------------
 -- solver
 
-solveInstances :: Flags -> [(Symbol,Bool)] -> Int -> [(Int,Bool,Symbol,[ClauseSet])] -> IO (Answer,Int)
+solveInstances :: Flags -> [(Symbol,Bool)] -> Int -> [(Int,Bool,Symbol,[ClauseSet])] -> IO (ClauseAnswer,Int)
 solveInstances flags predsPure minSize css =
   do ref  <- newIORef (M.empty,M.empty)
      
@@ -147,7 +147,7 @@ solveInstances flags predsPure minSize css =
              | otherwise = 1 + (x `ind` ys)             
          
          domains minSize [] =
-           do return (GaveUp,minSize)
+           do return (NoAnswerClause GaveUp,minSize)
 
          domains minSize ((k,check,assump,clauses):rest) =
            do if progress flags then

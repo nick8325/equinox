@@ -5,6 +5,7 @@ import Name
 import qualified Data.Set as Set
 import List
 import qualified Infinox.Symbols as Sym
+import Infinox.Types
 
 {-
 --for testing	
@@ -25,10 +26,6 @@ p @@ [x,y] = subst ((Sym.x |=> x) |+| (Sym.y |=> y)) p
 _ @@ _     = error "@@"
 
 -----------------------------------------------------------------------------------------
-
-type Function  = Term -- has one variable X
-type Relation  = Form -- has two variables X, Y
-type Predicate = Form -- has one variable X
 
 existsFun :: String -> Function -> ((Term -> Term) -> Form) -> Form
 existsFun s t p = existsSymbol s t (\f -> p (\x -> f [x]))

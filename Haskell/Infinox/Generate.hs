@@ -6,9 +6,13 @@ import Form
 import Data.List (nub,sortBy,init,permutations)
 import Data.Set as S( Set )
 import qualified Data.Set as S
+import Infinox.Types
+import qualified Infinox.Symbols as Sym
+import Infinox.Symbols( star )
 
 -------------------------------------------------------------------------------
 
+{- -- obsolete, because now Clauses
 getForms :: Problem ->  [Form]
 --convert a problem to a list of formulas
 getForms [] = []
@@ -16,21 +20,21 @@ getForms ((Input k t f):fs) =
    case k of 
       Conjecture  -> (nt f):(getForms fs)
       _	          -> (f:(getForms fs))
+-}
 
 ------------------to simplify notation-----------------------------------------
 
-equality :: Form
-equality = Atom (Pred ("=" ::: (PredArity 2)) 
-	[Var ("X" ::: Variable), Var ("Y" ::: Variable)])
-
-star = (Var ("*" ::: Variable))
+equality :: Relation
+equality = Atom (Var Sym.x :=: Var Sym.y)
 
 ----for testing----
 
+{-
 testterm = Fun ("f" ::: (FunArity 1)) 
 	[Fun ("g" ::: (FunArity 3)) [Var ("X" ::: Variable),
 		Var ("Y" ::: Variable),Var ("X" ::: Variable)]]
-		
+-}
+
 -----------collecting terms and predicates from the problem--------------------
 
 --pick out the functional terms
@@ -46,7 +50,7 @@ getFuns = S.filter function
 getFunSymbols :: Set Term -> Set Symbol
 getFunSymbols = (S.filter funsymbol).symbols
 	where
-		funsymbol (_ ::: (FunArity _)) = True
+		funsymbol (_ ::: (_ :-> rtype)) = rtype == top
 		funsymbol _ = False
 	
 --collects all the variables of a term
@@ -58,7 +62,7 @@ getVars (Fun _ ts) = S.unions $ map getVars ts
 getPredSymbols :: Form -> Set Symbol
 getPredSymbols f  = S.filter predsymbol $ symbols f
 	where 
-		predsymbol (_ ::: (PredArity _)) = True
+		predsymbol (_ ::: (_ :-> rtype)) = rtype == bool
 		predsymbol _ = False
 
 -----------Generation of new terms---------------------------------------------
@@ -69,27 +73,26 @@ generateFromTerms ts = S.unions $ map fixVars (S.toList ts)
 	where
 		fixVars t = S.map (fixVar t) (getVars t)
 
-		fixVar (Var (x ::: Variable)) (z ::: Variable)   = 
-			if x == z then (Var ("X" ::: Variable)) else star
+		fixVar (Var x) z   = 
+			Var (if x == z then Sym.x else star)
 
 		fixVar (Fun f ts)  z   = if and [not (includesVar z t) | t <- ts] then 
-			star else Fun f [fixVar t z | t <- ts]
+			Var star else Fun f [fixVar t z | t <- ts]
 
-		includesVar (z ::: Variable) (Var (x ::: Variable)) = z == x
+		includesVar z (Var x) = z == x
 		includesVar z (Fun f ts) = or [includesVar z t | t <- ts]
 		
 
 --generate all terms with the given symbols, up to depth n
 --WARNING! with many symbols or arities > 2, do not use depths > 2!
 generateFromSymbols ss n = concat $ init $
-	generate ss [[star, Var ("X" ::: Variable)]] n
+	generate ss [[Var star, Var Sym.x]] n
 	
 generate _ ts 0 = ts
 		--invariant: ts non-empty.
 generate ss ts n = generate ss (funs:ts) (n-1)
 	where
-		funs = [ Fun (f ::: (FunArity a)) terms | 
-							(f ::: (FunArity a)) <- ss, terms <- termLists a ts, hasX terms ]
+		funs = [ Fun (f ::: ftype) terms | f ::: (ftype@(args :-> _)) <- ss, terms <- termLists (length args) ts, hasX terms ]
 		termLists 0 _ = [[]] 
 		termLists n (ts:tts) = 
 		--at least one argument in each produced list must have depth (n-1)
@@ -105,7 +108,7 @@ isArg a [] 		= False
 isArg a ((Fun _ ts):tts) = isArg a ts || isArg a tts
 isArg a (x:xs) = if a == x then True else isArg a xs
 
-hasX = isArg (Var ("X" ::: Variable))
+hasX = isArg (Var Sym.x)
 
 insertions :: a -> [a] -> [[a]] 
 insertions a [] = [ [a] ] 
@@ -115,10 +118,10 @@ insertions a list@(x : xs) = (a : list) : [ x : z | z <- insertions a xs ]
 	
 --Generation of predicates containing at least one "X"-argument,
 --all other arguments are represented by "*"
-generateFromP (p ::: (PredArity a)) = 
-   [ Atom ( Pred (p ::: (PredArity a)) ts) | ts <- args a, hasX ts]
+generateFromP (p ::: ptype@(pargs :-> rtype)) | rtype == bool = 
+   [ Atom ( prd (p ::: ptype) ts) | ts <- args (length pargs), hasX ts]
 	where
-		args n = arglists n [star, Var ("X" ::: Variable)]
+		args n = arglists n [Var star, Var Sym.x]
 
 generatePs  [] = []
 generatePs (p:ps) = generateFromP p ++ generatePs ps
@@ -128,20 +131,20 @@ genRs :: Form -> [Form]
 --ex p(X,*,X,*,X) ==> [p(X,*,Y,*,X), p(X,*,Y,*,Y), p(X,*,X,*,Y)]
 --create all predicates with at least one X and one Y, *'s are left unchanged. 
 genRs (Not form) = map Not $ genRs form
-genRs (Atom (Pred p ts)) = map Atom $ filter hasXY [(Pred p ts')| ts' <- (genRs' ts)]
+genRs (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | [t1',t2'] <- genRs' [t1,t2]]
    where
       genRs'   [] = [[]]
-      genRs'  ((Var ("X" ::: Variable)):ts) = map  ((Var ("X" ::: Variable)) : )   (genRs'' ts)
+      genRs'  (Var x:ts) | x == Sym.x = map  ((Var Sym.x) : )   (genRs'' ts)
 			--the first variable that is not a star is always "X"
-      genRs'  ((Var ("*" ::: Variable)):ts) = map  ((Var ("*" ::: Variable)) : )   (genRs' ts)
+      genRs'  (Var s:ts) | s == star  = map  ((Var star) : )   (genRs' ts)
 
 			--after fixing the first variable to "X", any "X" can be substituted for either "X" or "Y".
       genRs'' [] = [[]]
-      genRs'' ((Var ("*" ::: Variable)):ts) = map ((Var ("*" ::: Variable)) : )   (genRs'' ts)
-      genRs'' ((Var ("X" ::: Variable)):ts) = (map ((Var ("X" ::: Variable)) : ) (genRs'' ts)) ++ 	 
-	(map ((Var ("Y" ::: Variable)) : ) (genRs'' ts))
+      genRs'' (Var s:ts) | s == star  = map ((Var star) : )   (genRs'' ts)
+      genRs'' (Var x:ts) | x == Sym.x = (map ((Var Sym.x) : ) (genRs'' ts)) ++ 	 
+	(map ((Var Sym.y) : ) (genRs'' ts))
 			--all predicates in the resultlist must include both X and Y.
-      hasXY (Pred p ts) = isArg (Var ("X" ::: Variable)) ts  && isArg (Var ("Y" ::: Variable)) ts
+      hasXY (t1 :=: t2) = isArg (Var Sym.x) [t1,t2]  && isArg (Var Sym.y) [t1,t2]
 
 --generate limiting predicates, possibly using connectives ~, /\, \/								
 getPs ps och eller inte = let 
@@ -154,43 +157,49 @@ getPs ps och eller inte = let
             p1 <- ps', p2 <- ps', p1 < p2, not (eq p1), not (eq p2) ] else [] in
       ps' ++ ps1 ++ ps2 ++ ps3
 	where
-		eq (Atom (Pred ("=" ::: _) _)) = True
-		eq _ = False
+		eq (Atom (Fun (_ ::: (_ :-> rtype)) _ :=: _)) = rtype == top
+		eq _                                          = False
 
 getRs = (filter twoOrMorex) . generatePs 
    where 
-      twoOrMorex (Atom (Pred p ts)) = foldl (+) 0 [countx t | t <- ts] >= 2
-      countx (Var ("X" ::: Variable)) = 1
-      countx (Var _) = 0
-      countx (Fun f ts) = foldl (+) 0 [countx t | t <- ts]
+      twoOrMorex (Atom (t1 :=: t2)) = sum [countx t | t <- [t1,t2]] >= 2
+      countx (Var x) | x == Sym.x = 1
+      countx (Var _)              = 0
+      countx (Fun f ts)           = sum [countx t | t <- ts]
 -------------------------------------------------------------------------------
 
 --sorting
 
 compareForms :: Form -> Form -> Ordering
--- "=" should come first in all lists, and is thus "less than" any other predicate
-compareForms (Atom (Pred ("=" ::: PredArity 2) _)) 
-								(Atom (Pred ("=" ::: PredArity 2) _)) = EQ
-compareForms (Atom (Pred ("=" ::: PredArity 2) _)) _ = LT
-compareForms _ (Atom (Pred ("=" ::: PredArity 2) _)) = Prelude.GT
+a `compareForms` b = stamp a `compare` stamp b
+ where
+  stamp a = (arity a, size a)
+  
+  arity (Atom (t1 :=: t2))  = numberOfArgs t1 + numberOfArgs t2
+  arity (And xs)            = sum (map arity (S.toList xs))
+  arity (Or xs)             = sum (map arity (S.toList xs))
+  arity (x `Equiv` y)       = arity x + arity y
+  arity (Not a)             = arity a
+  arity (ForAll (Bind x a)) = arity (subst (x |=> Fun Sym.c []) a)
+  arity (Exists (Bind x a)) = arity (subst (x |=> Fun Sym.c []) a)
 
-compareForms (Atom (Pred _ ts)) (Atom (Pred _ ts2)) =  
-	compare (countArgs ts) (countArgs ts2) 
-	where
-		countArgs list = foldl (+) 0 (map numberOfArgs list)
+  size (Atom (t1 :=: t2))  = 1 + sizeTerm t1 + sizeTerm t2
+  size (And xs)            = 1 + sum (map size (S.toList xs))
+  size (Or xs)             = 1 + sum (map size (S.toList xs))
+  size (x `Equiv` y)       = 1 + size x + size y
+  size (Not a)             = 1 + size a
+  size (ForAll (Bind x a)) = 1 + size a
+  size (Exists (Bind x a)) = 1 + size a
 
-compareForms p (Not f) 				= compareForms p f
-compareForms (Not f) p 				= compareForms f p
-compareForms (Atom _) _ 		  = LT
-compareForms _ (Atom _)				= Prelude.GT
-compareForms _ _ = EQ --I don't bother about more complicated structures...
+  sizeTerm (Var _)    = 1
+  sizeTerm (Fun f xs) = 1 + sum (map sizeTerm xs)
 
 compareTerms :: Term -> Term -> Ordering
 compareTerms t1 t2 = compare (numberOfArgs t1) (numberOfArgs t2)
 
 numberOfArgs :: Term -> Int
 numberOfArgs (Var _) = 1
-numberOfArgs (Fun _ ts) = foldl (+) 0 $ map numberOfArgs ts
+numberOfArgs (Fun _ ts) = sum $ map numberOfArgs ts
 
 sortForms :: [Form] -> [Form]
 sortForms = sortBy compareForms

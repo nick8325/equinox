@@ -43,6 +43,6 @@ conjSerial rel =
     /\
     (forEvery x (exist y (r x y))) --serial
  where
-  x = Sym.x
-  y = Sym.y
-  z = Sym.z
+  x = Var Sym.x
+  y = Var Sym.y
+  z = Var Sym.z

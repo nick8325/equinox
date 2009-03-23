@@ -392,10 +392,11 @@ mlift2 f m1 m2 = \no yes -> m1 no (\x -> m2 no (\y -> yes (f x y)))
 -- destructors
 
 class Symbolic a where
-  symbols  :: a -> Set Symbol
-  free     :: a -> Set Symbol
-  subterms :: a -> Set Term
-  subst'   :: Subst -> a -> Mybe r a
+  symbols   :: a -> Set Symbol
+  free      :: a -> Set Symbol
+  subterms  :: a -> Set Term
+  subst'    :: Subst -> a -> Mybe r a
+  occurring :: Symbol -> [Term] -> a -> (a,[Term])
 
   symbols{| Unit |}    Unit      = S.empty
   symbols{| a :*: b |} (x :*: y) = symbols x `S.union` symbols y
@@ -419,6 +420,13 @@ class Symbolic a where
   subst'{| a :+: b |} sub (Inl x)   = mlift1 Inl (subst' sub x)
   subst'{| a :+: b |} sub (Inr y)   = mlift1 Inr (subst' sub y)
 
+  occurring{| Unit |}    z ts Unit      = (Unit,ts)
+  occurring{| a :*: b |} z ts (x :*: y) = let (x',ts1) = occurring z ts x
+                                              (y',ts2) = occurring z ts1 y
+                                           in (x' :*: y', ts2)
+  occurring{| a :+: b |} z ts (Inl x)   = let (x', ts') = occurring z ts x in (Inl x', ts')
+  occurring{| a :+: b |} z ts (Inr y)   = let (y', ts') = occurring z ts y in (Inr y', ts')
+
 subst :: Symbolic a => Subst -> a -> a
 subst sub a = subst' sub a a id
 
@@ -427,15 +435,19 @@ isGround x = S.null (free x)
 
 instance                             Symbolic ()
 instance (Symbolic a, Symbolic b) => Symbolic (a,b)
-instance Symbolic a               => Symbolic [a]
 instance Symbolic a               => Symbolic (Signed a)
 
+instance Symbolic a => Symbolic [a] where
+  occurring z ts []     = ([], ts)
+  occurring z ts (x:xs) = let ((x',xs'),ts') = occurring z ts (x,xs) in (x':xs',ts')
+
 instance (Ord a, Symbolic a) => Symbolic (Set a) where
-  symbols s   = symbols (S.toList s)
-  free s      = free (S.toList s)
+  symbols s        = symbols (S.toList s)
+  free s           = free (S.toList s)
   --subst sub s = S.map (subst sub) s
-  subterms s  = subterms (S.toList s)
-  subst' sub  = mlift1 S.fromList . subst' sub . S.toList
+  subterms s       = subterms (S.toList s)
+  subst' sub       = mlift1 S.fromList . subst' sub . S.toList
+  occurring z ts s = let (xs', ts') = occurring z ts (S.toList s) in (S.fromList xs', ts')
 
 instance Symbolic Atom
 instance Symbolic QClause
@@ -461,6 +473,10 @@ instance Symbolic Term where
     case M.lookup v (mapp sub) of
       Nothing -> nothing
       Just t' -> just t'
+
+  occurring z ts     (Fun f xs)       = let (xs', ts') = occurring z ts xs in (Fun f xs', ts')
+  occurring z (t:ts) (Var v) | v == z = (t,ts)
+  occurring z ts     t                = (t,ts)
 
 instance Symbolic a => Symbolic (Bind a) where
   symbols   (Bind v a) = v `S.insert` symbols a
@@ -524,6 +540,11 @@ instance Symbolic a => Symbolic (Bind a) where
                   , w /= v'
                   ]
                 )
+
+  -- here, we have risk that x is bound in one of the ts...
+  occurring z ts (Bind x a)
+    | x == z    = (Bind x a, ts)
+    | otherwise = let (a', ts') = occurring z ts a in (Bind x a', ts')
 
 ----------------------------------------------------------------------
 -- input clauses

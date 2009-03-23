@@ -1,8 +1,8 @@
 module Infinox.Serial where
 
 import Form
-import Conjecture	
-import Util
+import Infinox.Conjecture	
+import Infinox.Util
 import System.Directory
 import qualified Data.Set as S
 

@@ -1,9 +1,9 @@
 module Infinox.InjOnto where
-import Generate
+import Infinox.Generate
 import Form
-import Conjecture
+import Infinox.Conjecture
 import List
-import Util
+import Infinox.Util
 
 import System.Directory
 

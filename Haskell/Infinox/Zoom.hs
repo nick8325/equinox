@@ -2,8 +2,8 @@ module Infinox.Zoom (zoom) where
 
 import IO
 import Form
-import Util (finiteModel)
-import Conjecture (form2axioms)
+import Infinox.Util (finiteModel)
+import Infinox.Conjecture (form2axioms)
 
 -------------------------------------------------------------------------------
 

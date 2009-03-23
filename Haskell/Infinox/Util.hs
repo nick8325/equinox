@@ -3,8 +3,8 @@ module Infinox.Util where
 import System
 import IO
 import System.Directory
-import Timeout
-import Conjecture
+import Infinox.Timeout
+import Infinox.Conjecture
 -------------------------------------------------------------------------------
 
 maybePrint :: (Show a) => Bool -> String -> Maybe a -> IO ()

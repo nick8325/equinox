@@ -250,7 +250,7 @@ showClause [] = "$false"
 showClause c  = show (foldr1 (\/) ([ Atom a | Pos a <- c ] ++ [ Not (Atom a) | Neg a <- c ]))
 
 toForm :: Clause -> Form
-toForm ls = forAllVars (S.toList (free ls)) (Or (S.fromList (map sign ls)))
+toForm ls = foldr forAll (Or (S.fromList (map sign ls))) (S.toList (free ls))
  where
   sign (Pos x) = Atom x
   sign (Neg x) = Not (Atom x)
@@ -286,9 +286,10 @@ Or as \/ b     = Or (b `S.insert` as)
 a     \/ Or bs = Or (a `S.insert` bs)
 a     \/ b     = Or (S.fromList [a,b])
 
-forAllVars, existVars :: [Symbol] -> Form -> Form
-forAllVars vs a = foldr forAll a vs
-existVars  vs a = foldr exists a vs
+-- quantify over all variables found in first argument
+forEvery, exist :: Symbolic a => a -> Form -> Form
+forEvery vs a = foldr forAll a (S.toList (free vs))
+exist    vs a = foldr exists a (S.toList (free vs))
 
 forAll_, exists_ :: Symbol -> Form -> Form
 forAll_ v a = ForAll (Bind v a)

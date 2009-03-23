@@ -16,9 +16,9 @@ import Form
 import Infinox.Util
 import Infinox.Conjecture
 import Infinox.Generate
+import Infinox.Serial
 import Infinox.Zoom 
 import Infinox.InjOnto
-import Infinox.Serial
 
 -----------------------------------------------------------------------------------------
 

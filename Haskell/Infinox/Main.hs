@@ -1,8 +1,6 @@
 module Infinox.Main where
 
-import Sat
 import qualified Main
-import Form
 import Flags
 import Infinox.Classify
 

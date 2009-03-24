@@ -4,6 +4,7 @@ import Form
 import Infinox.Conjecture
 import List
 import Infinox.Util
+import qualified Infinox.Symbols as Sym
 
 import System.Directory
 
@@ -86,11 +87,11 @@ checkPR :: FilePath -> [Form] ->
    Int -> Bool -> Maybe Form -> Maybe Form -> IO [(Maybe Form, Maybe Form)]
 checkPR dir problem to vb p (Just r)  = do
    case r of
-      (Atom (Pred ("=" ::: _) _)) -> return $ zip (repeat p) (map Just (genRs r))
-      (Not (Atom (Pred ("=" ::: _) _))) -> return []
+ --     (Atom (Pred ("=" ::: _) _)) -> return $ zip (repeat p) (map Just (genRs r))
+ --     (Not (Atom (Pred ("=" ::: _) _))) -> return []
       _  -> do
             let 
-               conj = form2conjecture 0 (checkProperty conjPimpliesRef Nothing (Just r) p)		
+               conj = form2conjecture 0 (conjPimpliesRef Nothing (Just r) p)	
                provefile = dir ++ "checkpr" 
             maybePrint vb "Checking reflexivity of " (Just r)
             maybePrint vb "under " p				  	
@@ -101,7 +102,7 @@ checkPR dir problem to vb p (Just r)  = do
 
 checkFP dir problem to vb p f  = do
    let 
-      conj = form2conjecture 0 (checkProperty conjPClosedUnderF f Nothing p)
+      conj = form2conjecture 0 (conjPClosedUnderF f Nothing p)
       provefile = dir ++ "checkfp"
    maybePrint vb "Checking " p
    maybePrint vb "closed under " f
@@ -114,89 +115,104 @@ checkFP dir problem to vb p f  = do
 ------properties---------------------------------------------------------------
 
 --injectivity and non-surjectivity
-conjInjNotOnto (Just f) (Just r) p = 
+
+conjInjNotOnto (Just fun) (Just rel) pr = 
 	let 	
-	 	a    =   var "A"
-		x    =   var "X"
-		y    =   var "Y" 
+	 	z    =   Var Sym.z
+		x    =   Var Sym.x
+		y    =   Var Sym.y
 	in
-		case p of
+	 existsFun "F" fun $ \f ->
+		existsRel "R" rel $ \r ->
+	 
+		 case pr of
 
 			Nothing		-> --no limiting predicate!
-				forall [x] (r x x) -- r refl
+				forEvery x (r x x) -- r refl
 				/\
-				forall [x,y] (r x y \/  nt (r (f x) (f y))) --f inj w.r.t r
+				forEvery [x,y] (r x y \/  nt (r (f x) (f y))) --f inj w.r.t r
 				/\
-				exist [a] (forall [x] (nt (r (f x) a))) --f non-surj w.r.t. r
+				exist z (forEvery x (nt (r (f x) z))) --f non-surj w.r.t. r
 
 			Just p' 	-> --limiting predicate!
-				(forall [x] ( --reflexivity + p closed under f
-					(nt (p' x)) \/ ( p' (f x) /\ r x x)
+			 existsPred "P" p' $ \p -> 
+				(forEvery [x] ( --reflexivity + p closed under f
+					(nt (p x)) \/ ( p (f x) /\ r x x)
 				)) --p(X) ==> p(f(X)) & r(X,X)
 				/\
-				(exist [y] ( --left/right non-surjectivity
-					p' y /\ forall [x] ((nt (p' x)) \/ nt (r (f x) y)))
+				(exist y ( --left/right non-surjectivity
+					p y /\ forEvery [x] ((nt (p x)) \/ nt (r (f x) y)))
             --Exists y : p(Y) & forall x (p(X) ==> ~r(f(X),Y))
 				\/
-				exist [y] (
-					p' y /\ forall [x] ((nt (p' x)) \/ nt (r y (f x)))
+				exist y (
+					p y /\ forEvery x ((nt (p x)) \/ nt (r y (f x)))
 				)) --Exists y : p(Y) & forall x (p(X) ==> ~r(Y,f(X)))
 				/\ 
-				forall [x,y]  --injectivity of f by r in p
-					((nt (p' x /\ p' y)) \/ ((nt (r (f x) (f y))) \/ r x y))
+				forEvery [x,y]  --injectivity of f by r in p
+					((nt (p x /\ p y)) \/ ((nt (r (f x) (f y))) \/ r x y))
             --p(X) & p(Y) => (r(f(X),f(Y) => r(X,Y)))
 
 
+
 --surjectivity and non-injectivity
-conjNotInjOnto (Just f) _ p =
+conjNotInjOnto (Just fun) _ pr =
 	let 
-			x    =   var "X"
-			y    =   var "Y"
+			x    =   Var Sym.x
+			y    =   Var Sym.y
 	in
-	case p of
 
-		Nothing ->  
-			exist [x,y] ( --f not injective
-				x `eq` y /\ nt (f x `eq` f y)
-			)
-			/\
-			forall [y] (exist [x] ( --f surjective
-			f x `eq` y))
+	existsFun "F" fun $ \f -> 
 
-		Just p' -> 
-			forall [x] (
-				(nt (p' x)) \/ p' (f x) --p closed under f
-			)
-			/\
-			exist [x,y] ( --f not injective in p
-				p' x /\ p' y /\ (nt (x `eq` y)) /\ (f x `eq` f y)
-			)
-			/\
-			forall [y] ( --f surjective in p
-				(nt (p' y)) \/ exist [x] (p' x /\ (f x `eq` y))
-			)
+		case pr of
+			Nothing ->  
+				exist [x,y] ( --f not injective
+					x `eq` y /\ nt (f x `eq` f y)
+				)
+				/\
+				forEvery y (exist x ( --f surjective
+				f x `eq` y))
+			Just p' -> 
+				existsPred "P" p' $ \p ->				
+					forEvery x (
+						(nt (p x)) \/ p (f x) --p closed under f
+					)
+					/\
+					exist [x,y] ( --f not injective in p
+						p x /\ p y /\ (nt (x `eq` y)) /\ (f x `eq` f y)
+					)
+					/\
+					forEvery y ( --f surjective in p
+						(nt (p y)) \/ exist x (p x /\ (f x `eq` y))
+					)
 
-		
 --r reflexive in p
-conjPimpliesRef _ (Just r) (Just p) = 
-	let x = var "X" in
-		forall [x] (
-			r x x \/ nt (p x)
-		)
-
+conjPimpliesRef _ (Just rel) (Just pr) = 
+	existsPred "P" pr $ \p -> 
+		existsRel "R" rel $ \r ->
+			forEvery x (
+				r x x \/ nt (p x)
+			)
+ where
+  x = Var Sym.x
+ 
 --r reflexive
-conjPimpliesRef _ (Just r) Nothing = 
-	let x = var "X" in
-		forall [x] (		
+conjPimpliesRef _ (Just rel) Nothing = 
+	existsRel "R" rel $ \r ->
+		forEvery x (		
 			r x x
 		)
+ where
+  x = Var Sym.x
 
 --p closed under f
-conjPClosedUnderF (Just f) _ (Just p) =
-	let x = var "X" in
-		forall [x] (
-			p (f x) \/ nt (p x)
-		)
+conjPClosedUnderF (Just fun) _ (Just pr) =
+	existsPred "P" pr $ \p ->
+		existsFun "F" fun $ \f ->		
+			forEvery x (
+				p (f x) \/ nt (p x)
+			)
+ where
+  x = Var Sym.x
 
 -------------------------------------------------------------------------------
 

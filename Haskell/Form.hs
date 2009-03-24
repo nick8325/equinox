@@ -327,7 +327,8 @@ forAll v a =
     --a | v `member` vs -> ForAll (v `delete` vs) v a
     --  | otherwise     -> a
     -- where
-    --  vs = free a    
+    --  vs = free a 
+   
 exists v a = nt (forAll v (nt a))
 
 positive :: Form -> Form

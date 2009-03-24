@@ -27,6 +27,8 @@ getForms ((Input k t f):fs) =
 equality :: Relation
 equality = Atom (Var Sym.x :=: Var Sym.y)
 
+eq t1 t2 = Atom (t1 :=: t2)
+
 ----for testing----
 
 {-

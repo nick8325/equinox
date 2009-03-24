@@ -1,6 +1,7 @@
 module Flags
   ( Flags(..)
   , Tool(..)
+	, Method(InjNotSurj,SurjNotInj,Serial)
   , getFlags
   , getTimeLeft
   , getTimeSpent

@@ -1,7 +1,7 @@
 module Infinox.Classify where
 
 import qualified Flags as F
-import Flags( Flags ) 
+import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial))
 import IO
 import List (nub,delete)
 import System (system)
@@ -12,6 +12,7 @@ import Data.Set as S( Set )
 import qualified Data.Set as S
 import Data.Maybe ( fromJust )
 
+import Name (name)
 import Form
 import Infinox.Util
 import Infinox.Conjecture
@@ -28,6 +29,7 @@ classifyProblem cs = do
 
 	let
 		tempdir = (F.temp ?flags) ++ "/" ++ (subdir (fromJust (F.mfile ?flags))) 
+		verbose	= F.verbose ?flags > 0
 			--the name of the temp directory is given as a flag to infinox. 
 			--each input file has its own subdirectory.
  --Create temp dir, get start time, parse the problem and collect the 
@@ -53,54 +55,34 @@ classifyProblem cs = do
 		preds			= S.toList $ S.unions $ map getPredSymbols fs	
                   --all predicate symbols	
 		rs        =  case F.relation ?flags of
-                        Nothing -> 
-        
-        
-        case (relflag inputs) of
-										(_, Just rel)  					-> getRs $ getSymb rel preds
-            			--try only the refl. rel. given as flag to main.
-										(useReflRels,Nothing) 	-> 
-											nub $ sortForms $ getRs $ 
-											(if (useReflRels || (mflag inputs == SR)) 
-												then preds 
-													else if elem ("=" ::: PredArity 2) preds then 
-														[("=" ::: PredArity 2)] else [])
-             -- if useReflRels - all "reflexive predicates" (predicates w at least 2 "X"),
-             --(reflexivity yet to be checked at this point), o.w. just "="
-
-		((usePs,limpred),(och,eller,inte)) = pflag inputs
-	
-		ps  = case limpred of 
-				Nothing  -> 
-					Nothing : (map Just $ sortForms  $ nub $ deleteEqs $ getPs preds och eller inte)
-
-          --No -p=(..) flag given - test all limiting predicates (starting with Nothing)
-				Just p'   -> case getSymb p' preds of 
+										Just rel			->  getRs $ getSymb rel preds
+										Nothing 			->  nub $ sortForms $ getRs preds --use all refl rels.
+		ps = case (F.subset ?flags) of
+			Nothing	-> Nothing : (map Just $ sortForms  $ nub $ deleteEqs $ getPs preds False False False)
+			Just p' -> case getSymb p' preds of 
                --test the given limiting predicate only
-												[p]   -> map Just $ getPs [p] och eller inte
+												[p]   -> map Just $ getPs [p] False False False
 												[]    -> []
-	
-		--look for a relation that is serial, transitive and irreflexive
-	if (mflag inputs == SR) then do 
-		let 
-			rs' = delete equality (nub (concatMap genRs rs)) 
-		result <- continueSR tempdir forms (rs'++(map nt rs')) (vflag inputs) (elimit inputs)  
-		finish starttime result tempdir       
-
+	if (F.method ?flags == Serial) then do
+		let
+			rs' 		= deleteEqs $ nub $ concatMap genRs rs
+			
+		result <- continueSR tempdir forms (rs'++(map nt rs')) verbose (F.elimit ?flags)  
+		finish starttime result tempdir  
+	 
 	 else do --look for inj and ~surj or ~inj and surj function
 		if terms == [] then finish starttime [] tempdir						
 		 else do        
 				let 
-					method = case (mflag inputs) of
-																					Ino -> checkProperty conjInjNotOnto 
-																					Oni -> checkProperty conjNotInjOnto
-					rels = map Just $ rs ++ map nt rs
-				
-				result <- continuePartOne tempdir forms (elimit inputs) 
-											(map Just terms) (rels,rels) [] ps method (vflag inputs)
+					method = case (F.method ?flags) of
+																					InjNotSurj -> conjInjNotOnto 
+																					SurjNotInj -> conjNotInjOnto
+					rels = map Just $ rs ++ map nt rs			
+				result <- continuePartOne tempdir forms (F.elimit ?flags) 
+											(map Just terms) (rels,rels) [] ps method verbose
 				finish starttime result tempdir		
 
-			
+	
 subdir inputfile = (filter ( (not . (flip elem) ['/','.','-',' '])) inputfile) ++ "_TEMP/"
 
 finish time1 result dir = do
@@ -109,12 +91,15 @@ finish time1 result dir = do
       time = tdSec $ diffClockTimes time2 time1
    threadDelay 5000000
    system $ "rm -r " ++  dir
-   return (result,time)
+   case result of
+    []				->	return $ NoAnswerClause GaveUp
+    _					->	return FinitelyUnsatisfiable
+--   return (result,time)
 
 -------------------------------------------------------------------------------
 
 deleteEqs [] = []
-deleteEqs ((Atom (Pred ("=" ::: PredArity 2) _)):xs) = deleteEqs xs
+deleteEqs ((Atom (_ :=: _)):xs) = deleteEqs xs
 deleteEqs (x:xs) = x:(deleteEqs xs)
 
 -------------------------------------------------------------------------------
@@ -127,13 +112,13 @@ negall fs = [Not f | f <- fs]
 
 --Search for a symbol with  given name in a list of terms.
 
-getSymb s xs = filter (((==) s).symbolname) xs
+getSymb s xs = filter (((==) s).show.symbolname) xs
 
 symbolname (r ::: _) = r
 
 getFun :: String -> Set Term -> Set Term
 getFun fun set = S.filter (((==) fun).funname) set
 	where
-		funname (Fun symb _) = symbolname symb
+		funname (Fun symb _) = show $ symbolname symb
 
 

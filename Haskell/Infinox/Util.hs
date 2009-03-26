@@ -31,10 +31,10 @@ proveProperty dir fs timeout vb method (t,r,p)  = do
 	maybePrint vb "r: " r
 	maybePrint vb "p: " p
 	let 
-		conj =  form2conjecture 0 (method t r p) 
+		conj =  form2conjecture fs 0 (method t r p) 
 		provefile = dir ++ "proveProperty"
 	b <- prove conj fs provefile timeout
-	removeFile provefile
+--	removeFile provefile
 	if b then return [(t,r,p)] 
 		else return [] 
 

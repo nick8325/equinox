@@ -10,6 +10,7 @@ module Name
   , isSkolemnName
   , isEltName
   , getIndex
+	, normalName
   )
  where
 
@@ -94,6 +95,11 @@ isEltName     = isName (== el)
 getIndex :: Name -> Int
 getIndex (_ :% i) = i
 getIndex _        = 0
+
+normalName :: String -> Name -> String
+normalName x (Name s) = show s
+normalName x (n :% i) = normalName x n ++ "_" ++ x ++ show i
+normalName x (Prim s) = "$" ++ show s
 
 ---------------------------------------------------------------------------
 -- the end.

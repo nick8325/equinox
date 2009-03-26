@@ -24,7 +24,7 @@ continueSR tempdir problem (r:rs) v tout = do
 checkSR tempdir problem r v tout = do
 	let
 		r' = And (S.fromList [r,Not equality])
-		conj = form2conjecture 0 (conjSerial r')
+		conj = form2conjecture problem 0 (conjSerial r')
 		provefile = tempdir ++ "checksr"
 	maybePrint v "Checking irreflexivity, transitivity, seriality: " (Just r')
 	b <- prove conj problem provefile tout

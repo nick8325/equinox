@@ -8,6 +8,8 @@ import qualified Infinox.Symbols as Sym
 
 import System.Directory
 
+continuePartOne _ _ _ _ _ _ [] _ _ = return []
+
 continuePartOne dir forms elim ts (_,rs) refls ((Just p):ps) method v =
 	continuePartTwo dir forms elim ts rs refls ((Just p):ps) method v
 
@@ -91,7 +93,7 @@ checkPR dir problem to vb p (Just r)  = do
  --     (Not (Atom (Pred ("=" ::: _) _))) -> return []
       _  -> do
             let 
-               conj = form2conjecture 0 (conjPimpliesRef Nothing (Just r) p)	
+               conj = form2conjecture problem 0 (conjPimpliesRef Nothing (Just r) p)	
                provefile = dir ++ "checkpr" 
             maybePrint vb "Checking reflexivity of " (Just r)
             maybePrint vb "under " p				  	
@@ -102,7 +104,7 @@ checkPR dir problem to vb p (Just r)  = do
 
 checkFP dir problem to vb p f  = do
    let 
-      conj = form2conjecture 0 (conjPClosedUnderF f Nothing p)
+      conj = form2conjecture problem 0 (conjPClosedUnderF f Nothing p)
       provefile = dir ++ "checkfp"
    maybePrint vb "Checking " p
    maybePrint vb "closed under " f

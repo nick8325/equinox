@@ -28,7 +28,7 @@ classifyProblem cs = do
 	createDirectoryIfMissing False (F.temp ?flags)
 
 	let
-		tempdir = (F.temp ?flags) ++ "/" ++ (subdir (fromJust (F.mfile ?flags))) 
+		tempdir = (F.temp ?flags) ++ "/" ++ (subdir ((F.thisFile ?flags))) 
 		verbose	= F.verbose ?flags > 0
 			--the name of the temp directory is given as a flag to infinox. 
 			--each input file has its own subdirectory.
@@ -63,15 +63,18 @@ classifyProblem cs = do
                --test the given limiting predicate only
 												[p]   -> map Just $ getPs [p] False False False
 												[]    -> []
+--	putStrLn $ "TERMS: " ++ (show terms)
+--	putStrLn $ "SUBSETS: " ++ (show ps) ++ "\n\n"
+--	putStrLn $ "RELATIONS: " ++ (show rs) ++ "\n\n"
+
 	if (F.method ?flags == Serial) then do
 		let
-			rs' 		= deleteEqs $ nub $ concatMap genRs rs
-			
+			rs' 		= deleteEqs $ nub $ concatMap genRs rs	
 		result <- continueSR tempdir forms (rs'++(map nt rs')) verbose (F.elimit ?flags)  
 		finish starttime result tempdir  
 	 
 	 else do --look for inj and ~surj or ~inj and surj function
-		if terms == [] then finish starttime [] tempdir						
+		if terms == [] || rs == [] then finish starttime [] tempdir						
 		 else do        
 				let 
 					method = case (F.method ?flags) of
@@ -90,7 +93,7 @@ finish time1 result dir = do
    let
       time = tdSec $ diffClockTimes time2 time1
    threadDelay 5000000
-   system $ "rm -r " ++  dir
+ --  system $ "rm -r " ++  dir
    case result of
     []				->	return $ NoAnswerClause GaveUp
     _					->	return FinitelyUnsatisfiable
@@ -99,7 +102,9 @@ finish time1 result dir = do
 -------------------------------------------------------------------------------
 
 deleteEqs [] = []
-deleteEqs ((Atom (_ :=: _)):xs) = deleteEqs xs
+deleteEqs (x@(Atom ((Fun symb _) :=: _)):xs) = if show (symbolname symb) == "=" 
+	then deleteEqs xs
+		else x:(deleteEqs xs)
 deleteEqs (x:xs) = x:(deleteEqs xs)
 
 -------------------------------------------------------------------------------
@@ -113,6 +118,7 @@ negall fs = [Not f | f <- fs]
 --Search for a symbol with  given name in a list of terms.
 
 getSymb s xs = filter (((==) s).show.symbolname) xs
+delSymb s xs = filter (((/=) s).show.symbolname) xs
 
 symbolname (r ::: _) = r
 

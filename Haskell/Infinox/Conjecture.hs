@@ -3,7 +3,7 @@ module Infinox.Conjecture where
 import Form
 import Name
 import qualified Data.Set as Set
-import List
+import Data.List
 import qualified Infinox.Symbols as Sym
 import Infinox.Types
 
@@ -47,17 +47,53 @@ existsSymbol s t p = exist (Bind Sym.x (Bind Sym.y t')) (p f)
 
 --translating to fof-form.
 
+noClashString :: [Form] -> String
+noClashString p = head [ s | i <- [0..] , let s = "x" ++ show i,
+	null (filter (isInfixOf s) (map show (Set.toList (symbols p))))]
+
 form2axioms [] = ""
 form2axioms fs = form2axioms' fs 0
 form2axioms' [] _ = ""
-form2axioms' (f:fs) n = form2axiom f n ++ form2axioms' fs (n+1)
+form2axioms' (f:fs) n = form2axiom fs f n ++ form2axioms' fs (n+1)
 
-form2axiom f n = 	"fof(" ++ "a_" ++ (show n) ++ ", " ++ "axiom" ++ 
-		", (" ++ show f ++ "))."
+form2axiom fs f n = 	let x = noClashString fs in
+	"fof(" ++ "a_" ++ (show n) ++ ", " ++ "axiom" ++ 
+		", (" ++ showNormal x f ++ "))."
+ 
+form2conjecture :: [Form] ->  Int -> Form -> String
+form2conjecture fs n f = let x = noClashString fs in 
+	"fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++ 
+			", (" ++ showNormal x f ++ "))."
 
-form2conjecture :: Int -> Form -> String		
-form2conjecture n f = 	"fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++ 
-		", (" ++ show f ++ "))."
+normalForm x (Atom (t1 :=: t2)) = 
+	let
+		nt1 = normalTerm x t1
+		nt2 = normalTerm x t2 in
+	Atom (nt1 :=: nt2)
+normalForm x (And ts) = 
+	let
+		newts = Set.map (normalForm x) ts 
+	in
+	And newts
+normalForm x (Or ts) = 
+	let
+		newts = Set.map (normalForm x) ts 
+	in
+	Or newts
+normalForm x (Not f) = Not (normalForm x f)
+normalForm x (Equiv f1 f2) = Equiv (normalForm x f1) (normalForm x f2)
+normalForm x (ForAll (Bind b f)) = ForAll (Bind b (normalForm x f))
+normalForm x (Exists (Bind b f)) = Exists (Bind b (normalForm x f))	
+
+normalTerm x (Fun (n ::: typing) ts) =  
+	let 
+		newname = name (normalName x n) in
+	Fun (newname ::: typing) (map (normalTerm x) ts)
+normalTerm x var = var
+
+showNormal x  = show.(normalForm x)
+
+
 
 ---------------------------------------------------------------------------------
 

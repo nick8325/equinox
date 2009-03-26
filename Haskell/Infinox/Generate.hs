@@ -43,17 +43,17 @@ testterm = Fun ("f" ::: (FunArity 1))
 getFuns :: Set Term -> Set Term
 getFuns = S.filter function
 	where
-		function (Fun f ts) = or $ map hasVariable ts
+		function (Fun f ts) = isFunsymbol f && (or $ map hasVariable ts)
 		function _ = False
 		hasVariable (Var _) = True
 		hasVariable t = function t
 
 --collect all function symbols
 getFunSymbols :: Set Term -> Set Symbol
-getFunSymbols = (S.filter funsymbol).symbols
-	where
-		funsymbol (_ ::: (_ :-> rtype)) = rtype == top
-		funsymbol _ = False
+getFunSymbols = (S.filter isFunsymbol).symbols
+	
+isFunsymbol (_ ::: (_ :-> rtype)) = rtype == top
+isFunsymbol _ = False
 	
 --collects all the variables of a term
 getVars :: Term -> Set Symbol
@@ -106,6 +106,8 @@ arglists 0 list = [[]]
 arglists m list = let tails = arglists (m-1) list in
 									[ (x:xs) | x <- list, xs <- tails]
 
+
+--isArg a ((x :=: y):tts) = isArg a (x:y:tts)
 isArg a [] 		= False
 isArg a ((Fun _ ts):tts) = isArg a ts || isArg a tts
 isArg a (x:xs) = if a == x then True else isArg a xs
@@ -133,20 +135,28 @@ genRs :: Form -> [Form]
 --ex p(X,*,X,*,X) ==> [p(X,*,Y,*,X), p(X,*,Y,*,Y), p(X,*,X,*,Y)]
 --create all predicates with at least one X and one Y, *'s are left unchanged. 
 genRs (Not form) = map Not $ genRs form
-genRs (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | [t1',t2'] <- genRs' [t1,t2]]
+genRs (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2 | t1' <- getRs t1]
+
    where
-      genRs'   [] = [[]]
-      genRs'  (Var x:ts) | x == Sym.x = map  ((Var Sym.x) : )   (genRs'' ts)
+		hasXY (t1 :=: t2) = isArg (Var Sym.x) [t1,t2]  && isArg (Var Sym.y) [t1,t2]
+		getRs t = case t of
+			Fun f ts -> map (Fun f) $ genRs' ts
+			_				 -> error $ "genRs: " ++ show t1
+		genRs'   [] = [[]]
+		genRs'  (Var x:ts) 
+							| x == Sym.x = map  ((Var Sym.x) : )   (genRs'' ts)
 			--the first variable that is not a star is always "X"
-      genRs'  (Var s:ts) | s == star  = map  ((Var star) : )   (genRs' ts)
+							| x == star  = map  ((Var star) : )   (genRs' ts)
 
 			--after fixing the first variable to "X", any "X" can be substituted for either "X" or "Y".
-      genRs'' [] = [[]]
-      genRs'' (Var s:ts) | s == star  = map ((Var star) : )   (genRs'' ts)
-      genRs'' (Var x:ts) | x == Sym.x = (map ((Var Sym.x) : ) (genRs'' ts)) ++ 	 
-	(map ((Var Sym.y) : ) (genRs'' ts))
+		genRs'' [] = [[]]
+		genRs'' (Var s:ts) 
+							| s == star  = map ((Var star) : )   (genRs'' ts)
+							| s == Sym.x = (map ((Var Sym.x) : ) (genRs'' ts)) ++ 	 
+									(map ((Var Sym.y) : ) (genRs'' ts))
 			--all predicates in the resultlist must include both X and Y.
-      hasXY (t1 :=: t2) = isArg (Var Sym.x) [t1,t2]  && isArg (Var Sym.y) [t1,t2]
+      
+
 
 --generate limiting predicates, possibly using connectives ~, /\, \/								
 getPs ps och eller inte = let 

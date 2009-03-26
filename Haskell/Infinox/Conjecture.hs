@@ -91,7 +91,7 @@ normalTerm x (Fun (n ::: typing) ts) =
 	Fun (newname ::: typing) (map (normalTerm x) ts)
 normalTerm x var = var
 
-showNormal x  = show.(normalForm x)
+showNormal  = show.normalForm
 
 
 

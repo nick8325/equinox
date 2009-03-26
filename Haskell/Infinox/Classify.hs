@@ -63,9 +63,9 @@ classifyProblem cs = do
                --test the given limiting predicate only
 												[p]   -> map Just $ getPs [p] False False False
 												[]    -> []
---	putStrLn $ "TERMS: " ++ (show terms)
---	putStrLn $ "SUBSETS: " ++ (show ps) ++ "\n\n"
---	putStrLn $ "RELATIONS: " ++ (show rs) ++ "\n\n"
+	putStrLn $ "TERMS: " ++ (show terms)
+	putStrLn $ "SUBSETS: " ++ (show ps) ++ "\n\n"
+	putStrLn $ "RELATIONS: " ++ (show rs) ++ "\n\n"
 
 	if (F.method ?flags == Serial) then do
 		let

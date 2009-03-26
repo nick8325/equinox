@@ -70,11 +70,12 @@ strip n        = n
 
 -- internal names
 
-vr = prim "X"
+-- TODO: clean up: remove unused names, and change prim to name where possible
+vr = name "X"
 eq = prim "eq"
-sk = prim "sk"
+sk = name "sk"
 dp = prim "dp"
-sp = prim "sp"
+sp = name "sp"
 tr = prim "truth"
 dm = prim "dm"
 un = prim "un"

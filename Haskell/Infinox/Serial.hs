@@ -9,25 +9,36 @@ import qualified Data.Set as S
 import qualified Infinox.Symbols as Sym
 import Infinox.Types
 
--------------------------------------------------------------------------------
-
-continueSR dir problem [] v tout =  return []
-continueSR tempdir problem (r:rs) v tout = do
-   b <-  checkSR tempdir problem r v tout
-   if b then return [(Nothing,Just r,Nothing)] 
-    else
-      continueSR tempdir problem rs v tout
+import Data.List (nub)
+import Data.Set as S( Set )
+import Output
+import qualified Data.Set as S
 
 -------------------------------------------------------------------------------
 
+continueSerial tempdir (Sig (preds,_,hasEq)) problem rflag v elim = do
+	let
+			rs        =  	collectRelations rflag (S.toList preds) hasEq
+			rs' 			= 	nub $ concatMap genRs rs
+	continueSerial' tempdir problem (rs'++(map nt rs')) v elim
+	
+continueSerial' _ _ [] _ _ = return None
 
-checkSR tempdir problem r v tout = do
+continueSerial' tempdir problem (r:rs) v elim = do
+	b <-  checkSerial tempdir problem r v elim
+	if b then return $ F r 
+		else
+			continueSerial' tempdir problem rs v elim
+
+-------------------------------------------------------------------------------
+
+checkSerial tempdir problem r v elim = do
 	let
 		r' = And (S.fromList [r,Not equality])
 		conj = form2conjecture problem 0 (conjSerial r')
 		provefile = tempdir ++ "checksr"
 	maybePrint v "Checking irreflexivity, transitivity, seriality: " (Just r')
-	b <- prove conj problem provefile tout
+	b <- prove conj problem provefile elim
 	removeFile provefile
 	return b
 
@@ -39,10 +50,11 @@ conjSerial rel =
   existsRel "R" rel $ \r ->  
     forEvery x (nt (r x x)) --not reflexive
     /\ 
-    (forEvery [x,y,z] (nt (r x y)) \/ (nt (r y z)) \/ (r x z) ) --transitive
+    (forEvery [x,y,z] ((nt (r x y)) \/ (nt (r y z)) \/ (r x z) )) --transitive
     /\
     (forEvery x (exist y (r x y))) --serial
  where
   x = Var Sym.x
   y = Var Sym.y
   z = Var Sym.z
+

@@ -3,6 +3,7 @@ module Infinox.Generate where
 --functions for collecting and generating predicates and terms
 
 import Form
+import Flags
 import Data.List (nub,sortBy,init,permutations)
 import Data.Set as S( Set )
 import qualified Data.Set as S
@@ -12,68 +13,93 @@ import Infinox.Symbols( star )
 
 -------------------------------------------------------------------------------
 
-{- -- obsolete, because now Clauses
-getForms :: Problem ->  [Form]
---convert a problem to a list of formulas
-getForms [] = []
-getForms ((Input k t f):fs) = 
-   case k of 
-      Conjecture  -> (nt f):(getForms fs)
-      _	          -> (f:(getForms fs))
--}
+data Signature = Sig (Set Symbol, Set Symbol,  Bool)
+	deriving (Eq,Show)
 
+getSignature :: [Form] -> Signature
+getSignature fs = Sig (
+	S.filter isPredSymbol syms,
+	S.filter isFunSymbol syms,
+	or (map hasEquality fs))
+	where
+		syms = symbols fs
+		hasEquality (Atom (t1 :=: t2)) = t2 /= truth
+		hasEquality (And fs) = S.member True $ S.map hasEquality fs
+		hasEquality (Or fs) = S.member True $ S.map hasEquality fs
+		hasEquality (Not f) = hasEquality f
+		hasEquality (Equiv f1 f2) = hasEquality f1 || hasEquality f2
+		hasEquality (ForAll (Bind s f)) = hasEquality f
+		hasEquality (Exists (Bind s f)) = hasEquality f
 ------------------to simplify notation-----------------------------------------
 
 equality :: Relation
 equality = Atom (Var Sym.x :=: Var Sym.y)
 
+equalityX :: Relation
+equalityX = Atom (Var Sym.x :=: Var Sym.x)
+
 eq t1 t2 = Atom (t1 :=: t2)
-
-----for testing----
-
-{-
-testterm = Fun ("f" ::: (FunArity 1)) 
-	[Fun ("g" ::: (FunArity 3)) [Var ("X" ::: Variable),
-		Var ("Y" ::: Variable),Var ("X" ::: Variable)]]
--}
 
 -----------collecting terms and predicates from the problem--------------------
 
---pick out the functional terms
+collectRelations rel preds hasEq = 
+	let 
+		rels = case rel of
+							Nothing	-> nub $ sortForms $ getRs preds
+							Just r	-> getRs $ getSymb r preds
+	in
+	if hasEq then equalityX:rels else rels
+
+collectSubsets p preds = 
+	case p of
+			Nothing	-> Nothing : 
+									(map Just $ sortForms  $ nub $ getPs preds False False False)
+			Just p' -> case getSymb p' preds of 
+										[p]   -> map Just $ getPs [p] False False False
+										[]    -> []
+
+collectTestTerms syms t fs depth =   
+	let
+		funterms' = getFuns $ S.unions $ map subterms fs
+		funterms	= case t of 
+											"-" -> funterms'
+											_		-> getNamedFun t funterms'		
+	in
+	 sortTerms $ nub $ getFunsFromSymbols syms t depth
+		 ++
+		 (S.toList $ generateFromTerms (S.toList funterms))
+		
+		
+getFunsFromSymbols syms t depth = 
+	let
+		funsymbols = S.toList (S.filter isFunSymbol syms) in
+			generateFromSymbols funsymbols depth
+		
+--pick out the functional terms - i.e. all functions with at least one variable
 getFuns :: Set Term -> Set Term
 getFuns = S.filter function
 	where
-		function (Fun f ts) = isFunsymbol f && (or $ map hasVariable ts)
+		function (Fun f ts) = isFunSymbol f && (or $ map hasVariable ts)
 		function _ = False
 		hasVariable (Var _) = True
 		hasVariable t = function t
 
---collect all function symbols
-getFunSymbols :: Set Term -> Set Symbol
-getFunSymbols = (S.filter isFunsymbol).symbols
-	
-isFunsymbol (_ ::: (_ :-> rtype)) = rtype == top
-isFunsymbol _ = False
-	
---collects all the variables of a term
-getVars :: Term -> Set Symbol
-getVars (Var x) = S.insert x S.empty
-getVars (Fun _ ts) = S.unions $ map getVars ts
+--get the functions with a given name only.
+getNamedFun :: String -> Set Term -> Set Term
+getNamedFun fun ts = S.filter (((==) fun).funname) ts
+	where
+		funname (Fun symb _) = show $ symbolname symb
 
---collect all predicate symbols
-getPredSymbols :: Form -> Set Symbol
-getPredSymbols f  = S.filter predsymbol $ symbols f
-	where 
-		predsymbol (_ ::: (_ :-> rtype)) = rtype == bool
-		predsymbol _ = False
+getSymb s xs = filter (((==) s).show.symbolname) xs
+symbolname (r ::: _) = r	
 
 -----------Generation of new terms---------------------------------------------
 
 --generation of new terms based on the terms found in the problem
 --Ex:  f(X,Y,g(X,Y)) becomes f(X,*,g(X,*)) and f(*,X,g(*,X))
-generateFromTerms ts = S.unions $ map fixVars (S.toList ts)
+generateFromTerms ts = S.unions $ map fixVars ts
 	where
-		fixVars t = S.map (fixVar t) (getVars t)
+		fixVars t = S.map (fixVar t) (free t)
 
 		fixVar (Var x) z   = 
 			Var (if x == z then Sym.x else star)
@@ -87,27 +113,25 @@ generateFromTerms ts = S.unions $ map fixVars (S.toList ts)
 
 --generate all terms with the given symbols, up to depth n
 --WARNING! with many symbols or arities > 2, do not use depths > 2!
-generateFromSymbols ss n = concat $ init $
-	generate ss [[Var star, Var Sym.x]] n
+generateFromSymbols ss depth = concat $ init $
+	generate ss [[Var star, Var Sym.x]] depth
 	
 generate _ ts 0 = ts
 		--invariant: ts non-empty.
 generate ss ts n = generate ss (funs:ts) (n-1)
 	where
-		funs = [ Fun (f ::: ftype) terms | f ::: (ftype@(args :-> _)) <- ss, terms <- termLists (length args) ts, hasX terms ]
+		funs = [ Fun (f ::: ftype) terms | f ::: (ftype@(args :-> _)) <- ss, 
+																				terms <- termLists (length args) ts, hasX terms ]
 		termLists 0 _ = [[]] 
 		termLists n (ts:tts) = 
 		--at least one argument in each produced list must have depth (n-1)
 		  	nub $ concat [ insertions t terms | 
 												t <- ts, terms <- arglists (n-1) (concat (ts:tts)) ]
 
-
 arglists 0 list = [[]]
 arglists m list = let tails = arglists (m-1) list in
 									[ (x:xs) | x <- list, xs <- tails]
 
-
---isArg a ((x :=: y):tts) = isArg a (x:y:tts)
 isArg a [] 		= False
 isArg a ((Fun _ ts):tts) = isArg a ts || isArg a tts
 isArg a (x:xs) = if a == x then True else isArg a xs
@@ -135,13 +159,13 @@ genRs :: Form -> [Form]
 --ex p(X,*,X,*,X) ==> [p(X,*,Y,*,X), p(X,*,Y,*,Y), p(X,*,X,*,Y)]
 --create all predicates with at least one X and one Y, *'s are left unchanged. 
 genRs (Not form) = map Not $ genRs form
-genRs (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2 | t1' <- getRs t1]
+genRs (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | (t1',t2') <- getRs t1 t2]
 
    where
 		hasXY (t1 :=: t2) = isArg (Var Sym.x) [t1,t2]  && isArg (Var Sym.y) [t1,t2]
-		getRs t = case t of
-			Fun f ts -> map (Fun f) $ genRs' ts
-			_				 -> error $ "genRs: " ++ show t1
+		getRs t1 t2 = case t1 of
+			Fun f ts 	-> zip (map (Fun f) $ genRs' ts) (repeat t2)
+			Var _			-> [(Var Sym.x,Var Sym.y)] 
 		genRs'   [] = [[]]
 		genRs'  (Var x:ts) 
 							| x == Sym.x = map  ((Var Sym.x) : )   (genRs'' ts)
@@ -156,7 +180,6 @@ genRs (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2 | t1' <- getRs t
 									(map ((Var Sym.y) : ) (genRs'' ts))
 			--all predicates in the resultlist must include both X and Y.
       
-
 
 --generate limiting predicates, possibly using connectives ~, /\, \/								
 getPs ps och eller inte = let 
@@ -178,6 +201,7 @@ getRs = (filter twoOrMorex) . generatePs
       countx (Var x) | x == Sym.x = 1
       countx (Var _)              = 0
       countx (Fun f ts)           = sum [countx t | t <- ts]
+
 -------------------------------------------------------------------------------
 
 --sorting

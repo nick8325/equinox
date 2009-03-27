@@ -25,9 +25,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import System
 import Flags
+import Form
+
 
 ---------------------------------------------------------------------------
 -- outputs
+
+data Result = None | F Form | TF Term Form | 
+								TFF Term Form Form
+	deriving (Eq,Show)
 
 putInfo :: String -> IO ()
 putInfo s = putStrLn s

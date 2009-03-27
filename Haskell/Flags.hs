@@ -74,6 +74,7 @@ data Flags
   , progress     :: Bool
   , tstp         :: Bool
   , temp         :: FilePath
+  , filelist		 :: Maybe FilePath
   
   -- infinox
   , elimit       :: Int
@@ -84,6 +85,8 @@ data Flags
   , relation     :: Maybe String
   , subset       :: Maybe String
   , method       :: Method
+	, outfile			 :: Maybe FilePath
+	
   
   -- primitive
   , thisFile     :: FilePath
@@ -124,6 +127,8 @@ initFlags =
   , relation     = Nothing
   , subset       = Nothing
   , method       = InjNotSurj
+	, outfile			 = Nothing
+	, filelist		 = Nothing
   
   -- primitive
   , thisFile     = ""
@@ -293,6 +298,27 @@ options =
     , help    = [ "Verbosity level."
                 , "Example: --verbose 2"
                 , "Default: --verbose 0"
+                ]
+    }
+
+	, Option
+    { long    = "outfile"
+    , tools   = [Infinox]
+    , meaning = (\file f -> f{ outfile = Just file }) <$> argName
+    , help    = [ "Specify a file for output"
+                , "Example: --outfile file"
+                , "Default: --outfile (off)"
+                ]
+    }
+
+	
+	, Option
+    { long    = "filelist"
+    , tools   = [Paradox, Equinox, Infinox]
+    , meaning = (\file f -> f{ filelist = Just file }) <$> argName
+    , help    = [ "Specify a file containing a list of problems"
+                , "Example: --filelist file"
+                , "Default: --filelist (off)"
                 ]
     }
 

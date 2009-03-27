@@ -34,7 +34,7 @@ proveProperty dir fs timeout vb method (t,r,p)  = do
 		conj =  form2conjecture fs 0 (method t r p) 
 		provefile = dir ++ "proveProperty"
 	b <- prove conj fs provefile timeout
---	removeFile provefile
+	removeFile provefile
 	if b then return [(t,r,p)] 
 		else return [] 
 

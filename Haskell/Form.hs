@@ -128,6 +128,8 @@ isPredSymbol :: Symbol -> Bool
 isPredSymbol (_ ::: (_ :-> t)) = t == bool
 isPredSymbol _                 = False
 
+isFunSymbol s = not (isVarSymbol s || isPredSymbol s)
+
 ----------------------------------------------------------------------
 -- Term
 

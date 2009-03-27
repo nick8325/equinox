@@ -7,15 +7,6 @@ import Data.List
 import qualified Infinox.Symbols as Sym
 import Infinox.Types
 
-{-
---for testing	
-testt =  Fun ("f" ::: FunArity 2) [Var ("X" ::: Variable), Var ("*" ::: Variable)]
-testp =  Atom $ Pred ("p" ::: PredArity 2) 
-   [Var ("*" ::: Variable), Var ("X" ::: Variable)]
-testr =  Atom $ Pred ("r" ::: PredArity 3) 
-   [Var ("*" ::: Variable), Var ("X" ::: Variable), Var ("Y" ::: Variable)]
--}
-
 -----------------------------------------------------------------------------------------
 
 --Applying a function/predicate containing variables X (and possibly Y) to 
@@ -65,11 +56,19 @@ form2conjecture fs n f = let x = noClashString fs in
 	"fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++ 
 			", (" ++ showNormal x f ++ "))."
 
+
+eqsymbol = (name "=" ::: ([top,top] :-> bool))
+
 normalForm x (Atom (t1 :=: t2)) = 
 	let
 		nt1 = normalTerm x t1
 		nt2 = normalTerm x t2 in
-	Atom (nt1 :=: nt2)
+	case nt1 of 
+		(Fun symb [t1',t2'])	-> 
+				if symb == eqsymbol then
+					if nt2 == truth then Atom (t1' :=: t2') else Not (Atom (t1' :=: t2'))
+				 else Atom (nt1 :=: nt2)
+		_	-> Atom (nt1 :=: nt2)
 normalForm x (And ts) = 
 	let
 		newts = Set.map (normalForm x) ts 
@@ -91,9 +90,7 @@ normalTerm x (Fun (n ::: typing) ts) =
 	Fun (newname ::: typing) (map (normalTerm x) ts)
 normalTerm x var = var
 
-showNormal  = show.normalForm
-
-
+showNormal x  = show.(normalForm x)
 
 ---------------------------------------------------------------------------------
 

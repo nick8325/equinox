@@ -1,14 +1,29 @@
 module Infinox.InjOnto where
 import Infinox.Generate
 import Form
+import Output
 import Infinox.Conjecture
 import List
 import Infinox.Util
 import qualified Infinox.Symbols as Sym
 
 import System.Directory
+import qualified Data.Set as S
 
-continuePartOne _ _ _ _ _ _ [] _ _ = return []
+
+
+continueInjOnto tempdir (Sig (psymbs,fsymbs,hasEq)) forms method
+	fflag rflag pflag depth verbose eflag =
+		let
+			ps				=		S.toList psymbs
+			relations	=  	collectRelations rflag ps hasEq
+			subsets		=		collectSubsets pflag ps
+			funs			=		collectTestTerms fsymbs fflag forms depth
+			
+		in
+		continuePartOne tempdir forms eflag funs (relations,relations) [] subsets method verbose
+
+continuePartOne _ _ _ _ _ _ [] _ _ = return None
 
 continuePartOne dir forms elim ts (_,rs) refls ((Just p):ps) method v =
 	continuePartTwo dir forms elim ts rs refls ((Just p):ps) method v
@@ -25,7 +40,7 @@ continuePartOne dir forms elim ts (rs1,rs2) refls (Nothing:ps) method v =
 					refls' 		= map snd psrs'
 					newrefls	= refls' ++ refls --save all refl.relations for later use!
 			mt <- (mappy (proveProperty dir forms elim v method) $ 
-						[(fun,r,Nothing) | r <- refls', fun <- ts])
+						[(Just fun,Just r,Nothing) | r <- refls', fun <- ts])
 			case mt of
 				[]	  -> case rs' of
 										[] -> continuePartTwo dir forms elim ts (rs2 \\ refls') newrefls ps method v 
@@ -33,10 +48,10 @@ continuePartOne dir forms elim ts (rs1,rs2) refls (Nothing:ps) method v =
 					--preds, and remove refl. preds from testlist to avoid testing them twice.
 										_	-> continuePartOne dir forms elim ts (rs',rs2) newrefls (Nothing:ps) method v 
 					--more relations to check...   
-				_      -> return mt
+				_      -> return $ toResult mt
          --success -> finish.
 
-continuePartTwo _ _ _ _ _ _ [] _ _ = return []
+continuePartTwo _ _ _ _ _ _ [] _ _ = return None
 
 continuePartTwo dir forms elim ts rs refls ((Just p):ps) method v  = 
    continueWithT ts --start by collecting the terms that match the lim.pred p.
@@ -57,7 +72,7 @@ continuePartTwo dir forms elim ts rs refls ((Just p):ps) method v  =
          let 
             psrs = (if b then [(Just p,r) | r <- refls] else []) ++ rsps' 
             --if b - include the predicates already shown to be reflexive.
-            candidates = zippy fsps psrs --candidate triples :: (Term, Maybe Form, Form)
+            candidates = zippy fsps psrs --candidate triples :: (Maybe Term, Maybe Form, Maybe Form)
          --putStrLn (show candidates)
          mt <- (mappy (proveProperty dir forms elim v method) candidates)
          --use the given method on the candidate triples.
@@ -72,13 +87,16 @@ continuePartTwo dir forms elim ts rs refls ((Just p):ps) method v  =
                   --more relations to check - collect new (r,p) pairs, "False" means disregard
                   --relations shown to be reflexive on the full domain since they were checked
                   --in the first round (with every new term)
-            _        -> return mt
+            _		-> return $ toResult mt
 
+
+toResult [(Just f,Just r,Nothing)]  = TF f r
+toResult [(Just f, Just r, Just p)] = TFF f r p
 
 zippy [] _ = []
 --zip together triples from pairs with matching "p's"
 zippy ((f,p):fsps) psrs = 
-   [(f,r,p') | (p',r) <- psrs, p' == p]  ++ zippy fsps psrs
+   [(Just f,Just r,p') | (p',r) <- psrs, p' == p]  ++ zippy fsps psrs
 
 getPairs dir fs elim v p checkfun ts_or_rs = 
    mapUntilSuccess (checkfun dir fs elim v p) ts_or_rs
@@ -86,33 +104,29 @@ getPairs dir fs elim v p checkfun ts_or_rs =
 
 
 checkPR :: FilePath -> [Form] -> 
-   Int -> Bool -> Maybe Form -> Maybe Form -> IO [(Maybe Form, Maybe Form)]
-checkPR dir problem to vb p (Just r)  = do
-   case r of
- --     (Atom (Pred ("=" ::: _) _)) -> return $ zip (repeat p) (map Just (genRs r))
- --     (Not (Atom (Pred ("=" ::: _) _))) -> return []
-      _  -> do
+   Int -> Bool -> Maybe Form -> Form -> IO [(Maybe Form, Form)]
+checkPR dir problem to vb p r  = do
+	if r == equalityX then return $ zip (repeat p) (genRs r)
+		else do
             let 
-               conj = form2conjecture problem 0 (conjPimpliesRef Nothing (Just r) p)	
+               conj = form2conjecture problem 0 (conjPimpliesRef r p)	
                provefile = dir ++ "checkpr" 
             maybePrint vb "Checking reflexivity of " (Just r)
             maybePrint vb "under " p				  	
             b <- prove conj problem provefile to
             removeFile provefile
-            if b then return (zip (repeat p) (map Just (genRs r))) else return []
+            if b then return (zip (repeat p) (genRs r)) else return []
 
 
 checkFP dir problem to vb p f  = do
    let 
-      conj = form2conjecture problem 0 (conjPClosedUnderF f Nothing p)
+      conj = form2conjecture problem 0 (conjPClosedUnderF f p)
       provefile = dir ++ "checkfp"
    maybePrint vb "Checking " p
-   maybePrint vb "closed under " f
+   maybePrint vb "closed under " (Just f)
    b <- prove conj problem provefile to
    removeFile provefile
    if b then return [(f,p)] else return []
-
------------------------------------------------------------------------------------------
 
 ------properties---------------------------------------------------------------
 
@@ -168,11 +182,12 @@ conjNotInjOnto (Just fun) _ pr =
 		case pr of
 			Nothing ->  
 				exist [x,y] ( --f not injective
-					x `eq` y /\ nt (f x `eq` f y)
+					nt (x `eq` y) /\ (f x `eq` f y)
 				)
 				/\
 				forEvery y (exist x ( --f surjective
 				f x `eq` y))
+
 			Just p' -> 
 				existsPred "P" p' $ \p ->				
 					forEvery x (
@@ -188,7 +203,7 @@ conjNotInjOnto (Just fun) _ pr =
 					)
 
 --r reflexive in p
-conjPimpliesRef _ (Just rel) (Just pr) = 
+conjPimpliesRef rel (Just pr) = 
 	existsPred "P" pr $ \p -> 
 		existsRel "R" rel $ \r ->
 			forEvery x (
@@ -198,7 +213,7 @@ conjPimpliesRef _ (Just rel) (Just pr) =
   x = Var Sym.x
  
 --r reflexive
-conjPimpliesRef _ (Just rel) Nothing = 
+conjPimpliesRef rel Nothing = 
 	existsRel "R" rel $ \r ->
 		forEvery x (		
 			r x x
@@ -207,7 +222,7 @@ conjPimpliesRef _ (Just rel) Nothing =
   x = Var Sym.x
 
 --p closed under f
-conjPClosedUnderF (Just fun) _ (Just pr) =
+conjPClosedUnderF fun (Just pr) =
 	existsPred "P" pr $ \p ->
 		existsFun "F" fun $ \f ->		
 			forEvery x (

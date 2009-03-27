@@ -42,6 +42,15 @@ main tool solveProblem =
   do hSetBuffering stdout LineBuffering
      theFlags <- getFlags tool
      let ?flags = theFlags
+
+     problems <- (case filelist ?flags of
+       Nothing      -> return []
+       Just flist   -> do
+        s <- readFile flist
+        return $ lines s)
+
+     let ?flags = ?flags{ files = files ?flags ++ problems }
+
      case time ?flags of
        Just n ->
          do timeoutVar <- newEmptyMVar

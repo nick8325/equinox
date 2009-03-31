@@ -45,20 +45,22 @@ eq t1 t2 = Atom (t1 :=: t2)
 collectRelations rel preds hasEq = 
 	let 
 		rels = case rel of
-							Nothing	-> nub $ sortForms $ getRs preds
-							Just r	-> getRs $ getSymb r preds
+							Nothing		-> if hasEq then [equality] else []
+							Just "-"	-> nub $ sortForms $ getRs preds
+							Just r		-> getRs $ getSymb r preds
 	in
 	if hasEq then equalityX:rels else rels
 
 collectSubsets p preds = 
 	case p of
-			Nothing	-> Nothing : 
+			Nothing 		-> [Nothing]
+			Just "-"		-> Nothing : 
 									(map Just $ sortForms  $ nub $ getPs preds False False False)
 			Just p' -> case getSymb p' preds of 
 										[p]   -> map Just $ getPs [p] False False False
 										[]    -> []
 
-collectTestTerms syms t fs depth =   
+collectTestTerms (Sig (syms,_,_)) t fs depth =   
 	let
 		funterms' = getFuns $ S.unions $ map subterms fs
 		funterms	= case t of 
@@ -128,13 +130,13 @@ generate ss ts n = generate ss (funs:ts) (n-1)
 		  	nub $ concat [ insertions t terms | 
 												t <- ts, terms <- arglists (n-1) (concat (ts:tts)) ]
 
-arglists 0 list = [[]]
-arglists m list = let tails = arglists (m-1) list in
-									[ (x:xs) | x <- list, xs <- tails]
+arglists 0 args = [[]]
+arglists m args = let tails = arglists (m-1) args in
+									[ (x:xs) | x <- args, xs <- tails]
 
 isArg a [] 		= False
 isArg a ((Fun _ ts):tts) = isArg a ts || isArg a tts
-isArg a (x:xs) = if a == x then True else isArg a xs
+isArg a (x:xs) = a == x || isArg a xs
 
 hasX = isArg (Var Sym.x)
 

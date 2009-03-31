@@ -32,19 +32,19 @@ classifyProblem cs = do
 	fs  <- if (F.zoom ?flags) then zoom tempdir forms (F.plimit ?flags)
 						else return forms --the formulas in which to search for candidates
 	let
-		sig	= getSignature fs 
+		sig 	= getSignature fs
 
 	result <-	
 		(if mflag == Serial then 				
-					continueSerial tempdir sig forms (F.relation ?flags) verbose eflag
+				continueSerial tempdir sig forms (F.relation ?flags) verbose eflag
 			else if mflag == InjNotSurj || mflag == SurjNotInj then
 					let
-						rflag = F.relation ?flags
+					--	rflag = F.relation ?flags
 						pflag = F.subset ?flags
-						fflag = F.function ?flags 
-						dflag	= F.termdepth ?flags 
-						method		=		if mflag == InjNotSurj then conjInjNotOnto else conjNotInjOnto in
-					continueInjOnto tempdir sig forms method fflag rflag pflag dflag verbose eflag
+						funs	=	collectTestTerms sig (F.function ?flags) fs (F.termdepth ?flags)
+						(method,rflag)		=		if mflag == InjNotSurj then (conjInjNotOnto,F.relation ?flags) 
+																		else (conjNotInjOnto,Nothing) in
+					continueInjOnto tempdir sig forms funs method rflag pflag verbose eflag
 				else	
 					undefined --Add new methods here!		 			
 		)

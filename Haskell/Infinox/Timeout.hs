@@ -90,9 +90,11 @@ timeOut2 n exe output args =
       h2 <- openFile output WriteMode
       h  <- runProcess exe args Nothing Nothing Nothing (Just h2) Nothing
       res <- newEmptyMVar
+
       forkIO (do 
          ex <- waitForProcess h 
-         putMVar res (Just ex))
+         putMVar res (Just ex)
+			)
 
       id <- forkIO (do 
          threadDelay n
@@ -110,8 +112,9 @@ timeOut2 n exe output args =
                               kill (m-1)
                   Right _ -> return () 
          kill 100
-         putMVar res Nothing)
---      killThread id
+         putMVar res Nothing
+			)
+      killThread id
       hClose h2
       takeMVar res
 

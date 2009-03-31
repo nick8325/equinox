@@ -12,14 +12,12 @@ import qualified Data.Set as S
 
 
 
-continueInjOnto tempdir (Sig (psymbs,fsymbs,hasEq)) forms method
-	fflag rflag pflag depth verbose eflag =
+continueInjOnto tempdir (Sig (psymbs,fsymbs,hasEq)) forms funs method
+	rflag pflag verbose eflag =
 		let
 			ps				=		S.toList psymbs
 			relations	=  	collectRelations rflag ps hasEq
-			subsets		=		collectSubsets pflag ps
-			funs			=		collectTestTerms fsymbs fflag forms depth
-			
+			subsets		=		collectSubsets pflag ps		
 		in
 		continuePartOne tempdir forms eflag funs (relations,relations) [] subsets method verbose
 

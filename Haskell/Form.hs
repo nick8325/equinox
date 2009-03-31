@@ -219,6 +219,19 @@ showsOps op unit xs  = showString "("
                      . opers (" " ++ op ++ " ") xs
                      . showString ")"
 
+mapOverTerms :: (Term -> Term) -> Form -> Form
+mapOverTerms f (Atom (t1 :=: t2)) = Atom ((f t1) :=: (f t2))
+mapOverTerms f form						    = mapOverAtoms (mapOverTerms f) form 
+
+mapOverAtoms :: (Form -> Form) -> Form -> Form
+mapOverAtoms f (Not form) 		= Not (f (mapOverAtoms f form))
+mapOverAtoms f (And fs)   		= And $ S.map (mapOverAtoms f) fs
+mapOverAtoms f (Or fs) 				= Or  $ S.map (mapOverAtoms f) fs
+mapOverAtoms f (Equiv f1 f2)  = Equiv (mapOverAtoms f f1) (mapOverAtoms f f2)
+mapOverAtoms f (Exists (Bind b form)) = Exists (Bind b (mapOverAtoms f form))
+mapOverAtoms f (ForAll (Bind b form)) = ForAll (Bind b (mapOverAtoms f form))
+mapOverAtoms f form = f form
+
 data Signed a
   = Pos a
   | Neg a
@@ -259,6 +272,7 @@ toForm ls = foldr forAll (Or (S.fromList (map sign ls))) (S.toList (free ls))
 
 data QClause = Uniq (Bind Clause)
   deriving ( Eq, Ord, Show )
+
 
 ----------------------------------------------------------------------
 -- constructors

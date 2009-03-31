@@ -45,52 +45,44 @@ noClashString p = head [ s | i <- [0..] , let s = "x" ++ show i,
 form2axioms [] = ""
 form2axioms fs = form2axioms' fs 0
 form2axioms' [] _ = ""
-form2axioms' (f:fs) n = form2axiom fs f n ++ form2axioms' fs (n+1)
+form2axioms' (f:fs) n = form2axiom fs f n ++ "\n" ++  form2axioms' fs (n+1)
 
 form2axiom fs f n = 	let x = noClashString fs in
 	"fof(" ++ "a_" ++ (show n) ++ ", " ++ "axiom" ++ 
-		", (" ++ showNormal x f ++ "))."
+		", " ++ showNormal x f ++ ")."
  
 form2conjecture :: [Form] ->  Int -> Form -> String
 form2conjecture fs n f = let x = noClashString fs in 
 	"fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++ 
 			", (" ++ showNormal x f ++ "))."
 
+showNormal x f = showForm x $ mapOverTerms (giveNormalName x) f
 
-eqsymbol = (name "=" ::: ([top,top] :-> bool))
+showForm x (Atom (t1 :=: t2)) = show (Atom (t1 :=: t2))
+showForm x (Not form) = 	"~(" ++ showForm x form ++ ")"
+showForm x (And fs)	  = 	"(" ++ showWithSymbol " & " (map (showForm x) (Set.toList fs)) ++ ")"
+showForm x (Or fs) 		= 	"(" ++ showWithSymbol " | " (map (showForm x) (Set.toList fs)) ++ ")"
+showForm x (Equiv f1 f2) 				 = 	"(" ++ showForm x f1 ++ " = " ++ showForm x f2 ++ ")"
+showForm x (ForAll (Bind b f)) 	 = 	"![" ++ show (normalSymb x b) ++ "] : (" ++ showForm x f ++ ")"
+showForm x (Exists  (Bind b f))  = 	"?[" ++ show (normalSymb x b) ++ "] : (" ++ showForm x f ++ ")"
 
-normalForm x (Atom (t1 :=: t2)) = 
-	let
-		nt1 = normalTerm x t1
-		nt2 = normalTerm x t2 in
-	case nt1 of 
-		(Fun symb [t1',t2'])	-> 
-				if symb == eqsymbol then
-					if nt2 == truth then Atom (t1' :=: t2') else Not (Atom (t1' :=: t2'))
-				 else Atom (nt1 :=: nt2)
-		_	-> Atom (nt1 :=: nt2)
-normalForm x (And ts) = 
-	let
-		newts = Set.map (normalForm x) ts 
-	in
-	And newts
-normalForm x (Or ts) = 
-	let
-		newts = Set.map (normalForm x) ts 
-	in
-	Or newts
-normalForm x (Not f) = Not (normalForm x f)
-normalForm x (Equiv f1 f2) = Equiv (normalForm x f1) (normalForm x f2)
-normalForm x (ForAll (Bind b f)) = ForAll (Bind b (normalForm x f))
-normalForm x (Exists (Bind b f)) = Exists (Bind b (normalForm x f))	
+showWithSymbol _ [] = ""
+showWithSymbol symb [f] = f
+showWithSymbol symb (f:fs) = f ++ symb ++ showWithSymbol symb fs 
 
-normalTerm x (Fun (n ::: typing) ts) =  
-	let 
-		newname = name (normalName x n) in
-	Fun (newname ::: typing) (map (normalTerm x) ts)
-normalTerm x var = var
+giveNormalName x fun@(Fun symb ts) = 
+	if fun == truth then fun 
+		else Fun (normalSymb x symb) (map (giveNormalName x) ts)
+giveNormalName x (Var symb) = Var $ normalSymb x symb
 
-showNormal x  = show.(normalForm x)
+normalSymb x (n ::: typing) = let newname = name (normalName x n) in
+	(newname ::: typing)
+
+trt = Fun ((prim "truth") ::: ([] :-> bool)) []
+n1 = name "hej"
+s1 = (n1 :::  ([top] :-> bool))
+t1 = Fun s1  [Var ((name "x") ::: (V top))] 
+test3 = Atom $  t1 :=: truth
 
 ---------------------------------------------------------------------------------
 

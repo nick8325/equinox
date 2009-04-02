@@ -13,14 +13,14 @@ import Infinox.Symbols( star )
 
 -------------------------------------------------------------------------------
 
-data Signature = Sig (Set Symbol, Set Symbol,  Bool)
+data Signature = Sig {psymbs :: Set Symbol, fsymbs :: Set Symbol,  hasEq :: Bool}
 	deriving (Eq,Show)
 
 getSignature :: [Form] -> Signature
-getSignature fs = Sig (
-	S.filter isPredSymbol syms,
-	S.filter isFunSymbol syms,
-	or (map hasEquality fs))
+getSignature fs = Sig 
+	(S.filter isPredSymbol syms)
+	(S.filter isFunSymbol syms)
+	(or (map hasEquality fs))
 	where
 		syms = symbols fs
 		hasEquality (Atom (t1 :=: t2)) = t2 /= truth
@@ -30,6 +30,7 @@ getSignature fs = Sig (
 		hasEquality (Equiv f1 f2) = hasEquality f1 || hasEquality f2
 		hasEquality (ForAll (Bind s f)) = hasEquality f
 		hasEquality (Exists (Bind s f)) = hasEquality f
+
 ------------------to simplify notation-----------------------------------------
 
 equality :: Relation
@@ -45,9 +46,9 @@ eq t1 t2 = Atom (t1 :=: t2)
 collectRelations rel preds hasEq = 
 	let 
 		rels = case rel of
-							Nothing		-> if hasEq then [equality] else []
-							Just "-"	-> nub $ sortForms $ getRs preds
-							Just r		-> getRs $ getSymb r preds
+							Nothing		-> []
+							Just "-"	-> nub $ sortForms $ getRelations preds
+							Just r		-> getRelations $ getSymb r preds
 	in
 	if hasEq then equalityX:rels else rels
 
@@ -55,19 +56,19 @@ collectSubsets p preds =
 	case p of
 			Nothing 		-> [Nothing]
 			Just "-"		-> Nothing : 
-									(map Just $ sortForms  $ nub $ getPs preds False False False)
+									(map Just $ sortForms  $ nub $ getSubsets preds False False False)
 			Just p' -> case getSymb p' preds of 
-										[p]   -> map Just $ getPs [p] False False False
+										[p]   -> map Just $ getSubsets [p] False False False
 										[]    -> []
 
-collectTestTerms (Sig (syms,_,_)) t fs depth =   
+collectTestTerms sig t fs depth =   
 	let
 		funterms' = getFuns $ S.unions $ map subterms fs
 		funterms	= case t of 
 											"-" -> funterms'
 											_		-> getNamedFun t funterms'		
 	in
-	 sortTerms $ nub $ getFunsFromSymbols syms t depth
+	 sortTerms $ nub $ getFunsFromSymbols (fsymbs sig) t depth
 		 ++
 		 (S.toList $ generateFromTerms (S.toList funterms))
 		
@@ -145,47 +146,10 @@ insertions a [] = [ [a] ]
 insertions a list@(x : xs) = (a : list) : [ x : z | z <- insertions a xs ] 
 	
 ----------Generation of predicates---------------------------------------------
-	
---Generation of predicates containing at least one "X"-argument,
---all other arguments are represented by "*"
-generateFromP (p ::: ptype@(pargs :-> rtype)) | rtype == bool = 
-   [ Atom ( prd (p ::: ptype) ts) | ts <- args (length pargs), hasX ts]
-	where
-		args n = arglists n [Var star, Var Sym.x]
-
-generatePs  [] = []
-generatePs (p:ps) = generateFromP p ++ generatePs ps
-		
-genRs :: Form -> [Form]
---used after checking reflexivity.
---ex p(X,*,X,*,X) ==> [p(X,*,Y,*,X), p(X,*,Y,*,Y), p(X,*,X,*,Y)]
---create all predicates with at least one X and one Y, *'s are left unchanged. 
-genRs (Not form) = map Not $ genRs form
-genRs (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | (t1',t2') <- getRs t1 t2]
-
-   where
-		hasXY (t1 :=: t2) = isArg (Var Sym.x) [t1,t2]  && isArg (Var Sym.y) [t1,t2]
-		getRs t1 t2 = case t1 of
-			Fun f ts 	-> zip (map (Fun f) $ genRs' ts) (repeat t2)
-			Var _			-> [(Var Sym.x,Var Sym.y)] 
-		genRs'   [] = [[]]
-		genRs'  (Var x:ts) 
-							| x == Sym.x = map  ((Var Sym.x) : )   (genRs'' ts)
-			--the first variable that is not a star is always "X"
-							| x == star  = map  ((Var star) : )   (genRs' ts)
-
-			--after fixing the first variable to "X", any "X" can be substituted for either "X" or "Y".
-		genRs'' [] = [[]]
-		genRs'' (Var s:ts) 
-							| s == star  = map ((Var star) : )   (genRs'' ts)
-							| s == Sym.x = (map ((Var Sym.x) : ) (genRs'' ts)) ++ 	 
-									(map ((Var Sym.y) : ) (genRs'' ts))
-			--all predicates in the resultlist must include both X and Y.
-      
 
 --generate limiting predicates, possibly using connectives ~, /\, \/								
-getPs ps och eller inte = let 
-   ps' = sortForms $ generatePs ps 
+getSubsets ps och eller inte = let 
+   ps' = sortForms $ generatePreds ps 
    ps1 = (if inte then [Not p | p <- ps',not (eq p)] else []) 
    ps2 = (if eller then
       [Or (S.fromList [p1,p2]) | 
@@ -197,13 +161,51 @@ getPs ps och eller inte = let
 		eq (Atom (Fun (_ ::: (_ :-> rtype)) _ :=: _)) = rtype == top
 		eq _                                          = False
 
-getRs = (filter twoOrMorex) . generatePs 
+--Get all relations with 2 or more "X-variables" - to check for reflexivity
+getRelations = (filter twoOrMorex) . generatePreds 
    where 
       twoOrMorex (Atom (t1 :=: t2)) = sum [countx t | t <- [t1,t2]] >= 2
       countx (Var x) | x == Sym.x = 1
       countx (Var _)              = 0
       countx (Fun f ts)           = sum [countx t | t <- ts]
+	
+--Generation of predicates containing at least one "X"-argument,
+--all other arguments are represented by "*"
+generatePreds  [] = []
+generatePreds (p:ps) = generateFromPSymbol p ++ generatePreds ps
+	where
+		args n = arglists n [Var star, Var Sym.x]
+		generateFromPSymbol (p ::: ptype@(pargs :-> rtype)) | rtype == bool = 
+				[ Atom ( prd (p ::: ptype) ts) | ts <- args (length pargs), hasX ts]
 
+
+		
+genRelsXY :: Form -> [Form]
+--ex p(X,*,X,*,X) ==> [p(X,*,Y,*,X), p(X,*,Y,*,Y), p(X,*,X,*,Y)]
+--From predicates with arguments "*" and "X", create all predicates with at 
+--least one X and one Y, *'s are left unchanged. 
+genRelsXY (Not form) = map Not $ genRelsXY form
+genRelsXY (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | (t1',t2') <- getRelations t1 t2]
+
+   where
+		hasXY (t1 :=: t2) = isArg (Var Sym.x) [t1,t2]  && isArg (Var Sym.y) [t1,t2]
+		getRelations t1 t2 = case t1 of
+			Fun f ts 	-> zip (map (Fun f) $ genRelsXY' ts) (repeat t2)
+			Var _			-> [(Var Sym.x,Var Sym.y)] 
+		genRelsXY'   [] = [[]]
+		genRelsXY'  (Var x:ts) 
+							| x == Sym.x = map  ((Var Sym.x) : )   (genRelsXY'' ts)
+			--the first variable that is not a star is always "X"
+							| x == star  = map  ((Var star) : )   (genRelsXY' ts)
+
+			--after fixing the first variable to "X", any "X" can be substituted for either "X" or "Y".
+		genRelsXY'' [] = [[]]
+		genRelsXY'' (Var s:ts) 
+							| s == star  = map ((Var star) : )   (genRelsXY'' ts)
+							| s == Sym.x = (map ((Var Sym.x) : ) (genRelsXY'' ts)) ++ 	 
+									(map ((Var Sym.y) : ) (genRelsXY'' ts))
+			--all predicates in the resultlist must include both X and Y.
+      
 -------------------------------------------------------------------------------
 
 --sorting

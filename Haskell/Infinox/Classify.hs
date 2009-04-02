@@ -9,6 +9,7 @@ import System.Directory (removeFile,createDirectoryIfMissing)
 import Control.Concurrent (threadDelay)
 
 import Form
+import Infinox.Conjecture
 import Output
 import Infinox.Generate
 import Infinox.Serial
@@ -28,23 +29,25 @@ classifyProblem cs = do
 	createDirectoryIfMissing False tempdir
 	starttime   <- getClockTime
 
-	let forms = map toForm cs
-	fs  <- if (F.zoom ?flags) then zoom tempdir forms (F.plimit ?flags)
+	let 
+		forms 		= map toForm cs
+		noClash 	= noClashString forms
+	fs  <- if (F.zoom ?flags) then zoom tempdir forms noClash (F.plimit ?flags)
 						else return forms --the formulas in which to search for candidates
 	let
-		sig 	= getSignature fs
-
+		sig 		= getSignature fs
+		axioms 	= form2axioms forms noClash
+		
 	result <-	
 		(if mflag == Serial then 				
-				continueSerial tempdir sig forms (F.relation ?flags) verbose eflag
+				continueSerial tempdir sig axioms noClash (F.relation ?flags) verbose eflag
 			else if mflag == InjNotSurj || mflag == SurjNotInj then
 					let
-					--	rflag = F.relation ?flags
 						pflag = F.subset ?flags
 						funs	=	collectTestTerms sig (F.function ?flags) fs (F.termdepth ?flags)
 						(method,rflag)		=		if mflag == InjNotSurj then (conjInjNotOnto,F.relation ?flags) 
 																		else (conjNotInjOnto,Nothing) in
-					continueInjOnto tempdir sig forms funs method rflag pflag verbose eflag
+					continueInjOnto tempdir sig axioms noClash funs method rflag pflag verbose eflag
 				else	
 					undefined --Add new methods here!		 			
 		)
@@ -56,7 +59,7 @@ finish time1 result dir file out = do
    time2 <- getClockTime
    let
       time = tdSec $ diffClockTimes time2 time1
-   threadDelay 5000000
+   threadDelay 1000000
    system $ "rm -r " ++  dir
    maybeAppendFile out ( file ++ ": " ++ show result ++ ", Time: " ++ show time ++ "\n" )
    case result of

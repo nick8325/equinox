@@ -16,26 +16,26 @@ import qualified Data.Set as S
 
 -------------------------------------------------------------------------------
 
-continueSerial tempdir (Sig (preds,_,hasEq)) problem rflag v elim = do
+continueSerial tempdir sig problem  noClash rflag v elim = do
 	let
-			rs        =  	collectRelations rflag (S.toList preds) hasEq
-			rs' 			= 	nub $ concatMap genRs rs
-	continueSerial' tempdir problem (rs'++(map nt rs')) v elim
+			rs        =  	collectRelations rflag (S.toList (psymbs sig)) (hasEq sig)
+			rs' 			= 	nub $ concatMap genRelsXY rs
+	continueSerial' tempdir problem noClash (rs'++(map nt rs')) v elim
 	
-continueSerial' _ _ [] _ _ = return None
+continueSerial' _ _ _ [] _ _ = return None
 
-continueSerial' tempdir problem (r:rs) v elim = do
-	b <-  checkSerial tempdir problem r v elim
+continueSerial' tempdir problem noClash (r:rs) v elim = do
+	b <-  checkSerial tempdir problem noClash r v elim
 	if b then return $ F r 
 		else
-			continueSerial' tempdir problem rs v elim
+			continueSerial' tempdir problem noClash rs v elim
 
 -------------------------------------------------------------------------------
 
-checkSerial tempdir problem r v elim = do
+checkSerial tempdir problem noClash r v elim = do
 	let
 		r' = And (S.fromList [r,Not equality])
-		conj = form2conjecture problem 0 (conjSerial r')
+		conj = form2conjecture problem noClash 0 (conjSerial r')
 		provefile = tempdir ++ "checksr"
 	maybePrint v "Checking irreflexivity, transitivity, seriality: " (Just r')
 	b <- prove conj problem provefile elim

@@ -100,7 +100,7 @@ getIndex _        = 0
 normalName :: String -> Name -> String
 normalName x (Name s) = show s
 normalName x (n :% i) = normalName x n ++ "_" ++ x ++ show i
-normalName x (Prim s) = "$" ++ show s
+normalName x (Prim s) = show s
 
 ---------------------------------------------------------------------------
 -- the end.

@@ -26,27 +26,26 @@ mapUntilSuccess f (x:xs)  = do
       [] -> mapUntilSuccess f xs
       _  -> return (y,xs)
 
-proveProperty dir fs timeout vb method (t,r,p)  = do
+proveProperty dir axioms noClash timeout vb method (t,r,p)  = do
 	maybePrint vb "t: " t
 	maybePrint vb "r: " r
 	maybePrint vb "p: " p
 	let 
-		conj =  form2conjecture fs 0 (method t r p) 
+		conj =  form2conjecture axioms noClash 0 (method t r p) 
 		provefile = dir ++ "proveProperty"
-	b <- prove conj fs provefile timeout
+	b <- prove conj axioms provefile timeout
 --	removeFile provefile
 	if b then return [(t,r,p)] 
 		else return [] 
 
-prove conj fs provefile timeout = do   
+prove conj axioms provefile timeout = do   
    h' <- try $ openFile provefile WriteMode			
    case h' of 
       Left e -> do 
          return False	
       Right h -> do
-         let 
-            s = form2axioms fs 
-         hPutStr h (s ++ conj)		
+         hSetBuffering h NoBuffering
+         hPutStr h (axioms ++ conj)		
          hClose h		
          eprove provefile timeout
 
@@ -85,10 +84,14 @@ finiteModel f plim = do
       Just _	->	do
          c <- readFile $ f  ++ "presult"  
          let r = last (lines c)
-        -- putStr $ show result
          system $ "rm " ++ f ++ "presult" 
+         putStrLn $ r			 
          return $ r /= "+++ RESULT: Timeout"
-      Nothing	-> return False
+        	 
+      Nothing	-> do
+         putStrLn "Timed out"
+         return False
+
 	
 -------------------------------------------------------------------------------
 

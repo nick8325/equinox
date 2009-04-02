@@ -41,6 +41,7 @@ classifyProblem cs = do
 	result <-	
 		(if mflag == Serial then 				
 				continueSerial tempdir sig axioms noClash (F.relation ?flags) verbose eflag
+
 			else if mflag == InjNotSurj || mflag == SurjNotInj then
 					let
 						pflag = F.subset ?flags
@@ -48,6 +49,7 @@ classifyProblem cs = do
 						(method,rflag)		=		if mflag == InjNotSurj then (conjInjNotOnto,F.relation ?flags) 
 																		else (conjNotInjOnto,Nothing) in
 					continueInjOnto tempdir sig axioms noClash funs method rflag pflag verbose eflag
+
 				else	
 					undefined --Add new methods here!		 			
 		)

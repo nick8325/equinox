@@ -43,10 +43,10 @@ noClashString p = head [ s | i <- [0..] , let s = "x" ++ show i,
 	null (filter (isInfixOf s) (map show (Set.toList (symbols p))))]
 
 form2axioms :: [Form] -> String -> String
-form2axioms [] _ = ""
 form2axioms fs noClash = form2axioms' fs noClash 0
-form2axioms' [] _ _ = ""
-form2axioms' (f:fs) s n = form2axiom f s n ++ "\n" ++  form2axioms' fs s (n+1)
+	where
+		form2axioms' [] _ _ = ""
+		form2axioms' (f:fs) s n = form2axiom f s n ++ "\n" ++  form2axioms' fs s (n+1)
 
 form2axiom :: Form -> String -> Int -> String
 form2axiom f s n =

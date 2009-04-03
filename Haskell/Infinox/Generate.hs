@@ -203,7 +203,7 @@ genRelsXY (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | (t1',t2')
 		genRelsXY'' (Var s:ts) 
 							| s == star  = map ((Var star) : )   (genRelsXY'' ts)
 							| s == Sym.x = (map ((Var Sym.x) : ) (genRelsXY'' ts)) ++ 	 
-									(map ((Var Sym.y) : ) (genRelsXY'' ts))
+									(map ((Var Sym.y) : ) (genRelsXY'' ts))monads-fd-0.0.0.1
 			--all predicates in the resultlist must include both X and Y.
       
 -------------------------------------------------------------------------------

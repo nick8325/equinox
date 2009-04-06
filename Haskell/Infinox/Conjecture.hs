@@ -56,7 +56,7 @@ form2axiom f s n =
 form2conjecture :: String -> String ->  Int -> Form -> String
 form2conjecture axioms noClash n f =
 	"fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++ 
-			", (" ++ showNormal (noClash) f ++ "))."
+			", (" ++ showNormal noClash f ++ "))."
 
 showNormal x f = show  $ normalBinds x $ mapOverTerms (giveNormalName x) f
 

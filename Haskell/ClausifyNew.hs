@@ -8,6 +8,7 @@ import Form
 import qualified Form
 import Name
 import Data.Set( Set )
+import List
 import qualified Data.Set as S
 import Control.Monad.State.Strict
 import Flags
@@ -196,7 +197,7 @@ removeEquivArg inEquiv p
   -- a formula is small if it does not contain any boolean connectives
   isSmall (Atom _)            = True
   isSmall (Not p)             = isSmall p
-  isSmall (Forall (Bind _ p)) = isSmall p
+  isSmall (ForAll (Bind _ p)) = isSmall p
   isSmall (Exists (Bind _ p)) = isSmall p
   isSmall _                   = False
 

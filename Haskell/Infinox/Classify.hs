@@ -20,20 +20,20 @@ import Infinox.InjOnto
 
 classifyProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
 classifyProblem cs = do
+	sequence_ [ print c | c <- cs ]
 	createDirectoryIfMissing False (F.temp ?flags)
 	let
 		tempdir 					= (F.temp ?flags) ++ "/" ++ (subdir ((F.thisFile ?flags))) 
 		verbose						=  F.verbose ?flags > 0	
 		mflag							=  F.method ?flags	
 		eflag							=  F.elimit ?flags
+		forms 						= map toForm cs
+		noClash 					= noClashString forms
+	
 	createDirectoryIfMissing False tempdir
 	starttime   <- getClockTime
-
-	let 
-		forms 		= map toForm cs
-		noClash 	= noClashString forms
-	fs  <- if (F.zoom ?flags) then zoom tempdir forms noClash (F.plimit ?flags)
-						else return forms --the formulas in which to search for candidates
+	fs  				<- if (F.zoom ?flags) then zoom tempdir forms noClash (F.plimit ?flags)
+									else return forms --the formulas in which to search for candidates
 	let
 		sig 		= getSignature fs
 		axioms 	= form2axioms forms noClash

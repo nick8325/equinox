@@ -142,15 +142,15 @@ removeEquiv' :: Bool -> Form -> M ([Form], Form)
 removeEquiv' inEquiv p =
   case positive p of
     And ps ->
-      do dps <- sequence [ removeEquiv' inEquiv p | p <- toList ps ]
+      do dps <- sequence [ removeEquiv' inEquiv p | p <- S.toList ps ]
          return ( concatMap fst dps
-                , And (fromList (map snd dps))
+                , And (S.fromList (map snd dps))
                 )
     
     Or ps ->
-      do dps <- sequence [ removeEquiv' inEquiv p | p <- toList ps ]
+      do dps <- sequence [ removeEquiv' inEquiv p | p <- S.toList ps ]
          return ( concatMap fst dps
-                , Or (fromList (map snd dps))
+                , Or (S.fromList (map snd dps))
                 )
 
     ForAll (Bind x p) ->
@@ -215,12 +215,12 @@ skolemize :: Form -> M Form
 skolemize p =
   case positive p of
     And ps ->
-      do ps <- sequence [ skolemize p | p <- toList ps ]
-         return (And (fromList ps))
+      do ps <- sequence [ skolemize p | p <- S.toList ps ]
+         return (And (S.fromList ps))
 
     Or ps ->
-      do ps <- sequence [ skolemize p | p <- toList ps ]
-         return (Or (fromList ps))
+      do ps <- sequence [ skolemize p | p <- S.toList ps ]
+         return (Or (S.fromList ps))
     
     ForAll (Bind x p) ->
       do p' <- skolemize p
@@ -278,7 +278,7 @@ makeCheapOr' (ForAll (Bind x p)) =
 makeCheapOr' lit =
   do return ([], lit, 1)
 
-makeOr :: [([Form],Form,Cost)] -> ([Form],Form,Cost)
+makeOr :: [([Form],Form,Cost)] -> M ([Form],Form,Cost)
 makeOr [] =
   do return ([], false, 1)
 
@@ -313,12 +313,12 @@ makeDef p =
 --   POST: p' has no Equiv, no Exists, no ForAll, and only Not on Atoms
 removeForAll :: Form -> M Form
 removeForAll (And ps) =
-  do ps <- sequence [ removeForAll p | p <- toList ps ]
-     return (And (fromList ps))
+  do ps <- sequence [ removeForAll p | p <- S.toList ps ]
+     return (And (S.fromList ps))
 
 removeForAll (Or ps) =
-  do ps <- sequence [ removeForAll p | p <- toList ps ]
-     return (Or (fromList ps))
+  do ps <- sequence [ removeForAll p | p <- S.toList ps ]
+     return (Or (S.fromList ps))
     
 removeForAll (ForAll (Bind x p)) =
   do x' <- fresh x
@@ -338,8 +338,8 @@ removeForAll lit =
 --   PRE: p has no Equiv, no Exists, no ForAll, and only Not on Atoms
 --   POST: And (map Or cs) is equivalent to p
 cnf :: Form -> [Clause]
-cnf (And ps)       = concatMap cnf (S.fromList ps)
-cnf (Or ps)        = cross (map cnf (S.fromList ps))
+cnf (And ps)       = concatMap cnf (S.toList ps)
+cnf (Or ps)        = cross (map cnf (S.toList ps))
 cnf (Atom a)       = [[Pos a]]
 cnf (Not (Atom a)) = [[Neg a]]
 

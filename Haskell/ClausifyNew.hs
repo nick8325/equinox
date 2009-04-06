@@ -207,36 +207,38 @@ removeEquivArg inEquiv p
 -- skolemization
 
 -- skolemize p -> p'
---   PRE: p has no Equiv, and only Not on Atoms
+--   PRE: p has no Equiv
 --   POST: p' is equivalent to p (modulo extra symbols)
 --   POST: p' has no Equiv, no Exists, and only Not on Atoms
 skolemize :: Form -> M Form
-skolemize (And ps) =
-  do ps <- sequence [ skolemize p | p <- toList ps ]
-     return (And (fromList ps))
+skolemize p =
+  case positive p of
+    And ps ->
+      do ps <- sequence [ skolemize p | p <- toList ps ]
+         return (And (fromList ps))
 
-skolemize (Or ps) =
-  do ps <- sequence [ skolemize p | p <- toList ps ]
-     return (Or (fromList ps))
+    Or ps ->
+      do ps <- sequence [ skolemize p | p <- toList ps ]
+         return (Or (fromList ps))
     
-skolemize (ForAll (Bind x p)) =
-  do p' <- skolemize p
-     return (ForAll (Bind x p'))
+    ForAll (Bind x p) ->
+      do p' <- skolemize p
+         return (ForAll (Bind x p'))
     
-skolemize (Exists b@(Bind x p)) =
-  -- skolemterms have only variables as arguments, arities are large(r)
-  do t <- skolem x (free b)
-     skolemize (subst (x |=> t) p)
-{-
-  -- skolemterms can have other skolemterms as arguments, arities are small(er)
-  -- disadvantage: skolemterms are very complicated and deep
-  do p' <- skolemize p
-     t <- skolem x (S.delete x (free p'))
-     return (subst (x |=> t) p')
--}
+    Exists b@(Bind x p) ->
+      -- skolemterms have only variables as arguments, arities are large(r)
+      do t <- skolem x (free b)
+         skolemize (subst (x |=> t) p)
+      {-
+      -- skolemterms can have other skolemterms as arguments, arities are small(er)
+      -- disadvantage: skolemterms are very complicated and deep
+      do p' <- skolemize p
+         t <- skolem x (S.delete x (free p'))
+         return (subst (x |=> t) p')
+      -}
 
-skolemize lit =
-  do return lit
+     lit ->
+       do return lit
 
 -- TODO: Avoid recomputing "free" at every step, by having
 -- skolemize return the set of free variables as well
@@ -249,52 +251,57 @@ skolemize lit =
 
 makeCheapOr :: Form -> M [Form]
 makeCheapOr p =
-  do (defs,p') <- makeCheapOr' S.empty p
+  do (defs,p',_) <- makeCheapOr' p
      return (defs ++ [p'])
 
-makeCheapOr' :: Set Symbol -> Form -> M ([Form],Int,Form)
-makeCheapOr' vs (And ps) =
-  do dcs <- sequence [ makeCheapOr' vs p | p <- S.toList ps ]
-     return (concatMap fst3 dcs, sum (map snd3 dcs), And (S.fromList (map thd3 dcs)))
+type Cost = Int
+-- how much does it cost (in clauses) to flatten this formula to clauses?
 
-makeCheapOr' vs (Or ps) =
-  do dcs <- sequence [ makeCheapOr' vs p | p <- S.toList ps ]
-     makeOr vs dcs
+tooLarge :: Cost -> Bool
+tooLarge c = c > 2 -- completely arbitrarily chosen; TODO: investigate best value
 
-makeCheapOr' vs (ForAll (Bind x p)) =
-  do (defs,n,p') <- makeCheapOr' (S.insert x vs) p
-     return (map (\p -> ForAll (Bind x p)) defs, n, ForAll (Bind x p'))
+makeCheapOr' :: Form -> M ([Form],Form,Cost)
+makeCheapOr' (And ps) =
+  do dcs <- sequence [ makeCheapOr' p | p <- S.toList ps ]
+     return (concatMap fst3 dcs,  And (S.fromList (map snd3 dcs)), sum (map thd3 dcs))
 
-makeCheapOr' vs lit =
-  do return ([], 1, lit)
+makeCheapOr' (Or ps) =
+  do dcs <- sequence [ makeCheapOr' p | p <- S.toList ps ]
+     makeOr dcs
+     (defs1',p1',cost1') <- makeArg p1 cost1 cost2
 
+makeCheapOr' (ForAll (Bind x p)) =
+  do (defs,p',cost) <- makeCheapOr' p
+     return (map (\p -> ForAll (Bind x p)) defs, ForAll (Bind x p'), cost)
 
-makeOr :: Set Symbol -> [([Form],Int,Form)] -> ([Form],Int,Form)
-makeOr = error "jobbigt"
-{-
-cnfOr :: [Form] -> M ([Clause],Int,[Clause])
-cnfOr [] =
-  do return ([],1,[[]])
+makeCheapOr' lit =
+  do return ([], lit, 1)
 
-cnfOr [p] =
-  do cnf' p
+makeOr :: [([Form],Form,Cost)] -> ([Form],Form,Cost)
+makeOr [] =
+  do return ([], false, 1)
 
-cnfOr (p:ps) =
-  do (defs1,n1,cs1) <- cnf' p
-     (defs2,n2,cs2) <- cnfOr ps
-     (defs1',n1',cs1') <- if not (isSmall n1) && n1 >= n2
-                            then makeSmall cs1
-                            else return ([], n1, cs1)
-     (defs2',n2',cs2') <- if not (isSmall n2) && n2 > n1
-                            then makeSmall cs2
-                            else return ([], n2, cs2)
-     return (defs1++defs2++defs1'++defs2', n1'*n2', [ c1++c2 | c1 <- cs1', c2 <- cs2' ])
- where
-  isSmall n = n <= 2
+makeOr [dc] =
+  do return dc
 
-  makeSmall cs =
-    do 
--}
+makeOr ((defs1,p1,cost1):dcs) =
+  do (defs2,p2,cost2) <- makeOr dcs
+     let costly = tooLarge cost1 && tooLarge cost2
+     (defs1',p1',cost1') <- if costly && cost1 >= cost2
+                              then makeDef p1
+                              else return ([],p1,cost1)
+     (defs2',p2',cost2') <- if costly && cost2 > cost1
+                              then makeDef p2
+                              else return ([],p2,cost2)
+     return (defs1++defs2++defs1'++defs2',p1' \/ p2',cost1' * cost2')
+
+makeDef :: Form -> M ([Form],Form,Cost)
+makeDef p =
+  do d <- Atom `fmap` literal (free p)
+     return ([nt d \/ p], d, 1)
+
+-- TODO: Avoid recomputing "free" at every step, by having
+-- makeOr return the set of free variables as well
 
 ----------------------------------------------------------------------
 -- removing ForAll
@@ -342,33 +349,21 @@ cross (cs:css) = [ c1++c2 | c1 <- cs, c2 <- cross css ]
 ----------------------------------------------------------------------
 -- monad
 
-type M = State (Int,Int)
+type M = State Int
 
 run :: M a -> a
-run m = evalState m (0,0)
+run m = evalState m 0
 
 next :: M Int
 next =
-  do (i,j) <- get
+  do i <- get
      let i' = i+1
-     i' `seq` put (i',j)
+     i' `seq` put i'
      return i
-
-next' :: M Int
-next' =
-  do (i,j) <- get
-     let j' = j+1
-     j' `seq` put (i,j')
-     return j
-
-fresh :: Symbol -> M Symbol
-fresh (v ::: t) =
-  do i <- next
-     return ((v % i) ::: t)
 
 skolem :: Symbol -> Set Symbol -> M Term
 skolem (_ ::: V t) vs =
-  do i <- next'
+  do i <- next
      let f = (sk % i) ::: ([ t | _ ::: V t <- args ] :-> t)
      return (Fun f [ Var v | v <- args ])
  where
@@ -376,7 +371,7 @@ skolem (_ ::: V t) vs =
 
 literal :: Set Symbol -> M Atom
 literal vs =
-  do i <- next'
+  do i <- next
      let p = (dp % i) ::: ([ t | _ ::: V t <- args ] :-> bool)
      return (prd p [ Var v | v <- args ])
  where

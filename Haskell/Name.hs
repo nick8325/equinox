@@ -7,7 +7,6 @@ module Name
   -- names
   , vr, sk, dp, sp, tr, dm, un, df, el, eq
   , isSimpleName
-  , isSkolemnName
   , isEltName
   , getIndex
 	, normalName
@@ -90,8 +89,7 @@ isName p _        = False
 isSimpleName (Name _) = True
 isSimpleName _        = False
 
-isSkolemnName = isName (== sk)
-isEltName     = isName (== el)
+isEltName = isName (== el)
 
 getIndex :: Name -> Int
 getIndex (_ :% i) = i

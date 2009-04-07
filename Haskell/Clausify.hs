@@ -120,7 +120,7 @@ clausForm p =
   do noEquivPs  <- removeEquiv p
      skolemedPs <- sequence [ skolemize p | p <- noEquivPs ]
      cheapOrPs  <- sequence [ makeCheapOr p | p <- skolemedPs ]
-     noQuantPs  <- sequence [ removeForAll p | p <- cheapOrPs ]
+     noQuantPs  <- sequence [ removeForAll p | p <- concat cheapOrPs ]
      return (concat [ cnf p | p <- noQuantPs ])
 
 ----------------------------------------------------------------------
@@ -156,13 +156,13 @@ removeEquiv' inEquiv p =
     ForAll (Bind x p) ->
       do (defs,p') <- removeEquiv' inEquiv p
          return ( defs
-                , ForAll (Bind x p)
+                , ForAll (Bind x p')
                 )
 
     Exists (Bind x p) ->
       do (defs,p') <- removeEquiv' inEquiv p
          return ( defs
-                , Exists (Bind x p)
+                , Exists (Bind x p')
                 )
 
     p `Equiv` q ->
@@ -323,7 +323,7 @@ removeForAll (Or ps) =
 removeForAll (ForAll (Bind x p)) =
   do x' <- fresh x
      p' <- removeForAll p
-     return (ForAll (Bind x' (subst (x |=> Var x') p')))
+     return (subst (x |=> Var x') p')
 
 removeForAll lit =
   do return lit

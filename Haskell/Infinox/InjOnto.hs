@@ -31,7 +31,7 @@ continuePartOne dir axioms noClash elim ts (rs1,rs2) refls (Nothing:ps) method v
 --collect all relations that are reflexive on the full domain before
 --checking subdomains!
    do
---			putStr $ if v then "Searching for reflexive relations...\n" else ""
+			putStr $ if v then "Searching for reflexive relations...\n" else ""
 			
 			(psrs',rs') <- getPairs dir axioms noClash elim v Nothing checkPR rs1 
 			--"getPairs" stops as soon as it founds a matching p-r tuple.
@@ -42,7 +42,7 @@ continuePartOne dir axioms noClash elim ts (rs1,rs2) refls (Nothing:ps) method v
 																		--thus we do not need to check them for reflexivity in combination
 																		--with subsets...
 					newrefls	= refls' ++ refls --save all refl.relations for later use!
---			putStr $ if v then "Found reflexive relations: " ++ show refls' ++ "\n" else ""
+			putStr $ if v then "Found reflexive relations: " ++ show refls' ++ "\n" else ""
 			mt <- (mappy (proveProperty dir axioms noClash elim v method) $ 
 						[(Just fun,Just r,Nothing) | r <- refls', fun <- ts]) --run the chosen method on each function
 																																	--together w. each reflexive relation.
@@ -63,15 +63,15 @@ continuePartTwo dir axioms noClash elim ts rs refls ((Just p):ps) oldpsrs method
    continueWithTerms ts oldpsrs --start by collecting the terms that match the lim.pred p.
    where 
       continueWithTerms ts oldpsrs = do
---        putStr $ if v then "Searching for functions under which " ++ show p ++ " is closed\n" else ""
-         (fsps,ts')  <- getPairs dir axioms noClash elim v (Just p) checkFP ts
+        putStr $ if v then "Searching for functions under which " ++ show p ++ " is closed\n" else ""
+        (fsps,ts')  <- getPairs dir axioms noClash elim v (Just p) checkFP ts
          --fsps are the matching pairs, ts' are the terms that have not yet been processed.
          --(getPairs stops as soon as a matching pair is found)
-         case fsps of
+        case fsps of
                [] -> continuePartTwo dir axioms noClash elim ts rs refls ps [] method v
                --no terms match with p - continue with next lim. pred, reset oldpsrs
                _  -> do
---                     putStr $ if v then "Found matching pairs: " ++ show fsps ++ "\n" else ""	     
+                     putStr $ if v then "Found matching pairs: " ++ show fsps ++ "\n" else ""	     
                      continueWithRelations True rs ts' fsps oldpsrs
                --if we have matching pairs -collect the refl. relations that match with p
                --"True" means that the relations in "refls" should be considered in this round,
@@ -87,9 +87,9 @@ continuePartTwo dir axioms noClash elim ts rs refls ((Just p):ps) oldpsrs method
             --if b - include the predicates already shown to be reflexive.
             candidates = zippy fsps psrs --candidate triples :: (Maybe Term, Maybe Form, Maybe Form)
          --putStrLn (show candidates)
---         putStr $ if v then "Found new matching pairs: " ++ show rsps' ++ "\n" else ""	     
---         putStr $ if v then "Matching pairs already found: " ++ show oldpsrs ++ "\n" else ""	 
---         putStr $ if v && b then "Trivially matching pairs: " ++ show prefls ++ "\n" else ""	 
+         putStr $ if v then "Found new matching pairs: " ++ show rsps' ++ "\n" else ""	     
+         putStr $ if v then "Matching pairs already found: " ++ show oldpsrs ++ "\n" else ""	 
+         putStr $ if v && b then "Trivially matching pairs: " ++ show prefls ++ "\n" else ""	 
          mt <- (mappy (proveProperty dir axioms noClash elim v method) candidates)
          --use the given method on the candidate triples.
          --"mappy" stops when successful.

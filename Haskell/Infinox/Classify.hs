@@ -20,7 +20,7 @@ import Infinox.InjOnto
 
 classifyProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
 classifyProblem cs = do
-	sequence_ [ print c | c <- cs ]
+--	sequence_ [ print c | c <- cs ]
 	createDirectoryIfMissing False (F.temp ?flags)
 	let
 		tempdir 					= (F.temp ?flags) ++ "/" ++ (subdir ((F.thisFile ?flags))) 

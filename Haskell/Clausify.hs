@@ -117,11 +117,13 @@ split p =
 
 clausForm :: Form -> M [Clause]
 clausForm p =
-  do noEquivPs  <- removeEquiv p
-     skolemedPs <- sequence [ skolemize p | p <- noEquivPs ]
-     cheapOrPs  <- sequence [ makeCheapOr p | p <- skolemedPs ]
-     noQuantPs  <- sequence [ removeForAll p | p <- concat cheapOrPs ]
-     return (concat [ cnf p | p <- noQuantPs ])
+  do noEquivPs       <-             removeEquiv       p
+     noExistsPs      <-  sequence [ removeExists      p | p <- noEquivPs ]
+     noExpensiveOrPs <- csequence [ removeExpensiveOr p | p <- noExistsPs ]
+     noForAllPs      <-  sequence [ removeForAll      p | p <- noExpensiveOrPs ]
+     return (concat [ cnf p | p <- noForAllPs ])
+ where
+  csequence = fmap concat . sequence
 
 ----------------------------------------------------------------------
 -- removing equivalences
@@ -131,115 +133,112 @@ clausForm p =
 --   POST: ps has no Equiv and only Not on Atoms
 removeEquiv :: Form -> M [Form]
 removeEquiv p =
-  do (defs,p') <- removeEquiv' False p
-     return (p' : defs)
+  do (defs,pos,_) <- removeEquivAux False p
+     return (defs++[pos])
 
--- removeEquiv' inEquiv p -> (defs,p') :
+-- removeEquivAux inEquiv p -> (defs,pos,neg) :
 --   PRE: inEquiv is True when we are "under" an Equiv
 --   POST: defs is a list of definitions, under which
---         p' is equivalent to p
-removeEquiv' :: Bool -> Form -> M ([Form], Form)
-removeEquiv' inEquiv p =
-  case positive p of
+--         pos is equivalent to p and neg is equivalent to nt p
+-- (the reason why "neg" and "nt pos" can be different, is
+-- because we want to always code an equivalence as
+-- a conjunction of two disjunctions, which leads to fewer
+-- clauses -- the "neg" part of the result for the case Equiv
+-- below makes use of this)
+removeEquivAux :: Bool -> Form -> M ([Form],Form,Form)
+removeEquivAux inEquiv p =
+  case simple p of
+    Not p ->
+      do (defs,pos,neg) <- removeEquivAux inEquiv p
+         return (defs,neg,pos)
+  
     And ps ->
-      do dps <- sequence [ removeEquiv' inEquiv p | p <- S.toList ps ]
-         return ( concatMap fst dps
-                , And (S.fromList (map snd dps))
-                )
-    
-    Or ps ->
-      do dps <- sequence [ removeEquiv' inEquiv p | p <- S.toList ps ]
-         return ( concatMap fst dps
-                , Or (S.fromList (map snd dps))
+      do dps <- sequence [ removeEquivAux inEquiv p | p <- S.toList ps ]
+         let (defss,poss,negs) = unzip3 dps
+         return ( concat defss
+                , And (S.fromList poss)
+                , Or  (S.fromList negs)
                 )
 
     ForAll (Bind x p) ->
-      do (defs,p') <- removeEquiv' inEquiv p
+      do (defs,pos,neg) <- removeEquivAux inEquiv p
          return ( defs
-                , ForAll (Bind x p')
-                )
-
-    Exists (Bind x p) ->
-      do (defs,p') <- removeEquiv' inEquiv p
-         return ( defs
-                , Exists (Bind x p')
+                , ForAll (Bind x pos)
+                , Exists (Bind x neg)
                 )
 
     p `Equiv` q ->
-      do (defsp,p') <- removeEquivArg inEquiv p
-         (defsq,q') <- removeEquivArg inEquiv q
-         return ( defsp ++ defsq
-                , (nt p' \/ q') /\ (p' \/ nt q')
+      do (defsp,posp,negp)    <- removeEquivAux True p
+         (defsq,posq,negq)    <- removeEquivAux True q
+         (defsp',posp',negp') <- makeSmall inEquiv posp negp
+         (defsq',posq',negq') <- makeSmall inEquiv posq negq
+         return ( defsp ++ defsq ++ defsp' ++ defsq'
+                , (negp' \/ posq') /\ (posp' \/ negq')
+                , (negp' \/ negq') /\ (posp' \/ posq')
                 )
-      
-    lit ->
-      do return ([],lit)
 
--- removeEquivArg inEquiv p -> (defs,p'):
--- deals with the argument to an Equiv.
---   PRE: inEquiv is True when we are "under" an Equiv
---   POST: defs is a list of definitions, under which
---         p' is equivalent to p
-removeEquivArg :: Bool -> Form -> M ([Form],Form)
-removeEquivArg inEquiv p
-  -- if we are not already under an Equiv, we can safely expand without
-  --   causing an explosion
-  -- if we are under an equiv, we have to force the argument to be small;
-  --   we do this by introducing a new predicate symbol and a definition
-  | not inEquiv || isSmall p =
-      do removeEquiv' True p
+    atom ->
+      do return ([],atom,nt atom)
+
+-- makeSmall turns a formula into something that we are
+-- willing to copy: (1) any formula that is not under an Equiv
+-- (because we have to copy these at least once anyway), (2)
+-- any formula that is small. All other formulas will be made
+-- small (by means of a definition) before we copy them.
+makeSmall :: Bool -> Form -> Form -> M ([Form],Form,Form)
+makeSmall inEquiv pos neg
+  | isSmall pos || not inEquiv =
+    do return ([],pos,neg)
 
   | otherwise =
-      do dp   <- Atom `fmap` literal (free p)
-         defs <- removeEquiv (forEvery dp (dp `Equiv` p))
-         return (defs, dp)
+    do dp <- Atom `fmap` literal (name "d_eq") (free pos)
+       return ([nt dp \/ pos, dp \/ neg],dp, nt dp)
  where
-  -- a formula is small if it does not contain any boolean connectives
-  isSmall (Atom _)            = True
-  isSmall (Not p)             = isSmall p
-  isSmall (ForAll (Bind _ p)) = isSmall p
-  isSmall (Exists (Bind _ p)) = isSmall p
-  isSmall _                   = False
+  -- a formula is small if it is already a literal
+  isSmall (Atom _) = True
+  isSmall (Not p)  = isSmall p
+  isSmall _        = False
 
 -- TODO: Replace the list of definitions by a sequence where
 -- concatenation is O(1)
 
+-- TODO: Small formulas should also be able to contain quantifiers.
+-- however, this messes up skolemization, so that should be done first then!
+
 ----------------------------------------------------------------------
 -- skolemization
 
--- skolemize p -> p'
+-- removeExists p -> p'
 --   PRE: p has no Equiv
 --   POST: p' is equivalent to p (modulo extra symbols)
 --   POST: p' has no Equiv, no Exists, and only Not on Atoms
-skolemize :: Form -> M Form
-skolemize p =
-  case positive p of
-    And ps ->
-      do ps <- sequence [ skolemize p | p <- S.toList ps ]
-         return (And (S.fromList ps))
+removeExists :: Form -> M Form
+removeExists (And ps) =
+  do ps <- sequence [ removeExists p | p <- S.toList ps ]
+     return (And (S.fromList ps))
 
-    Or ps ->
-      do ps <- sequence [ skolemize p | p <- S.toList ps ]
-         return (Or (S.fromList ps))
+removeExists (Or ps) =
+  do ps <- sequence [ removeExists p | p <- S.toList ps ]
+     return (Or (S.fromList ps))
     
-    ForAll (Bind x p) ->
-      do p' <- skolemize p
-         return (ForAll (Bind x p'))
+removeExists (ForAll (Bind x p)) =
+  do p' <- removeExists p
+     return (ForAll (Bind x p'))
     
-    Exists b@(Bind x p) ->
-      -- skolemterms have only variables as arguments, arities are large(r)
-      do t <- skolem x (free b)
-         skolemize (subst (x |=> t) p)
-      {-
-      -- skolemterms can have other skolemterms as arguments, arities are small(er)
-      -- disadvantage: skolemterms are very complicated and deep
-      do p' <- skolemize p
-         t <- skolem x (S.delete x (free p'))
-         return (subst (x |=> t) p')
-      -}
+removeExists (Exists b@(Bind x p)) =
+  -- skolemterms have only variables as arguments, arities are large(r)
+  do t <- skolem x (free b)
+     removeExists (subst (x |=> t) p)
+  {-
+  -- skolemterms can have other skolemterms as arguments, arities are small(er)
+  -- disadvantage: skolemterms are very complicated and deep
+  do p' <- skolemize p
+     t <- skolem x (S.delete x (free p'))
+     return (subst (x |=> t) p')
+  -}
 
-    lit ->
-      do return lit
+removeExists lit =
+  do return lit
 
 -- TODO: Avoid recomputing "free" at every step, by having
 -- skolemize return the set of free variables as well
@@ -250,9 +249,9 @@ skolemize p =
 ----------------------------------------------------------------------
 -- make cheap Ors
 
-makeCheapOr :: Form -> M [Form]
-makeCheapOr p =
-  do (defs,p',_) <- makeCheapOr' p
+removeExpensiveOr :: Form -> M [Form]
+removeExpensiveOr p =
+  do (defs,p',_) <- removeExpensiveOrAux p
      return (defs ++ [p'])
 
 type Cost = Int
@@ -261,21 +260,21 @@ type Cost = Int
 tooLarge :: Cost -> Bool
 tooLarge c = c > 2 -- completely arbitrarily chosen; TODO: investigate best value
 
-makeCheapOr' :: Form -> M ([Form],Form,Cost)
-makeCheapOr' (And ps) =
-  do dcs <- sequence [ makeCheapOr' p | p <- S.toList ps ]
+removeExpensiveOrAux :: Form -> M ([Form],Form,Cost)
+removeExpensiveOrAux (And ps) =
+  do dcs <- sequence [ removeExpensiveOrAux p | p <- S.toList ps ]
      let (defss,ps,costs) = unzip3 dcs
      return (concat defss, And (S.fromList ps), sum costs)
 
-makeCheapOr' (Or ps) =
-  do dcs <- sequence [ makeCheapOr' p | p <- S.toList ps ]
+removeExpensiveOrAux (Or ps) =
+  do dcs <- sequence [ removeExpensiveOrAux p | p <- S.toList ps ]
      makeOr dcs
 
-makeCheapOr' (ForAll (Bind x p)) =
-  do (defs,p',cost) <- makeCheapOr' p
+removeExpensiveOrAux (ForAll (Bind x p)) =
+  do (defs,p',cost) <- removeExpensiveOrAux p
      return (map (\p -> ForAll (Bind x p)) defs, ForAll (Bind x p'), cost)
 
-makeCheapOr' lit =
+removeExpensiveOrAux lit =
   do return ([], lit, 1)
 
 makeOr :: [([Form],Form,Cost)] -> M ([Form],Form,Cost)
@@ -295,11 +294,10 @@ makeOr ((defs1,p1,cost1):dcs) =
                               then makeDef p2
                               else return ([],p2,cost2)
      return (defs1++defs2++defs1'++defs2',p1' \/ p2',cost1' * cost2')
-
-makeDef :: Form -> M ([Form],Form,Cost)
-makeDef p =
-  do d <- Atom `fmap` literal (free p)
-     return ([nt d \/ p], d, 1)
+ where
+  makeDef p =
+    do d <- Atom `fmap` literal (name "d_or") (free p)
+       return ([d .=> p], d, 1)
 
 -- TODO: Avoid recomputing "free" at every step, by having
 -- makeOr return the set of free variables as well
@@ -375,8 +373,8 @@ skolem (_ ::: V t) vs =
  where
   args = S.toList vs
 
-literal :: Set Symbol -> M Atom
-literal vs =
+literal :: Name -> Set Symbol -> M Atom
+literal dp vs =
   do i <- next
      let p = (dp % i) ::: ([ t | _ ::: V t <- args ] :-> bool)
      return (prd p [ Var v | v <- args ])

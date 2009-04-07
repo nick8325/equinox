@@ -285,6 +285,9 @@ nt :: Form -> Form
 nt (Not a) = a
 nt a       = Not a
 
+(.=>) :: Form -> Form -> Form
+p .=> q = nt p \/ q
+
 (/\), (\/) :: Form -> Form -> Form
 And as /\ And bs = And (as `S.union` bs)
 a      /\ b 

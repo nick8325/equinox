@@ -200,9 +200,6 @@ makeSmall inEquiv pos neg
   isSmall (Not p)  = isSmall p
   isSmall _        = False
 
--- TODO: Replace the list of definitions by a sequence where
--- concatenation is O(1)
-
 -- TODO: Small formulas should also be able to contain quantifiers.
 -- however, this messes up skolemization, so that should be done first then!
 
@@ -410,7 +407,7 @@ instance Functor Seq where
 fromList :: [a] -> Seq a
 fromList xs = List xs
 
-nil = fromList []
+nil = List []
 
 (+++) :: Seq a -> Seq a -> Seq a
 p +++ q = p `Cat` q

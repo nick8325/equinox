@@ -171,8 +171,8 @@ removeEquivAux inEquiv p =
     p `Equiv` q ->
       do (defsp,posp,negp)    <- removeEquivAux True p
          (defsq,posq,negq)    <- removeEquivAux True q
-         (defsp',posp',negp') <- makeSmall inEquiv posp negp
-         (defsq',posq',negq') <- makeSmall inEquiv posq negq
+         (defsp',posp',negp') <- makeCopyable inEquiv posp negp
+         (defsq',posq',negq') <- makeCopyable inEquiv posq negq
          return ( defsp +++ defsq +++ defsp' +++ defsq'
                 , (negp' \/ posq') /\ (posp' \/ negq')
                 , (negp' \/ negq') /\ (posp' \/ posq')
@@ -181,27 +181,31 @@ removeEquivAux inEquiv p =
     atom ->
       do return (nil,atom,nt atom)
 
--- makeSmall turns a formula into something that we are
--- willing to copy: (1) any formula that is not under an Equiv
--- (because we have to copy these at least once anyway), (2)
--- any formula that is small. All other formulas will be made
--- small (by means of a definition) before we copy them.
-makeSmall :: Bool -> Form -> Form -> M (Seq Form,Form,Form)
-makeSmall inEquiv pos neg
+-- makeCopyable turns an argument to an Equiv into something that we are
+-- willing to copy. There are two such cases: (1) when the Equiv is
+-- not under another Equiv (because we have to copy arguments to an Equiv
+-- at least once anyway), (2) if the formula is small.
+-- All other formulas will be made small (by means of a definition)
+-- before we copy them.
+makeCopyable :: Bool -> Form -> Form -> M (Seq Form,Form,Form)
+makeCopyable inEquiv pos neg
   | isSmall pos || not inEquiv =
-    do return (nil,pos,neg)
+    -- we skolemize here so that we reuse the skolem function
+    -- (if we do this after copying, we get several skolemfunctions)
+    do pos' <- removeExists pos
+       neg' <- removeExists neg
+       return (nil,pos',neg')
 
   | otherwise =
     do dp <- Atom `fmap` literal (name "d_eq") (free pos)
        return (fromList [nt dp \/ pos, dp \/ neg],dp, nt dp)
  where
   -- a formula is small if it is already a literal
-  isSmall (Atom _) = True
-  isSmall (Not p)  = isSmall p
-  isSmall _        = False
-
--- TODO: Small formulas should also be able to contain quantifiers.
--- however, this messes up skolemization, so that should be done first then!
+  isSmall (Atom _)            = True
+  isSmall (Not p)             = isSmall p
+  isSmall (ForAll (Bind _ p)) = isSmall p
+  isSmall (Exists (Bind _ p)) = isSmall p
+  isSmall _                   = False
 
 ----------------------------------------------------------------------
 -- skolemization

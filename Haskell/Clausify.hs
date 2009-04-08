@@ -8,7 +8,8 @@ import Form
 import qualified Form
 import Name
 import Data.Set( Set )
-import Data.List( nub, maximumBy )
+import Data.List( nub, maximumBy, sortBy )
+import Data.Ord
 import qualified Data.Set as S
 import Control.Monad.State.Strict
 import Flags
@@ -134,7 +135,7 @@ clausForm p =
 removeEquiv :: Form -> M [Form]
 removeEquiv p =
   do (defs,pos,_) <- removeEquivAux False p
-     return (defs++[pos])
+     return (toList (defs+++fromList [pos]))
 
 -- removeEquivAux inEquiv p -> (defs,pos,neg) :
 --   PRE: inEquiv is True when we are "under" an Equiv
@@ -145,7 +146,7 @@ removeEquiv p =
 -- a conjunction of two disjunctions, which leads to fewer
 -- clauses -- the "neg" part of the result for the case Equiv
 -- below makes use of this)
-removeEquivAux :: Bool -> Form -> M ([Form],Form,Form)
+removeEquivAux :: Bool -> Form -> M (Seq Form,Form,Form)
 removeEquivAux inEquiv p =
   case simple p of
     Not p ->
@@ -155,7 +156,7 @@ removeEquivAux inEquiv p =
     And ps ->
       do dps <- sequence [ removeEquivAux inEquiv p | p <- S.toList ps ]
          let (defss,poss,negs) = unzip3 dps
-         return ( concat defss
+         return ( conc defss
                 , And (S.fromList poss)
                 , Or  (S.fromList negs)
                 )
@@ -172,27 +173,27 @@ removeEquivAux inEquiv p =
          (defsq,posq,negq)    <- removeEquivAux True q
          (defsp',posp',negp') <- makeSmall inEquiv posp negp
          (defsq',posq',negq') <- makeSmall inEquiv posq negq
-         return ( defsp ++ defsq ++ defsp' ++ defsq'
+         return ( defsp +++ defsq +++ defsp' +++ defsq'
                 , (negp' \/ posq') /\ (posp' \/ negq')
                 , (negp' \/ negq') /\ (posp' \/ posq')
                 )
 
     atom ->
-      do return ([],atom,nt atom)
+      do return (nil,atom,nt atom)
 
 -- makeSmall turns a formula into something that we are
 -- willing to copy: (1) any formula that is not under an Equiv
 -- (because we have to copy these at least once anyway), (2)
 -- any formula that is small. All other formulas will be made
 -- small (by means of a definition) before we copy them.
-makeSmall :: Bool -> Form -> Form -> M ([Form],Form,Form)
+makeSmall :: Bool -> Form -> Form -> M (Seq Form,Form,Form)
 makeSmall inEquiv pos neg
   | isSmall pos || not inEquiv =
-    do return ([],pos,neg)
+    do return (nil,pos,neg)
 
   | otherwise =
     do dp <- Atom `fmap` literal (name "d_eq") (free pos)
-       return ([nt dp \/ pos, dp \/ neg],dp, nt dp)
+       return (fromList [nt dp \/ pos, dp \/ neg],dp, nt dp)
  where
   -- a formula is small if it is already a literal
   isSmall (Atom _) = True
@@ -252,55 +253,69 @@ removeExists lit =
 removeExpensiveOr :: Form -> M [Form]
 removeExpensiveOr p =
   do (defs,p',_) <- removeExpensiveOrAux p
-     return (defs ++ [p'])
+     return (toList (defs +++ fromList [p']))
 
-type Cost = Int
--- how much does it cost (in clauses) to flatten this formula to clauses?
+-- cost: represents how it expensive it is to clausify a formula
+type Cost = (Int,Int) -- (#clauses, #literals)
 
-tooLarge :: Cost -> Bool
-tooLarge c = c > 2 -- completely arbitrarily chosen; TODO: investigate best value
+unitCost :: Cost
+unitCost = (1,1)
 
-removeExpensiveOrAux :: Form -> M ([Form],Form,Cost)
+andCost :: [Cost] -> Cost
+andCost cs = (sum (map fst cs), sum (map snd cs))
+
+orCost :: [Cost] -> Cost
+orCost []           = (1,0)
+orCost [c]          = c
+orCost ((c1,l1):cs) = (c1 * c2, c1 * l2 + c2 * l1)
+ where
+  (c2,l2) = orCost cs
+
+removeExpensiveOrAux :: Form -> M (Seq Form,Form,Cost)
 removeExpensiveOrAux (And ps) =
   do dcs <- sequence [ removeExpensiveOrAux p | p <- S.toList ps ]
      let (defss,ps,costs) = unzip3 dcs
-     return (concat defss, And (S.fromList ps), sum costs)
+     return (conc defss, And (S.fromList ps), andCost costs)
 
 removeExpensiveOrAux (Or ps) =
   do dcs <- sequence [ removeExpensiveOrAux p | p <- S.toList ps ]
-     makeOr dcs
+     let (defss,ps,costs) = unzip3 dcs
+     (defs2,p,c) <- makeOr (sortBy (comparing snd) (zip ps costs))
+     return (conc defss+++defs2,p,c)
 
 removeExpensiveOrAux (ForAll (Bind x p)) =
   do (defs,p',cost) <- removeExpensiveOrAux p
-     return (map (\p -> ForAll (Bind x p)) defs, ForAll (Bind x p'), cost)
+     return (fmap (\p -> ForAll (Bind x p)) defs, ForAll (Bind x p'), cost)
 
 removeExpensiveOrAux lit =
-  do return ([], lit, 1)
+  do return (nil, lit, unitCost)
 
-makeOr :: [([Form],Form,Cost)] -> M ([Form],Form,Cost)
+-- input is sorted; small costs first
+makeOr :: [(Form,Cost)] -> M (Seq Form,Form,Cost)
 makeOr [] =
-  do return ([], false, 1)
+  do return (nil, false, orCost [])
 
-makeOr [dc] =
-  do return dc
+makeOr [(f,c)] =
+  do return (nil,f,c)
 
-makeOr ((defs1,p1,cost1):dcs) =
-  do (defs2,p2,cost2) <- makeOr dcs
-     let tooCostly = tooLarge cost1 && tooLarge cost2
-     (defs1',p1',cost1') <- if tooCostly && cost1 >= cost2
-                              then makeDef p1
-                              else return ([],p1,cost1)
-     (defs2',p2',cost2') <- if tooCostly && cost2 > cost1
-                              then makeDef p2
-                              else return ([],p2,cost2)
-     return (defs1++defs2++defs1'++defs2',p1' \/ p2',cost1' * cost2')
+makeOr fcs
+  | null fcs2 =
+    do return (nil, Or (S.fromList (map fst fcs1)), orCost (map snd fcs1))
+
+  | otherwise =
+    do d <- Atom `fmap` literal (name "d_or") (free (map fst fcs2))
+       (defs,p,_) <- makeOr ((nt d,unitCost):fcs2)
+       return ( defs+++fromList [p]
+              , Or (S.fromList (d : map fst fcs1))
+              , orCost (unitCost : map snd fcs1)
+              )
  where
-  makeDef p =
-    do d <- Atom `fmap` literal (name "d_or") (free p)
-       return ([d .=> p], d, 1)
-
--- TODO: Avoid recomputing "free" at every step, by having
--- makeOr return the set of free variables as well
+  (fcs1,fcs2) = split [] fcs
+  
+  split fcs1 []                            = (fcs1,[])
+  split fcs1 (fc@(_,(cc,_)):fcs) | cc <= 1 = split (fc:fcs1) fcs
+  split fcs1 fcs@((_,(cc,_)):_)  | cc <= 2 = (take 2 fcs ++ fcs1, drop 2 fcs)
+  split fcs1 fcs                           = (take 1 fcs ++ fcs1, drop 1 fcs)
 
 ----------------------------------------------------------------------
 -- removing ForAll
@@ -399,6 +414,10 @@ nil = fromList []
 
 (+++) :: Seq a -> Seq a -> Seq a
 p +++ q = p `Cat` q
+
+conc :: [Seq a] -> Seq a
+conc [] = nil
+conc ss = foldr1 (+++) ss
 
 toList :: Seq a -> [a]
 toList s = list s []

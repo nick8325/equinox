@@ -29,14 +29,24 @@ classifyProblem cs = do
 		eflag							=  F.elimit ?flags
 		forms 						= map toForm cs
 		noClash 					= noClashString forms
+		axiomfile					= tempdir ++ "axiomfile"
 	
 	createDirectoryIfMissing False tempdir
 	starttime   <- getClockTime
-	fs  				<- if (F.zoom ?flags) then zoom tempdir forms noClash (F.plimit ?flags)
+	fs  				<- if (F.zoom ?flags) then do
+											putStrLn $ if verbose then "Zooming..." else ""
+											zoom tempdir forms noClash (F.plimit ?flags)
 									else return forms --the formulas in which to search for candidates
 	let
 		sig 		= getSignature fs
 		axioms 	= form2axioms forms noClash
+	
+	h <- openFile axiomfile WriteMode			
+	hSetBuffering h NoBuffering
+	hPutStr h axioms	
+	hClose h
+
+	
 		
 	result <-	
 		(if mflag == Serial then 				
@@ -48,11 +58,12 @@ classifyProblem cs = do
 						funs	=	collectTestTerms sig (F.function ?flags) fs (F.termdepth ?flags)
 						(method,rflag)		=		if mflag == InjNotSurj then (conjInjNotOnto,F.relation ?flags) 
 																		else (conjNotInjOnto,Nothing) in
-					continueInjOnto tempdir sig axioms noClash funs method rflag pflag verbose eflag
+					continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose eflag
 
 				else	
 					undefined --Add new methods here!		 			
 		)
+	removeFile axiomfile
 	finish starttime result tempdir (F.thisFile ?flags) (F.outfile ?flags)
 
 -----------------------------------------------------------------------------------------

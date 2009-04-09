@@ -54,11 +54,10 @@ collectRelations rel preds hasEq =
 
 collectSubsets p preds = 
 	case p of
-			Nothing 		-> [Nothing]
-			Just "-"		-> Nothing : 
-									(map Just $ sortForms  $ nub $ getSubsets preds False False False)
+			Nothing 		-> []
+			Just "-"		-> sortForms  $ nub $ getSubsets preds False False False
 			Just p' -> case getSymb p' preds of 
-										[p]   -> map Just $ getSubsets [p] False False False
+										[p]   -> getSubsets [p] False False False
 										[]    -> []
 
 collectTestTerms sig t fs depth =   

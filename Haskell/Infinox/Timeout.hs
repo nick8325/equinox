@@ -87,17 +87,21 @@ timeout n f
 --timeOut2 :: Int  -> String -> [String] -> IO (Maybe ExitCode)
 timeOut2 n exe output args =
    do
+      putStrLn "blahblahblah"
       h2 <- openFile output WriteMode
       h  <- runProcess exe args Nothing Nothing Nothing (Just h2) Nothing
       res <- newEmptyMVar
 
       forkIO (do 
+         putStrLn "Waiting for process..."
          ex <- waitForProcess h 
          putMVar res (Just ex)
 			)
 
       id <- forkIO (do 
+         putStrLn "threadDelay.."
          threadDelay n
+         putStrLn "ok"
          --terminateProcess h
          let 
             kill 0 = do 
@@ -111,6 +115,7 @@ timeOut2 n exe output args =
                               threadDelay (n `div` 10) 
                               kill (m-1)
                   Right _ -> return () 
+         putStrLn "Timed out, trying to kill paradox.."
          kill 100
          putMVar res Nothing
 			)

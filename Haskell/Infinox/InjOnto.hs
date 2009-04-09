@@ -1,146 +1,146 @@
 module Infinox.InjOnto where
-import Infinox.Generate
+
+import qualified Data.Set as S
+import System.Directory
+
 import Form
 import Output
-import Infinox.Conjecture
-import List
+import Infinox.Generate
 import Infinox.Util
+import Infinox.Conjecture
+import Data.List
+import System (system)
 import qualified Infinox.Symbols as Sym
 
-import System.Directory
-import qualified Data.Set as S
 
-
-
-continueInjOnto tempdir sig axioms noClash funs method rflag pflag verbose eflag =
+continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose eflag = do
 		let
 			ps				=		S.toList $ psymbs sig
-			relations	=  	collectRelations rflag ps (hasEq sig)
+			relations	=  	collectRelations rflag ps (hasEq sig) 
+										--relations with two or more "X"-variables
 			subsets		=		collectSubsets pflag ps		
-		in
-		continuePartOne tempdir axioms noClash eflag funs (relations,relations) [] 
-			subsets method verbose
+	
+		(result,refl_rels) <- tryFullDomain funs relations [] 
+								--while testing the full domain - collect all reflexive relations to avoid
+								--testing them again!
+		case result of
+			[]	-> do
+								let testrels = deleteRels refl_rels relations 
+								(result,fsps) <- trySubdomains_Refl funs refl_rels subsets []
+								--First test the relations that are reflexive on the full domain
+								--and test the resulting candidate triples.
+								--collect matching pairs of functions and subsets to reuse in next steps
+								case result of 
+									None	-> trySubdomains fsps (nub [p | (_,p) <- fsps]) testrels testrels
+									--Next, given pairs of functions and subsets, test all others relations
+									--for reflexivity on these subsets, and test the resulting candidate triples.
+									_			-> return result
+			_		-> return $ toResult result
 
 
-continuePartOne _ _ _ _ _ _ _ [] _ _ = return None
-
-continuePartOne dir axioms noClash elim ts (_,rs) refls ((Just p):ps) method v =
-	continuePartTwo dir axioms noClash elim ts rs refls ((Just p):ps) [] method v
-
-continuePartOne dir axioms noClash elim ts (rs1,rs2) refls (Nothing:ps) method v =
---collect all relations that are reflexive on the full domain before
---checking subdomains!
-   do
-			putStr $ if v then "Searching for reflexive relations...\n" else ""
+	where
 			
-			(psrs',rs') <- getPairs dir axioms noClash elim v Nothing checkPR rs1 
-			--"getPairs" stops as soon as it founds a matching p-r tuple.
-			--rs' are the remaining relations we need to check.
-			--psrs' are the pairs "(Nothing,r)" where r is reflexive on the full domain
-			let 
-					refls' 		= map snd psrs' --these relations are reflexive on the full domain, and
-																		--thus we do not need to check them for reflexivity in combination
-																		--with subsets...
-					newrefls	= refls' ++ refls --save all refl.relations for later use!
-			putStr $ if v then "Found reflexive relations: " ++ show refls' ++ "\n" else ""
-			mt <- (mappy (proveProperty dir axioms noClash elim v method) $ 
-						[(Just fun,Just r,Nothing) | r <- refls', fun <- ts]) --run the chosen method on each function
-																																	--together w. each reflexive relation.
-			case mt of
-				[]	  -> case rs' of
-										[] -> continuePartTwo dir axioms noClash elim ts (rs2 \\ refls') newrefls ps [] method v 
-										--no success and no more relations to check on the full domain -> continue with limiting predicates, 
-										--keeping the list of refl. relations, and remove these from the testlist to avoid testing them twice.
-										_	-> continuePartOne dir axioms noClash elim ts (rs',rs2) newrefls (Nothing:ps) method v 
-										--more relations to check..   
-				_      -> return $ toResult mt
-         --success -> finish.
+		tryFullDomain _ [] allrefls = return ([],allrefls)	
+		tryFullDomain funs relations refls = do
+			(psrs,rs) <- getPairs tempdir axiomfile noClash eflag verbose Nothing checkPR relations 
+			--getPairs stops as soon as we find a relation that is reflexive on the full domain. 
+			--psrs are the matching pairs subset-relation pairs, rs are the relations to be checked the next round.
+			let
+				newrefls = map snd psrs
+				allrefls = newrefls ++ refls
+			result <- (mappy (proveProperty tempdir axiomfile noClash eflag verbose method) $ 
+							[(Just fun,Just r,Nothing) | r <- newrefls, fun <- funs])
+			case result of
+				[]	->	tryFullDomain funs rs allrefls
+				_		->	return $ (result,[])
 
-continuePartTwo _ _ _ _ _ _ _ [] _ _ _ = return None
---If we run out of subsets to test, there are no more candidates, and we must give up!
+		trySubdomains_Refl _ _ [] fsps = return (None,fsps)
+		trySubdomains_Refl funs refl_rels (p:ps) oldfsps = do
+			(result,newfsps) <- trySubdomains_Refl' funs refl_rels p []
+			case result of
+				[]	-> trySubdomains_Refl funs refl_rels ps (newfsps ++ oldfsps)
+				_		-> return (toResult result, newfsps ++ oldfsps)
 
-continuePartTwo dir axioms noClash elim ts rs refls ((Just p):ps) oldpsrs method v  = 
-   continueWithTerms ts oldpsrs --start by collecting the terms that match the lim.pred p.
-   where 
-      continueWithTerms ts oldpsrs = do
-        putStr $ if v then "Searching for functions under which " ++ show p ++ " is closed\n" else ""
-        (fsps,ts')  <- getPairs dir axioms noClash elim v (Just p) checkFP ts
-         --fsps are the matching pairs, ts' are the terms that have not yet been processed.
-         --(getPairs stops as soon as a matching pair is found)
-        case fsps of
-               [] -> continuePartTwo dir axioms noClash elim ts rs refls ps [] method v
-               --no terms match with p - continue with next lim. pred, reset oldpsrs
-               _  -> do
-                     putStr $ if v then "Found matching pairs: " ++ show fsps ++ "\n" else ""	     
-                     continueWithRelations True rs ts' fsps oldpsrs
-               --if we have matching pairs -collect the refl. relations that match with p
-               --"True" means that the relations in "refls" should be considered in this round,
-      continueWithRelations b rs ts fsps oldpsrs  = do
-         putStr $ if v then "Searching for relations that are reflexive under " ++ show p ++ "\n" else "" 
-         (rsps',rs') <- getPairs dir axioms noClash elim v (Just p) checkPR (rs\\(map snd oldpsrs)) 					
-         --rsps' are matching (r,p) pairs, rs' are the relations not yet processed.
-         let
-            newoldpsrs = oldpsrs ++ rsps'
-            prefls = [(Just p,r) | r <- refls]
-            psrs = (if b then prefls else []) ++ newoldpsrs
-						
-            --if b - include the predicates already shown to be reflexive.
-            candidates = zippy fsps psrs --candidate triples :: (Maybe Term, Maybe Form, Maybe Form)
-         --putStrLn (show candidates)
-         putStr $ if v then "Found new matching pairs: " ++ show rsps' ++ "\n" else ""	     
-         putStr $ if v then "Matching pairs already found: " ++ show oldpsrs ++ "\n" else ""	 
-         putStr $ if v && b then "Trivially matching pairs: " ++ show prefls ++ "\n" else ""	 
-         mt <- (mappy (proveProperty dir axioms noClash elim v method) candidates)
-         --use the given method on the candidate triples.
-         --"mappy" stops when successful.
-         case mt of
-            []	->       --property does not hold for any candidate
-               case rs' of 
-               --check remaining list of relations r
-                  []    -> continueWithTerms ts $ newoldpsrs
-                  --no more relations - check remaining list of terms
-                  _     -> continueWithRelations False rs' ts fsps newoldpsrs 
-                  --more relations to check - collect new (r,p) pairs, "False" means disregard
-                  --relations shown to be reflexive on the full domain since they were checked
-                  --in the first round (with every new term)
-            _		-> return $ toResult mt
+		trySubdomains_Refl' [] _ _ fsps 					= return ([],fsps)
+		trySubdomains_Refl' funs refl_rels p fsps = do
+			(fsps',unprocessed_funs) <- collectMatchingFunsAndSubset p funs
+			case fsps' of
+				[]	-> return ([],fsps)
+				_		-> do
+								let 
+									candidates = zippy fsps' (zip (repeat (Just p)) refl_rels)
+								result <- (mappy (proveProperty tempdir axiomfile noClash eflag verbose method) candidates)
+								case result of
+									[]	->  trySubdomains_Refl' unprocessed_funs refl_rels p (fsps++fsps')
+									_		->  return (result,fsps ++ fsps') 	
+							
+		trySubdomains _ [] _ _ = return None
+		trySubdomains fsps (p:ps) relations [] = trySubdomains fsps ps relations relations 
+		trySubdomains fsps (p:ps) relations rs = do
+			(psrs,rs') <- getPairs tempdir axiomfile noClash eflag verbose p checkPR rs 
+			case psrs of 
+				[]	-> trySubdomains fsps ps relations rs'
+				_		-> do
+							let candidates = zippy fsps psrs
+							result <- (mappy (proveProperty tempdir axiomfile noClash eflag verbose method) candidates)
+							case result of
+								[]	-> trySubdomains fsps (p:ps) relations rs'
+								_		-> return $ toResult result
+													
+		collectMatchingFunsAndSubset p funs =
+			getPairs tempdir axiomfile noClash eflag verbose (Just p) checkFP funs
+			
+		collectMatchingRelationsAndSubset p rs = 
+			getPairs tempdir axiomfile noClash eflag verbose (Just p) checkPR rs
 
 
+
+toResult []													= None
 toResult [(Just f,Just r,Nothing)]  = TF f r
 toResult [(Just f, Just r, Just p)] = TFF f r p
 
+deleteRels :: [Form] -> [Form] -> [Form]
+deleteRels rels1 rels2 = delSymbols rels2 (S.toList (symbols rels1))
+delSymbols [] _ = []
+delSymbols (r@(Atom ( (Fun s ts) :=: _)):rs) ss = if elem s ss 
+	then delSymbols rs ss else r:(delSymbols rs ss)
+delSymbols (r:rs) ss = delSymbols rs ss
+
+-------------------------------------------------------------------------------
 zippy [] _ = []
 --zip together triples from pairs with matching "p's"
 zippy ((f,p):fsps) psrs = 
    [(Just f,Just r,p') | (p',r) <- psrs, p' == p]  ++ zippy fsps psrs
 
-getPairs dir axioms noClash elim v p checkfun ts_or_rs = 
-   mapUntilSuccess (checkfun dir axioms noClash elim v p) ts_or_rs
+getPairs dir axiomfile noClash elim v p checkfun ts_or_rs = 
+   mapUntilSuccess (checkfun dir axiomfile noClash elim v p) ts_or_rs
 -------------------------------------------------------------------------------
 
 
-checkPR :: FilePath -> String -> String ->
+checkPR :: FilePath -> FilePath -> String ->
    Int -> Bool -> Maybe Form -> Form -> IO [(Maybe Form, Form)]
-checkPR dir axioms noClash to vb p r  = do
+checkPR dir axiomfile noClash to vb p r  = do
 	if r == equalityX then return $ zip (repeat p) (genRelsXY r)
 		else do
             let 
-               conj = form2conjecture axioms noClash 0 (conjPimpliesRef r p)	
+               conj = form2conjecture noClash 0 (conjPimpliesRef r p)	
                provefile = dir ++ "checkpr" 
+            system $ "cp " ++ axiomfile ++ " " ++ provefile
             maybePrint vb "Checking reflexivity of " (Just r)
             maybePrint vb "under " p				  	
-            b <- prove conj axioms provefile to
+            b <- prove conj provefile to
             removeFile provefile
             if b then return (zip (repeat p) (genRelsXY r)) else return []
 
 
-checkFP dir axioms noClash to vb p f  = do
+checkFP dir axiomfile noClash to vb p f  = do
    let 
-      conj = form2conjecture axioms noClash 0 (conjPClosedUnderF f p)
+      conj = form2conjecture noClash 0 (conjPClosedUnderF f p)
       provefile = dir ++ "checkfp"
+   system $ "cp " ++ axiomfile ++ " " ++ provefile	
    maybePrint vb "Checking " p
    maybePrint vb "closed under " (Just f)
-   b <- prove conj axioms provefile to
+   b <- prove conj provefile to
    removeFile provefile
    if b then return [(f,p)] else return []
 

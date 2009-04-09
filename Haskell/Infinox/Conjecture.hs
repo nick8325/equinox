@@ -53,8 +53,8 @@ form2axiom f s n =
 	"fof(" ++ "a_" ++ (show n) ++ ", " ++ "axiom" ++ 
 		", " ++ showNormal s f ++ ")."
  
-form2conjecture :: String -> String ->  Int -> Form -> String
-form2conjecture axioms noClash n f =
+form2conjecture :: String ->  Int -> Form -> String
+form2conjecture noClash n f =
 	"fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++ 
 			", (" ++ showNormal noClash f ++ "))."
 

@@ -1,6 +1,6 @@
 module Infinox.Util where
 
-import System
+import System (system)
 import IO
 import System.Directory
 import Infinox.Timeout
@@ -31,21 +31,22 @@ proveProperty dir axioms noClash timeout vb method (t,r,p)  = do
 	maybePrint vb "r: " r
 	maybePrint vb "p: " p
 	let 
-		conj =  form2conjecture axioms noClash 0 (method t r p) 
+		conj =  form2conjecture noClash 0 (method t r p) 
 		provefile = dir ++ "proveProperty"
-	b <- prove conj axioms provefile timeout
+	system ("cp " ++ axioms ++ " " ++ provefile)
+	b <- prove conj provefile timeout
 --	removeFile provefile
 	if b then return [(t,r,p)] 
 		else return [] 
 
-prove conj axioms provefile timeout = do   
-   h' <- try $ openFile provefile WriteMode			
+prove conj provefile timeout = do   
+   h' <- try $ openFile provefile AppendMode			
    case h' of 
       Left e -> do 
          return False	
       Right h -> do
          hSetBuffering h NoBuffering
-         hPutStr h (axioms ++ conj)		
+         hPutStr h conj	
          hClose h		
          eprove provefile timeout
 
@@ -78,21 +79,21 @@ eprove f n  = do
 --(interrupts when paradox hasnt responded in plim+3 secs)
 finiteModel :: FilePath -> Int -> IO Bool
 finiteModel f plim = do
-   result <- timeout ((plim+3)*10^6) (timeOut2 ((plim+2)*10^6) "paradox" 
+   result <- (timeOut2 ((plim+2)*10^6) "paradox" 
 							(f ++ "presult") [f, "--time",show plim])
+--timeout ((plim+3)*10^6) (timeOut2 ((plim+2)*10^6) "paradox" 
+--							(f ++ "presult") [f, "--time",show plim])
    case result of
       Just _	->	do
          c <- readFile $ f  ++ "presult"  
          let r = last (lines c)
-         system $ "rm " ++ f ++ "presult" 
-         putStrLn $ r			 
+         system $ "rm " ++ f ++ "presult" 	 
          return $ r /= "+++ RESULT: Timeout"
         	 
-      Nothing	-> do
-         putStrLn "Timed out"
+      Nothing	-> 
          return False
 
-	
+
 -------------------------------------------------------------------------------
 
 

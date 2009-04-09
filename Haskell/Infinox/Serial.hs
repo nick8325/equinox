@@ -35,10 +35,10 @@ continueSerial' tempdir problem noClash (r:rs) v elim = do
 checkSerial tempdir problem noClash r v elim = do
 	let
 		r' = And (S.fromList [r,Not equality])
-		conj = form2conjecture problem noClash 0 (conjSerial r')
+		conj = form2conjecture noClash 0 (conjSerial r')
 		provefile = tempdir ++ "checksr"
 	maybePrint v "Checking irreflexivity, transitivity, seriality: " (Just r')
-	b <- prove conj problem provefile elim
+	b <- prove conj provefile elim
 	removeFile provefile
 	return b
 

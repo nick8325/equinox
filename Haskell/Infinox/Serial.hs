@@ -18,8 +18,15 @@ import qualified Data.Set as S
 
 continueSerial tempdir sig problem  noClash rflag v elim = do
 	let
-			rs        =  	collectRelations rflag (S.toList (psymbs sig)) (hasEq sig)
+			rflag'		=		case rflag of
+											Nothing 	-> Just "-"
+											Just "-"	-> Just "-"
+											_					-> rflag
+			rs        =  	collectRelations rflag' (S.toList (psymbs sig)) (hasEq sig)
+										--collect all predicates with at least two "X"
 			rs' 			= 	nub $ concatMap genRelsXY rs
+										--convert to predicates containing (all combinations of) 
+										--variables "X" and "Y"
 	continueSerial' tempdir problem noClash (rs'++(map nt rs')) v elim
 	
 continueSerial' _ _ _ [] _ _ = return None

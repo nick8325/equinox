@@ -56,6 +56,7 @@ collectSubsets p preds =
 	case p of
 			Nothing 		-> []
 			Just "-"		-> sortForms  $ nub $ getSubsets preds False False False
+											--Possibility to add negation, conjunction and disjunction here
 			Just p' -> case getSymb p' preds of 
 										[p]   -> getSubsets [p] False False False
 										[]    -> []

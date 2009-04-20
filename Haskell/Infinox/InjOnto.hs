@@ -15,10 +15,12 @@ import qualified Infinox.Symbols as Sym
 
 continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose eflag = do
 		let
-			ps				=		S.toList $ psymbs sig
+			ps				=		S.toList $ psymbs sig --all predicates in the signature
 			relations	=  	collectRelations rflag ps (hasEq sig) 
-										--relations with two or more "X"-variables
-			subsets		=		collectSubsets pflag ps		
+										--relations with two or more "X"-variables, with equality if present.
+										--after establishing reflexivity of a relation, relations with "X" and "Y"
+										--variables will be generated.
+			subsets		=		collectSubsets pflag ps	--collect subset-predicates depending on flag given	
 	
 		(result,refl_rels) <- tryFullDomain funs relations [] 
 								--while testing the full domain - collect all reflexive relations to avoid

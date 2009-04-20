@@ -84,24 +84,24 @@ timeout n f
                             (\_ -> fmap Just f))
 -- #endif
 
---timeOut2 :: Int  -> String -> [String] -> IO (Maybe ExitCode)
+
+test = do
+	timeOut2 (2*(10^6)) "eprover" "utdata" (words "--tstp-in --tstp-out -tAuto -xAuto --output-level=0 /home/ann/Documents/Infinox/TPTP-v3.5.0/Problems/ALG/ALG221+1.p") 
+
+timeOut2 :: Int  -> String -> String -> [String] -> IO (Maybe ExitCode)
 timeOut2 n exe output args =
    do
-      putStrLn "blahblahblah"
       h2 <- openFile output WriteMode
       h  <- runProcess exe args Nothing Nothing Nothing (Just h2) Nothing
       res <- newEmptyMVar
 
       forkIO (do 
-         putStrLn "Waiting for process..."
          ex <- waitForProcess h 
          putMVar res (Just ex)
 			)
 
       id <- forkIO (do 
-         putStrLn "threadDelay.."
          threadDelay n
-         putStrLn "ok"
          --terminateProcess h
          let 
             kill 0 = do 
@@ -111,15 +111,16 @@ timeOut2 n exe output args =
                ex <- try (terminateProcess h)
                case ex of
                   Left _ -> do 
-                              putStrLn $ "Failed killing Paradox: " ++ show m ++ " try"
                               threadDelay (n `div` 10) 
                               kill (m-1)
                   Right _ -> return () 
-         putStrLn "Timed out, trying to kill paradox.."
          kill 100
          putMVar res Nothing
 			)
-      killThread id
+      
+      x <- takeMVar res
       hClose h2
-      takeMVar res
+      killThread id
+      return x 
+		
 

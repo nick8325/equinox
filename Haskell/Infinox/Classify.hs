@@ -20,13 +20,13 @@ import Infinox.InjOnto
 
 classifyProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
 classifyProblem cs = do
---	sequence_ [ print c | c <- cs ]
 	createDirectoryIfMissing False (F.temp ?flags)
 	let
 		tempdir 					= (F.temp ?flags) ++ "/" ++ (subdir ((F.thisFile ?flags))) 
 		verbose						=  F.verbose ?flags > 0	
 		mflag							=  F.method ?flags	
 		eflag							=  F.elimit ?flags
+		pflag = F.subset ?flags
 		forms 						= map toForm cs
 		noClash 					= noClashString forms
 		axiomfile					= tempdir ++ "axiomfile"
@@ -45,16 +45,13 @@ classifyProblem cs = do
 	hSetBuffering h NoBuffering
 	hPutStr h axioms	
 	hClose h
-
-	
-		
 	result <-	
 		(if mflag == Serial then 				
-				continueSerial tempdir sig axioms noClash (F.relation ?flags) verbose eflag
+				continueSerial tempdir sig axioms noClash (F.relation ?flags) pflag verbose eflag
 
 			else if mflag == InjNotSurj || mflag == SurjNotInj then
 					let
-						pflag = F.subset ?flags
+						
 						funs	=	collectTestTerms sig (F.function ?flags) fs (F.termdepth ?flags)
 						(method,rflag)		=		if mflag == InjNotSurj then (conjInjNotOnto,F.relation ?flags) 
 																		else (conjNotInjOnto,Nothing) in

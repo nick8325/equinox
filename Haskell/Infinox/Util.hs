@@ -90,7 +90,8 @@ finiteModel f plim = do
          system $ "rm " ++ f ++ "presult" 	 
          return $ r /= "+++ RESULT: Timeout"
         	 
-      Nothing	-> 
+      Nothing	-> do
+
          return False
 
 

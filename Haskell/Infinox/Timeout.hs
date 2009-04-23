@@ -121,6 +121,7 @@ timeOut2 n exe output args =
       x <- takeMVar res
       hClose h2
       killThread id
+--      putStrLn $ show x
       return x 
 		
 

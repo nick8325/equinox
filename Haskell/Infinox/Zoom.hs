@@ -12,7 +12,7 @@ zoom dir fs noClash plimit   = zoom' dir fs  (shrink fs) noClash plimit 0
 
 zoom' :: FilePath -> [Form] -> [[Form]] -> String -> Int -> Int -> IO [Form]
 zoom' dir best [] _ _ _  = return best
-zoom' dir best fs noClash plim n  = do 
+zoom' dir best fs noClash plim n  = do  
    (f,count) <- smallestUnsat dir best fs noClash plim n 
    if f == best then return f else 
       zoom' dir f (shrink f) noClash plim count 

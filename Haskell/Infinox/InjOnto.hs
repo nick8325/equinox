@@ -15,14 +15,17 @@ import qualified Infinox.Symbols as Sym
 
 continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose eflag = do
 		let
-			ps				=		S.toList $ psymbs sig --all predicates in the signature
+			
+			ps				=		filter (leqfour . arity) (S.toList $ psymbs sig) --all predicates in the signature with arity <= 4
 			relations	=  	collectRelations rflag ps (hasEq sig) 
 										--relations with two or more "X"-variables, with equality if present.
 										--after establishing reflexivity of a relation, relations with "X" and "Y"
 										--variables will be generated.
 			subsets		=		collectSubsets pflag ps	--collect subset-predicates depending on flag given	
-	
+--		putStrLn $ show relations
 		(result,refl_rels) <- tryFullDomain funs relations [] 
+
+	
 								--while testing the full domain - collect all reflexive relations to avoid
 								--testing them again!
 		case result of
@@ -50,6 +53,7 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 			let
 				newrefls = map snd psrs
 				allrefls = newrefls ++ refls
+--			putStrLn $ "Found reflexive predicates: " ++ show newrefls
 			result <- (mappy (proveProperty tempdir axiomfile noClash eflag verbose method) $ 
 							[(Just fun,Just r,Nothing) | r <- newrefls, fun <- funs])
 			case result of
@@ -107,6 +111,9 @@ delSymbols [] _ = []
 delSymbols (r@(Atom ( (Fun s ts) :=: _)):rs) ss = if elem s ss 
 	then delSymbols rs ss else r:(delSymbols rs ss)
 delSymbols (r:rs) ss = delSymbols rs ss
+
+
+
 
 -------------------------------------------------------------------------------
 zippy [] _ = []
@@ -244,13 +251,26 @@ conjPimpliesRef rel Nothing =
 
 --p closed under f
 conjPClosedUnderF fun (Just pr) =
-	existsPred "P" pr $ \p ->
-		existsFun "F" fun $ \f ->		
+	existsPred "P" pr $ \p -> 
+	--	(nt (forEvery x (p x))) /\ --p is not the whole domain! (too hard to prove?)
+			(existsFun "F" fun $ \f ->	
+															
+	
 			forEvery x (
 				p (f x) \/ nt (p x)
-			)
+			))
  where
   x = Var Sym.x
+
+ 
+
+
+
+
+
+
+
+
 
 -------------------------------------------------------------------------------
 

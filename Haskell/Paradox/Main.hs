@@ -71,8 +71,8 @@ main =
 solveProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
 solveProblem csIn =    
   do -- {-
-     putStrLn "==> Input clauses"
-     sequence_ [ putStrLn (showClause c) | c <- csIn ]
+ --    putStrLn "==> Input clauses"
+ --    sequence_ [ putStrLn (showClause c) | c <- csIn ]
      --print (length csIn)
      {-
      putStrLn "==> Simplified clauses"

@@ -3,7 +3,6 @@ module Infinox.Main where
 import qualified Main
 import Flags
 import Infinox.Classify
-
 ---------------------------------------------------------------------------
 -- main
 

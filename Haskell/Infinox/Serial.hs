@@ -12,6 +12,7 @@ import Infinox.Types
 import Data.List (nub)
 import Data.Set as S( Set )
 import Output
+import System (system)
 import qualified Data.Set as S
 
 -------------------------------------------------------------------------------
@@ -22,14 +23,14 @@ continueSerial tempdir sig problem  noClash rflag pflag v elim = do
 											Nothing 	-> Just "-"
 											Just "-"	-> Just "-"
 											_					-> rflag
-			psymbols	=		S.toList (psymbs sig)
+			psymbols	=		filter (leqfour . arity) (S.toList (psymbs sig)) 
 			ps				=		Nothing : (map Just $ collectSubsets pflag psymbols)
 			rs        =  	collectRelations rflag' psymbols (hasEq sig)
 										--collect all predicates with at least two "X"
 			rs' 			= 	nub $ concatMap genRelsXY rs
 										--convert to predicates containing (all combinations of) 
 										--variables "X" and "Y"
-
+	putStrLn $ show rs'
 	continueSerial' tempdir problem noClash (rs'++(map nt rs')) (rs'++(map nt rs')) ps v elim
 	
 continueSerial' _ _ _ _ _ [] _ _ = return None
@@ -39,7 +40,9 @@ continueSerial' tempdir problem noClash [] rs (p:ps) v elim =
 
 continueSerial' tempdir problem noClash (r:rs) rs' (p:ps) v elim = do
 	b <-  checkSerial tempdir problem noClash r p v elim
-	if b then return $ F r 
+	if b then case p of
+		Nothing ->	return $ F r
+		Just p'	->	return $ FF r p' 
 		else
 			continueSerial' tempdir problem noClash rs rs' (p:ps) v elim
 
@@ -50,6 +53,7 @@ checkSerial tempdir problem noClash r p v elim = do
 		r' = And (S.fromList [r,Not equality])
 		conj = form2conjecture noClash 0 (conjSerial r' p)
 		provefile = tempdir ++ "checksr"
+	system $ "cp " ++ problem ++ " " ++ provefile
 	maybePrint v "Checking irreflexivity, transitivity, seriality: " (Just r')
 	maybePrint v "under " p	
 	b <- prove conj provefile elim
@@ -77,7 +81,8 @@ conjSerial rel subset =
 
 		Just pr	->
 			existsPred "P" pr $ \p -> 
-				existsRel "R" rel $ \r ->  
+				existsRel "R" rel $ \r ->
+					exist x (p x) /\ --p non empty  
   		  	forEvery x ((nt (p x)) \/ nt (r x x)) --not reflexive in p
   		  	/\ 
 

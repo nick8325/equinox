@@ -14,15 +14,20 @@ zoom' :: FilePath -> [Form] -> [[Form]] -> String -> Int -> Int -> IO [Form]
 zoom' dir best [] _ _ _  = return best
 zoom' dir best fs noClash plim n  = do  
    (f,count) <- smallestUnsat dir best fs noClash plim n 
+   
    if f == best then return f else 
       zoom' dir f (shrink f) noClash plim count 
 
 smallestUnsat _ best [] _ _ count  = return (best,count)
 smallestUnsat dir best (f:fs) noClash plim n  = do
+ 
    h <- openFile (dir ++ "zoom"++(show n)) WriteMode
+ 
    hPutStr h $ (form2axioms f noClash)
    hClose h
+  
    b <- finiteModel (dir ++ "zoom"++(show n)) plim
+ 
    if b then smallestUnsat dir best fs noClash plim (n+1)  
      --if finite model - discard f and try the other shrinked lists
     else return (f,n+1) --if no finite model - return f

@@ -1,0 +1,65 @@
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Infinox Manual ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requirements 
+
+Infinox requires installations of Paradox and the E Equational Theorem Prover.
+Infinox has been tested with the following versions of E:
+
+E 0.999-006 Longview2 (2008-02-10)
+E 1.0 Temi  					(2008-10-22) 
+E 1.0-004 Temi  			(2009-02-15) 
+
+Make sure that both Paradox and E are in the execution path.
+
+-------------------------------------------------------------------------------
+
+Type 
+
+./infinox FILE
+
+to run Infinox on a file FILE.
+
+The result will be shown as: 
+
++++ RESULT: FinitelyUnsatisfiable (Success)
++++ RESULT: GaveUp	(No more test cases)
++++ RESULT: Timeout (The pre-set time limit is up)
+
+
+The flags are pre-set to run three methods in sequence on a "zoomed" subset
+of the problem, and terminate when one of them succeeds. 
+
+The methods are:
+
+1. Search for a function f : D -> D that is injective and not surjective on
+	 some subset of D, with respect to some reflexive relation r.
+
+2. Search for a function f : D -> D that surjective and not injective on some
+	 subset of D.
+
+3. Search for a relation r : D x D that is anti-symmetric, transitive, 
+	 and serial (where D is non-empty)
+
+-------------------------------------------------------------------------------
+
+Some other useful flags are:
+
+--temp <dir>
+Uses the specified directory to store temporary files.
+Default is "/temp"
+
+--outfile <file>
+Appends the result (and the found terms/predicates) to the specified file, as
+Filename : Result : Time
+
+--verbose 1
+Print out the progress of the program (i.e. see what terms/predicates
+are being tested).
+
+More flags can be displayed with the command "--help".
+
+-------------------------------------------------------------------------------
+
+

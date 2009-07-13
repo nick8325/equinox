@@ -26,8 +26,10 @@ mapUntilSuccess f (x:xs)  = do
       [] -> mapUntilSuccess f xs
       _  -> return (y,xs)
 
+leqfour	x =   x <= 4
+
 proveProperty dir axioms noClash timeout vb method (t,r,p)  = do
-	maybePrint vb "t: " t
+	maybePrint vb "\nt: " t
 	maybePrint vb "r: " r
 	maybePrint vb "p: " p
 	let 
@@ -84,7 +86,7 @@ finiteModel f plim = do
 --timeout ((plim+3)*10^6) (timeOut2 ((plim+2)*10^6) "paradox" 
 --							(f ++ "presult") [f, "--time",show plim])
    case result of
-      Just _	->	do
+      Just _	->	do	
          c <- readFile $ f  ++ "presult"  
          let r = last (lines c)
          system $ "rm " ++ f ++ "presult" 	 

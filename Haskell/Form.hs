@@ -232,6 +232,13 @@ mapOverAtoms f (Exists (Bind b form)) = Exists (Bind b (mapOverAtoms f form))
 mapOverAtoms f (ForAll (Bind b form)) = ForAll (Bind b (mapOverAtoms f form))
 mapOverAtoms f form = f form
 
+
+
+funArity (Fun s _) = arity s
+predArity (Atom (t :=: _)) = funArity t
+
+
+
 data Signed a
   = Pos a
   | Neg a

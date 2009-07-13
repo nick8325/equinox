@@ -77,10 +77,17 @@ normalSymb x (n ::: typing) = let newname = name (normalName x n) in
 	(newname ::: typing)
 
 trt = Fun ((prim "truth") ::: ([] :-> bool)) []
-n1 = name "hej"
+n1 = name "f"
+n2 = name "subset"
 s1 = (n1 :::  ([top] :-> bool))
-t1 = Fun s1  [Var ((name "x") ::: (V top))] 
+s2 = (n2 :::  ([top] :-> bool))
+t1 = Fun s1  [Var ((name "X") ::: (V top))] 
+t2 = Fun s2  [Var ((name "X") ::: (V top))]
+ 
 test3 = Atom $  t1 :=: truth
+
+p1 = Atom $ t2 :=: truth
+
 
 -----------------------------------------------------------------------------------------
 

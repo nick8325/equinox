@@ -1,7 +1,7 @@
 module Flags
   ( Flags(..)
   , Tool(..)
-	, Method(InjNotSurj,SurjNotInj,Serial)
+	, Method(InjNotSurj,SurjNotInj,Serial,Relation)
   , getFlags
   , getTimeLeft
   , getTimeSpent
@@ -84,7 +84,7 @@ data Flags
   , function     :: String
   , relation     :: Maybe String
   , subset       :: Maybe String
-  , method       :: Method
+  , method       :: [Method]
 	, outfile			 :: Maybe FilePath
 	
   
@@ -99,6 +99,8 @@ data Method
   = InjNotSurj
   | SurjNotInj
   | Serial
+	| Bijection
+	| Relation
  deriving ( Eq, Show, Read, Bounded, Enum )
 
 initFlags :: Flags
@@ -121,12 +123,12 @@ initFlags =
   -- infinox
   , elimit       = 2
   , plimit       = 2
-  , zoom         = False
+  , zoom         = True
   , termdepth    = 1
   , function     = "-"
-  , relation     = Nothing
-  , subset       = Nothing
-  , method       = InjNotSurj
+  , relation     = Just "-"
+  , subset       = Just "-"
+  , method       = [InjNotSurj,SurjNotInj,Serial]
 	, outfile			 = Nothing
 	, filelist		 = Nothing
   
@@ -218,6 +220,15 @@ options =
                 ]
     }
 
+	, Option
+    { long    = "temp"
+    , tools   = [Infinox]
+    , meaning = (\s f -> f{ temp = s }) <$> argName
+    , help    = [ "Directory for temporary files."
+                , "Default: (/temp)"
+                ]
+    }
+
   , Option
     { long    = "elimit"
     , tools   = [Infinox]
@@ -257,8 +268,7 @@ options =
   , Option
     { long    = "method"
     , tools   = [Infinox]
-    , meaning = (\m f -> f{ method = read m })
-            <$> argOption (map show [(minBound :: Method) .. maxBound])
+		, meaning = (\m f -> f{ method = map read m }) <$> argList (map show [(minBound :: Method) .. maxBound])
     , help    = [ "Method to use."
                 , "Default: --method InjNotSurj"
                 ]

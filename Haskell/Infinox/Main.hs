@@ -8,7 +8,7 @@ import Infinox.Classify
 
 main :: IO ()
 main =
-  do putStrLn "Infinox, version 1.0, 2009-03-17."
+  do putStrLn "Infinox, version 1.0, 2009-07-20."
      Main.main Infinox classifyProblem
 
 ---------------------------------------------------------------------------

@@ -174,7 +174,7 @@ options =
 
   , Option
     { long    = "model"
-    , tools   = [Paradox, Equinox]
+    , tools   = [Paradox]
     , meaning = unit (\f -> f{ printModel = True })
     , help    = [ "Print the found model on the screen."
                 , "Default: (off)"

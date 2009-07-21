@@ -141,7 +141,6 @@ con n w s = Con w n
 
 instance Show Con where
   show (Con _ n) = "#" ++ show n
-
 -- -}
 
 data State

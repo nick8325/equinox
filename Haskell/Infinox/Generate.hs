@@ -4,7 +4,7 @@ module Infinox.Generate where
 
 import Form
 import Flags
-import Data.List (nub,sortBy,init,permutations)
+import Data.List (nub,sortBy,init)
 import Data.Set as S( Set )
 import qualified Data.Set as S
 import Infinox.Types

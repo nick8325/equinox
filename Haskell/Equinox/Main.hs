@@ -34,7 +34,7 @@ import Equinox.FolSat
 
 main :: IO ()
 main =
-  do putStrLn "Equinox, version 2.0, 2008-07-29."
+  do putStrLn "Equinox, version 4.0, 2009-07-20."
      Main.main Equinox solveProblem
   
 ---------------------------------------------------------------------------

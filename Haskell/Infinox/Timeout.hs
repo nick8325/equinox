@@ -23,7 +23,8 @@ module Infinox.Timeout  where
 import Prelude             --(IO, Ord((<)), Eq((==)), Int, (.), otherwise, fmap)
 import Data.Maybe          --(Maybe(..))
 import Control.Monad       (Monad(..), guard)
-import Control.OldException   hiding (catch) --(handleJust, throwDynTo, dynExceptions, bracket)
+--import Control.OldException   hiding (catch) --(handleJust, throwDynTo, dynExceptions, bracket)
+import Control.Exception
 import Data.Dynamic        (Typeable, fromDynamic)
 import Data.Unique         (Unique, newUnique)
 
@@ -69,7 +70,7 @@ data Timeout = Timeout Unique deriving (Eq, Typeable)
 -- because the runtime system uses scheduling mechanisms like @select(2)@ to
 -- perform asynchronous I\/O, so it is possible to interrupt standard socket
 -- I\/O or file I\/O using this combinator.
-
+{-
 timeout :: Int -> IO a -> IO (Maybe a)
 timeout n f
     | n <  0    = fmap Just f
@@ -83,7 +84,7 @@ timeout n f
                             (killThread)
                             (\_ -> fmap Just f))
 -- #endif
-
+-}
 
 test = do
 	timeOut2 (2*(10^6)) "eprover" "utdata" (words "--tstp-in --tstp-out -tAuto -xAuto --output-level=0 /home/ann/Documents/Infinox/TPTP-v3.5.0/Problems/ALG/ALG221+1.p") 

@@ -24,7 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -}
 
 import Form
-import Name( prim, tr, (%) )
+import Name( prim, (%) )
 import List hiding ( union, insert, delete )
 import Maybe
 import Equinox.Fair
@@ -46,18 +46,27 @@ prove flags cs' =
        st   <- star `app` []
        
        sequence_
+         [ addGroundTerm x
+         | c <- nonGroundCs
+         , l <- c
+         , a :=: b <- [the l]
+         , x <- [a,b]
+         , x /= truth
+         ]
+
+       sequence_
          [ do put 1 "P: "
-              addClauseSub true (M.fromList [ (x, st) | x <- S.toList (free c) ]) c
-         | c <- cs
+              addClauseSub true M.empty c
+         | c <- groundCs
          ]
 
        let getModelCons =
              do tabs <- sequence [ getModelTable f | f <- S.toList fs ]
-                return (S.toList (S.fromList [ c | tab <- tabs, (_,c) <- tab ]))
+                return (S.toList (S.fromList (st:[ c | tab <- tabs, (_,c) <- tab ])))
 
        let refineGuess  = refine flags true getModelCons True  True  nonGroundCs
            refineStar   = refine flags true getModelCons True  False nonGroundCs
-           refineNoStar = refine flags true getModelCons False False nonGroundCs
+           refineNoStar = refine flags true getModelCons False True  nonGroundCs
 
        r <- cegar Nothing                 refineGuess
           $ cegar (Just (strength flags)) refineStar
@@ -71,7 +80,7 @@ prove flags cs' =
   
   cs = concatMap (norm []) cs'
   
-  nonGroundCs = filter (not . isGround) cs
+  (groundCs,nonGroundCs) = partition isGround cs
   
   syms = symbols cs
   
@@ -160,9 +169,9 @@ cclause cl = (defs,neqs)
 
 addClauseSub :: Con -> Map Symbol Con -> Clause -> T ()
 addClauseSub true sub cl =
-  do ls <- sequence [ literal l | l <- cl ]
-     --lift (print cl)
+  do --lift (print cl)
      --lift (print sub)
+     ls <- sequence [ literal l | l <- cl ]
      --lift (print ls)
      addClause ls
  where
@@ -184,6 +193,16 @@ addClauseSub true sub cl =
   
   literal (Pos a) = atom a
   literal (Neg a) = neg `fmap` atom a
+
+addGroundTerm :: Term -> T (Maybe Con)
+addGroundTerm (Var _) =
+  do return Nothing
+
+addGroundTerm (Fun f ts) =
+  do mxs <- sequence [ addGroundTerm t | t <- ts ]
+     if all isJust mxs
+       then Just `fmap` (f `app` map fromJust mxs)
+       else return Nothing
 
 tryAll []     = do return False
 tryAll (m:ms) = do b  <- m
@@ -222,9 +241,12 @@ refine flags true getCons liberal guess cs =
      lift (putStrLn ("==> refining: liberal=" ++ show liberal
                             ++ ", guess=" ++ show guess
                             ++ ", #elements=" ++ show (length cons)))
+     
+     --lift (putStrLn ("domain = " ++ show cons))
      {-
      sequence_
        [ do tab <- getModelTable f
+            lift (putStrLn ("table for " ++ show f))
             sequence_
               [ lift (putStrLn (show f ++ "("
                                        ++ concat (intersperse "," (map show xs))
@@ -235,59 +257,61 @@ refine flags true getCons liberal guess cs =
        | f <- S.toList fs
        ]
      -}
-     tryAll [ check liberal guess c true cons st
-            | c <- cs
-            ]
+     b <- tryAll [ check liberal guess c true cons st
+                 | c <- cs
+                 ]
+     lift (putStrLn "")
+     return b
  where
   fs = S.filter (\f ->
     case f of
-      _ ::: ((_:_) :-> t) -> True
-      _                   -> False) (symbols cs)
+      _ ::: (_ :-> t) -> True
+      _               -> False) (symbols cs)
 
 
 check :: Bool -> Bool -> [Signed Atom] -> Con -> [Con] -> Con -> T Bool
-check liberal guess cl true cons st = checkDefs 0 defs (M.fromList [(trueX,[true])])
+check liberal guess cl true cons st =
+  do --lift (putStrLn ("checking: let " ++ show defs ++ " in " ++ show neqs))
+     checkDefs 0 defs (M.fromList [(trueX,[true])])
  where
   (defs,neqs) = cclause cl
   
   vr i = (prim "D" % i) ::: V top
  
   -- going through the definitions
-  checkDefs i [] vinfo
+  checkDefs i [] vinfo'
     | not guess && or [ True | x <- S.toList (free cl), Just (_:_:_) <- [M.lookup x vinfo] ] =
-        do lift (putStrLn "no guessing!")
+        do lift (putStr "(G)")
            return False
            
     | otherwise =
         do case findSolution st cons vinfo neqs of
-             Nothing  -> do if guess && or [ True | x <- S.toList (free cl), Just (_:_:_) <- [M.lookup x vinfo] ]  then lift (do print (defs,neqs); print vinfo) else return ()
-                            return False
-             Just sub -> do lift (putStrLn (if liberal then "L: " else "B: "))
+             Nothing  -> do return False
+             Just sub -> do lift (putStr $ (if liberal then if guess then "G" else "L" else "B"))
                             addClauseSub true sub cl
                             return True
-
-  checkDefs i ((Fun f ts,y):defs) vinfo =
-    do tab <- getModelTable f
-       checkTab i (reverse (sort tab)) [] ts y defs vinfo
-  
-  -- going through the table entries
-  checkTab i [] assign ts y defs vinfo =
-    do return False
-  
-  checkTab i tab@(([],c):_) assign [] y defs vinfo =
-    do checkAssign i ((Var y,[c]):assign) defs vinfo
-
-  checkTab i tab assign (t:ts) y defs vinfo =
-    do let ds = nub (map (head . fst) tab)
-       tryAll [ checkTab i [ (xs,c) | (x:xs,c) <- tab
-                                    , x == d || (liberal && x == st) ]
-                           (argument t d ds : assign) ts y defs vinfo
-              | d <- ds
-              ]
    where
-    argument t d ds
-      | liberal && d == st = (t,cons \\ (ds \\ [d]))
-      | otherwise          = (t,[d])
+    vinfo = foldr (\x -> M.insert x cons) vinfo' (S.toList (free cl) \\ M.keys vinfo')
+
+  checkDefs i defs' vinfo =
+    do tab' <- getModelTable f
+       let (tab,df)
+             | not liberal    = (tab', undefined)
+             | isPredSymbol f = ({- filter ((==true).snd) -} tab', st)
+             | otherwise      = ({- filter ((/=df).snd) -} tab', df)
+            where
+             df = occursMost st (map snd tab')
+       
+       tryAll $
+         [ checkAssign i ((Var y,[c]):(ts `zip` (map (:[]) xs))) defs vinfo
+         | (xs,c) <- tab
+         ] ++
+         [ checkAssign i ((Var y,[df]):assign) defs vinfo
+         | liberal
+         , assign <- nonMatching cons ts (map fst tab)
+         ]
+   where
+    ((Fun f ts,y),defs) = pickDefs defs' vinfo
 
   -- going through the assignments
   checkAssign i [] defs vinfo =
@@ -310,6 +334,41 @@ check liberal guess cl true cons st = checkDefs 0 defs (M.fromList [(trueX,[true
     checkAssign (i+1) ((Var x,ds):assign) ((t,x):defs) vinfo
    where
     x = vr i
+
+pickDefs defs vinfo = pick . map snd . reverse . sort . map tag $ defs
+ where
+  pick (x:xs) = (x,xs)
+  
+  tag (t,x) = (if S.null (free t)
+                 then 0
+                 else if cost x == 1
+                        then 1
+                        else 2 + size t,(t,x))
+  
+  size (Var _)    = 1
+  size (Fun _ ts) = 1 + sum (map size ts)
+  
+  cost x = case M.lookup x vinfo of
+             Just ds -> fromIntegral (length ds)
+             Nothing -> 9999 :: Integer
+
+occursMost :: Ord a => a -> [a] -> a
+occursMost y [] = y
+occursMost _ xs = snd . head . reverse . sort . map (\xs -> (length xs, head xs)) . group . sort $ xs
+
+nonMatching :: (Ord a, Ord b) => [b] -> [a] -> [[b]] -> [[(a,[b])]]
+nonMatching dom []     tab = [[] | null tab ]
+nonMatching dom (x:xs) tab =
+  [ [(x, ds')]
+  | let ds' = dom \\ ds
+  , not (null ds')
+  ] ++
+  [ (x,[d]):sol
+  | d <- ds
+  , sol <- nonMatching dom xs [ ys | y:ys <- tab, y == d ]
+  ]
+ where
+  ds = nub (map head tab)
 
 data Result c a
   = Cost c (Result c a)

@@ -359,6 +359,7 @@ formula =
     , ("theorem",            Fact)  -- I see no reason to distinguish these
     , ("lemma",              Fact)  -- ..
     , ("hypothesis",         Fact)  -- ..
+    , ("definition",         Fact)  -- ..
     , ("conjecture",         Conjecture)
     , ("negated_conjecture", NegatedConjecture)
     ]

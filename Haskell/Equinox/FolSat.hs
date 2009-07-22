@@ -260,7 +260,7 @@ refine flags true getCons liberal guess cs =
      b <- tryAll [ check liberal guess c true cons st
                  | c <- cs
                  ]
-     lift (putStrLn "")
+     lift (putStrLn "<")
      return b
  where
   fs = S.filter (\f ->
@@ -272,6 +272,7 @@ refine flags true getCons liberal guess cs =
 check :: Bool -> Bool -> [Signed Atom] -> Con -> [Con] -> Con -> T Bool
 check liberal guess cl true cons st =
   do --lift (putStrLn ("checking: let " ++ show defs ++ " in " ++ show neqs))
+     lift (putStr ">" >> hFlush stdout)
      checkDefs 0 defs (M.fromList [(trueX,[true])])
  where
   (defs,neqs) = cclause cl
@@ -281,13 +282,13 @@ check liberal guess cl true cons st =
   -- going through the definitions
   checkDefs i [] vinfo'
     | not guess && or [ True | x <- S.toList (free cl), Just (_:_:_) <- [M.lookup x vinfo] ] =
-        do lift (putStr "(G)")
+        do lift (putStr "(G)" >> hFlush stdout)
            return False
            
     | otherwise =
         do case findSolution st cons vinfo neqs of
              Nothing  -> do return False
-             Just sub -> do lift (putStr $ (if liberal then if guess then "G" else "L" else "B"))
+             Just sub -> do lift (putStr (if liberal then if guess then "G" else "L" else "B") >> hFlush stdout)
                             addClauseSub true sub cl
                             return True
    where

@@ -43,7 +43,9 @@ prove :: Flags -> [Clause] -> IO Bool
 prove flags cs' =
   run $
     do true <- newCon "$true"
-       st   <- star `app` []
+       st   <- case [ c | c <- S.toList syms, isFunSymbol c, arity c == 0 ] of
+                 c:_ -> c `app` []
+                 _   -> star `app` []
        
        sequence_
          [ addGroundTerm x

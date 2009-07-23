@@ -40,7 +40,7 @@ struct solver : public PropSolver {
     vec<int> dummy;
 
     solver(char* log) : PropSolver(log), contr(NULL), loc(NULL) {}
-    ~solver() { delete [] contr; delete loc; }
+    ~solver() { delete [] contr; }
 };
 
 static inline Lit fromDimacs (int l) { int neg = l < 0; return Lit( (neg ? -l : l) - 1, neg); }

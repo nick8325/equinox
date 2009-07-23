@@ -16,7 +16,6 @@ import Infinox.Generate
 import Infinox.Relations
 import Infinox.Zoom 
 import Infinox.InjOnto
-import Infinox.Bijection
 import Infinox.Util
 
 -----------------------------------------------------------------------------------------

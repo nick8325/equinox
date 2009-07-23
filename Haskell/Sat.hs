@@ -60,7 +60,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import Foreign.C.Types       ( CInt )
 import Foreign.C.String      ( CString, withCString )
 import Foreign.Ptr           ( Ptr, FunPtr, nullPtr )
-import Foreign.ForeignPtr    ( ForeignPtr, newForeignPtr, withForeignPtr )
+import Foreign.ForeignPtr    ( ForeignPtr, newForeignPtr, newForeignPtr_, withForeignPtr )
 import Foreign.Storable      ( peek )
 import Foreign.Marshal.Array ( withArray0, peekArray0 )
 import Foreign.Marshal.Alloc ( malloc, free )

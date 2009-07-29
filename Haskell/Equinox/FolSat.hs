@@ -48,6 +48,12 @@ prove flags cs' =
                  _   -> star `app` []
        
        sequence_
+         [ do put 1 "P: "
+              addClauseSub true M.empty c
+         | c <- groundCs
+         ]
+
+       sequence_
          [ addGroundTerm x
          | c <- nonGroundCs
          , l <- c
@@ -56,23 +62,19 @@ prove flags cs' =
          , x /= truth
          ]
 
-       sequence_
-         [ do put 1 "P: "
-              addClauseSub true M.empty c
-         | c <- groundCs
-         ]
-
        let getModelCons =
              do tabs <- sequence [ getModelTable f | f <- S.toList fs ]
                 return (S.toList (S.fromList (st:[ c | tab <- tabs, (_,c) <- tab ])))
 
-       let refineGuess  = refine flags true getModelCons True  True  nonGroundCs
-           refineStar   = refine flags true getModelCons True  False nonGroundCs
-           refineNoStar = refine flags true getModelCons False True  nonGroundCs
+       let refineGuess = refine flags (Refine True  True  True)  (true,st) getModelCons nonGroundCs
+           refineFun   = refine flags (Refine True  True  False) (true,st) getModelCons nonGroundCs
+           refinePred  = refine flags (Refine True  False False) (true,st) getModelCons nonGroundCs
+           refineBasic = refine flags (Refine False False True)  (true,st) getModelCons nonGroundCs
 
        r <- cegar Nothing                 refineGuess
-          $ cegar (Just (strength flags)) refineStar
-          $ cegar Nothing                 refineNoStar
+          $ cegar (Just (strength flags)) refineFun
+          $ cegar Nothing                 refinePred
+          $ cegar Nothing                 refineBasic
           $ Just `fmap` solve flags []
 
        return (r == Just False)
@@ -86,12 +88,10 @@ prove flags cs' =
   
   syms = symbols cs
   
-  fs' = S.filter (\f ->
+  fs = S.filter (\f ->
     case f of
       _ ::: (_ :-> t) -> t /= bool
       _               -> False) syms
-  
-  fs = star `S.insert` fs'
 
 trueX, star :: Symbol
 trueX = prim "True" ::: V bool
@@ -122,7 +122,7 @@ norm ls' (l : ls) =
 cclause :: [Signed Atom] -> ([(Term,Symbol)],[(Symbol,Symbol)])
 cclause cl = (defs,neqs)
  where
-  theX i = var top i
+  theX i = (prim "A" % i) ::: V top
     
   (defs,neqs) = lits 1 cl
     
@@ -234,18 +234,36 @@ cegar mk refine solve =
        _ ->
          do return mb
 
-refine :: Flags -> Con -> T [Con] -> Bool -> Bool -> [[Signed Atom]] -> T Bool
-refine flags true getCons liberal guess cs =
+data Refine
+  = Refine
+  { liberalPred :: Bool
+  , liberalFun  :: Bool
+  , guess       :: Bool
+  }
+
+instance Show Refine where
+  show (Refine p f g) =
+    concat $ intersperse "+" $
+      (if p then ["libpred"] else []) ++
+      (if f then ["libfun"]  else []) ++
+      (if g then ["guess"]   else [])
+      
+letter :: Refine -> String
+letter (Refine False False _)    = "B"
+letter (Refine True  False _)    = "P"
+letter (Refine _     _     True) = "G"
+letter (Refine _     True  _)    = "L"
+
+refine :: Flags -> Refine -> (Con,Con) -> T [Con] -> [[Signed Atom]] -> T Bool
+refine flags opts (true,st') getCons cs =
   do cons' <- getCons
-     st'   <- star `app` []
      st    <- getModelRep st'
      let cons = st : (cons' \\ [st])
-     lift (putStrLn ("==> refining: liberal=" ++ show liberal
-                            ++ ", guess=" ++ show guess
+     lift (putStrLn ("==> refining: " ++ show opts
                             ++ ", #elements=" ++ show (length cons)))
      
-     --lift (putStrLn ("domain = " ++ show cons))
      {-
+     lift (putStrLn ("domain = " ++ show cons))
      sequence_
        [ do tab <- getModelTable f
             lift (putStrLn ("table for " ++ show f))
@@ -259,7 +277,8 @@ refine flags true getCons liberal guess cs =
        | f <- S.toList fs
        ]
      -}
-     b <- tryAll [ check liberal guess c true cons st
+     
+     b <- tryAll [ check opts c true cons st
                  | c <- cs
                  ]
      lift (putStrLn "<")
@@ -271,10 +290,9 @@ refine flags true getCons liberal guess cs =
       _               -> False) (symbols cs)
 
 
-check :: Bool -> Bool -> [Signed Atom] -> Con -> [Con] -> Con -> T Bool
-check liberal guess cl true cons st =
-  do --lift (putStrLn ("checking: let " ++ show defs ++ " in " ++ show neqs))
-     lift (putStr ">" >> hFlush stdout)
+check :: Refine -> [Signed Atom] -> Con -> [Con] -> Con -> T Bool
+check opts cl true cons st =
+  do lift (putStr ">" >> hFlush stdout)
      checkDefs 0 defs (M.fromList [(trueX,[true])])
  where
   (defs,neqs) = cclause cl
@@ -283,14 +301,14 @@ check liberal guess cl true cons st =
  
   -- going through the definitions
   checkDefs i [] vinfo'
-    | not guess && or [ True | x <- S.toList (free cl), Just (_:_:_) <- [M.lookup x vinfo] ] =
+    | not (guess opts) && or [ True | x <- S.toList (free cl), Just (_:_:_) <- [M.lookup x vinfo] ] =
         do lift (putStr "(G)" >> hFlush stdout)
            return False
            
     | otherwise =
         do case findSolution st cons vinfo neqs of
              Nothing  -> do return False
-             Just sub -> do lift (putStr (if liberal then if guess then "G" else "L" else "B") >> hFlush stdout)
+             Just sub -> do lift (putStr (letter opts) >> hFlush stdout)
                             addClauseSub true sub cl
                             return True
    where
@@ -299,9 +317,8 @@ check liberal guess cl true cons st =
   checkDefs i defs' vinfo =
     do tab' <- getModelTable f
        let (tab,df)
-             | not liberal    = (tab', undefined)
-             | isPredSymbol f = ({- filter ((==true).snd) -} tab', st)
-             | otherwise      = ({- filter ((/=df).snd) -} tab', df)
+             | isPredSymbol f = (tab', st)
+             | otherwise      = (tab', df)
             where
              df = occursMost st (map snd tab')
        
@@ -310,7 +327,7 @@ check liberal guess cl true cons st =
          | (xs,c) <- tab
          ] ++
          [ checkAssign i ((Var y,[df]):assign) defs vinfo
-         | liberal
+         | liberalFun opts || (liberalPred opts && isPredSymbol f)
          , assign <- nonMatching cons ts (map fst tab)
          ]
    where

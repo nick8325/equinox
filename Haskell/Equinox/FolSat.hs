@@ -53,6 +53,13 @@ prove flags cs' =
          | c <- groundCs
          ]
 
+       {-
+       sequence_
+         [ do lift (print c)
+         | c <- nonGroundCs
+         ]
+       -}
+       
        sequence_
          [ addGroundTerm x
          | c <- nonGroundCs
@@ -262,11 +269,11 @@ refine flags opts (true,st') getCons cs =
      lift (putStrLn ("==> refining: " ++ show opts
                             ++ ", #elements=" ++ show (length cons)))
      
+     --lift (putStrLn ("domain = " ++ show cons))
      {-
-     lift (putStrLn ("domain = " ++ show cons))
      sequence_
        [ do tab <- getModelTable f
-            lift (putStrLn ("table for " ++ show f))
+            lift (putStrLn ("table for " ++ show f ++ ", isPredSymbol=" ++ show (isPredSymbol f)))
             sequence_
               [ lift (putStrLn (show f ++ "("
                                        ++ concat (intersperse "," (map show xs))
@@ -302,7 +309,7 @@ check opts cl true cons st =
   -- going through the definitions
   checkDefs i [] vinfo'
     | not (guess opts) && or [ True | x <- S.toList (free cl), Just (_:_:_) <- [M.lookup x vinfo] ] =
-        do lift (putStr "(G)" >> hFlush stdout)
+        do --lift (putStr "(G)" >> hFlush stdout)
            return False
            
     | otherwise =
@@ -326,9 +333,14 @@ check opts cl true cons st =
          [ checkAssign i ((Var y,[c]):(ts `zip` (map (:[]) xs))) defs vinfo
          | (xs,c) <- tab
          ] ++
-         [ checkAssign i ((Var y,[df]):assign) defs vinfo
+         [ checkAssign i ((Var y,[df]):assign++terms) defs vinfo
          | liberalFun opts || (liberalPred opts && isPredSymbol f)
          , assign <- nonMatching cons ts (map fst tab)
+         , let terms = [ (t,cons)
+                       | not (liberalFun opts)
+                       , t <- ts
+                       , t `notElem` map fst assign
+                       ]
          ]
    where
     ((Fun f ts,y),defs) = pickDefs defs' vinfo

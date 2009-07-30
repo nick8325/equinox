@@ -39,7 +39,7 @@ import IO
 import Flags
 import Control.Monad
 
-prove :: Flags -> [Clause] -> IO Bool
+prove :: Flags -> [Clause] -> IO ClauseAnswer
 prove flags cs' =
   run $
     do true <- newCon "$true"
@@ -84,7 +84,10 @@ prove flags cs' =
           $ cegar Nothing                 refineBasic
           $ Just `fmap` solve flags []
 
-       return (r == Just False)
+       return $ case r of
+                  Just False -> Unsatisfiable
+                  Just True  -> Satisfiable
+                  Nothing    -> NoAnswerClause GaveUp
  where
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout

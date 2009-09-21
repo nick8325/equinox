@@ -180,6 +180,15 @@ options =
                 , "Default: (off)"
                 ]
     }
+
+  , Option
+    { long    = "modelfile"
+    , tools   = [Equinox]
+    , meaning = (\m f -> f{ mfile = Just m }) <$> argFile
+    , help    = [ "Print the found approximation model in the file."
+                , "Default: (off)"
+                ]
+    }
 {-
   , Option
     { long    = "dot"

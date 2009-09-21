@@ -35,6 +35,7 @@ import Data.Set( Set )
 import qualified Data.Set as S
 import Data.Map( Map )
 import qualified Data.Map as M
+import Data.Maybe( isJust, fromJust )
 import IO
 import Flags
 import Control.Monad
@@ -73,10 +74,10 @@ prove flags cs' =
              do tabs <- sequence [ getModelTable f | f <- S.toList fs ]
                 return (S.toList (S.fromList (st:[ c | tab <- tabs, (_,c) <- tab ])))
 
-       let refineGuess = refine flags (Refine True  True  True)  (true,st) getModelCons nonGroundCs
-           refineFun   = refine flags (Refine True  True  False) (true,st) getModelCons nonGroundCs
-           refinePred  = refine flags (Refine True  False False) (true,st) getModelCons nonGroundCs
-           refineBasic = refine flags (Refine False False True)  (true,st) getModelCons nonGroundCs
+       let refineGuess = refine flags (Refine True  True  True)  (true,st) syms getModelCons nonGroundCs
+           refineFun   = refine flags (Refine True  True  False) (true,st) syms getModelCons nonGroundCs
+           refinePred  = refine flags (Refine True  False False) (true,st) syms getModelCons nonGroundCs
+           refineBasic = refine flags (Refine False False True)  (true,st) syms getModelCons nonGroundCs
 
        r <- cegar Nothing                 refineGuess
           $ cegar (Just (strength flags)) refineFun
@@ -251,6 +252,9 @@ data Refine
   , guess       :: Bool
   }
 
+isModelPoint :: Refine -> Bool
+isModelPoint (Refine lp lf g) = lp && not lf
+
 instance Show Refine where
   show (Refine p f g) =
     concat $ intersperse "+" $
@@ -264,8 +268,8 @@ letter (Refine True  False _)    = "P"
 letter (Refine _     _     True) = "G"
 letter (Refine _     True  _)    = "L"
 
-refine :: Flags -> Refine -> (Con,Con) -> T [Con] -> [[Signed Atom]] -> T Bool
-refine flags opts (true,st') getCons cs =
+refine :: Flags -> Refine -> (Con,Con) -> Set Symbol -> T [Con] -> [[Signed Atom]] -> T Bool
+refine flags opts (true,st') syms getCons cs =
   do cons' <- getCons
      st    <- getModelRep st'
      let cons = st : (cons' \\ [st])
@@ -292,13 +296,39 @@ refine flags opts (true,st') getCons cs =
                  | c <- cs
                  ]
      lift (putStrLn "<")
+     if not b && isModelPoint opts && isJust (mfile flags)
+       then writeModel (fromJust (mfile flags)) true (S.toList fs)
+       else return ()
      return b
  where
   fs = S.filter (\f ->
     case f of
       _ ::: (_ :-> t) -> True
-      _               -> False) (symbols cs)
+      _               -> False) syms
 
+writeModel :: FilePath -> Con -> [Symbol] -> T ()
+writeModel file true fs =
+  do lls <- sequence
+              [ do tab <- getModelTable f
+                   return (table f tab)
+              | f <- fs
+              ]
+     lift (writeFile file (unlines (concat (intersperse [""] lls))))
+ where
+  table f tab
+    | isPredSymbol f = [ app f xs
+                      ++ " <=> "
+                      ++ (if y == true then "$true" else "$false")
+                       | (xs,y) <- tab
+                       ]
+    | otherwise      = [ app f xs
+                      ++ " = "
+                      ++ show y
+                       | (xs,y) <- tab
+                       ]
+
+  app f [] = show f
+  app f xs = show f ++ "(" ++ concat (intersperse "," (map show xs)) ++ ")"
 
 check :: Refine -> [Signed Atom] -> Con -> [Con] -> Con -> T Bool
 check opts cl true cons st =

@@ -10,12 +10,12 @@ GHC     = ghc
 
 #-- Main
 
-main: paradox.exe equinox.exe infinox.exe
+main: paradox.exe equinox.exe infinox.exe satplay.exe
 
 paradox: paradox.exe
 equinox: equinox.exe
 infinox: infinox.exe
-equiparadox: equiparadox.exe
+satplay: satplay.exe
 
 Sat.o: Sat.hs
 	$(GHC) -fglasgow-exts --make Sat.hs
@@ -40,7 +40,14 @@ equinox.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base
 infinox.exe: *.hs Infinox/*.hs
 	$(GHC) $(HFLAGS) -main-is Infinox.Main.main --make Infinox.Main -o infinox
                 
+#-- SatPlay
+
+satplay.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+	$(GHC) $(HSAT) $(HFLAGS) -main-is SatPlay.Main.main --make SatPlay.Main -o satplay
+                
 #-- Cleaning up
 
 clean:
-	rm -f *.o *.hi paradox* equinox* Equinox/*.o Equinox/*.hi Paradox/*.o Paradox/*.hi
+	rm -f *.o *.hi paradox* equinox* infinox* satplay* Equinox/*.o Equinox/*.hi Paradox/*.o Paradox/*.hi Infinox/*.o Infinox/*.hi SatPlay/*.o SatPlay/*.hi
+	
+	

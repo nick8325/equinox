@@ -22,6 +22,7 @@ import Infinox.Util
 
 classifyProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
 classifyProblem cs = do
+	
 
 	createDirectoryIfMissing False (F.temp ?flags)
 
@@ -37,13 +38,22 @@ classifyProblem cs = do
 		termdepth					=	F.termdepth ?flags
 		funflag						= F.function ?flags
 		relflag						= F.relation ?flags
+	
 
 	createDirectoryIfMissing False tempdir
+	
+
 	starttime   <- getClockTime
+
 	fs  				<- if (F.zoom ?flags) then do
 											putStrLn $ if verbose then "Zooming..." else ""
 											zoom tempdir forms noClash (F.plimit ?flags)
-									else return forms --the formulas in which to search for candidates
+	
+									else do
+																				
+										return forms --the formulas in which to search for candidates
+	
+
 	let
 		sig 		= getSignature fs (F.function ?flags)
 		axioms 	= form2axioms forms noClash

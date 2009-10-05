@@ -227,7 +227,8 @@ solve = solve_ True
 
 newLit         = MiniSatM s_newlit
 addClause ls     =
-  do --lift $ putStrLn ("Sat.addClause: " ++ show ls)
+  do 
+   --  lift $ putStrLn ("Sat.addClause: " ++ show ls)
      fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . s_clause)
 solve_ b ls   = fmap fromCBool $ MiniSatM (withArray0 (Lit 0) ls . flip s_solve (toCBool b))
 

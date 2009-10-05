@@ -130,6 +130,8 @@ isPredSymbol _                 = False
 
 isFunSymbol s = not (isVarSymbol s || isPredSymbol s)
 
+isConstantSymbol s = isFunSymbol s && arity s == 0
+
 ----------------------------------------------------------------------
 -- Term
 

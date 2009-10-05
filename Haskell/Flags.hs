@@ -57,6 +57,7 @@ data Tool
   = Paradox
   | Equinox
   | Infinox
+	| SatPlay
  deriving ( Eq, Show )
 
 data Flags
@@ -123,7 +124,7 @@ initFlags =
   -- infinox
   , elimit       = 2
   , plimit       = 2
-  , zoom         = True
+  , zoom         = False
   , termdepth    = 1
   , function     = "-"
   , relation     = Just "-"
@@ -259,7 +260,7 @@ options =
   , Option
     { long    = "zoom"
     , tools   = [Infinox]
-    , meaning = unit (\f -> f{ zoom = True })
+    , meaning = unit (\f -> f{ zoom = False })
     , help    = [ "Use 'zooming' to reduce the size of the problem."
                 , "Default: (off)"
                 ]

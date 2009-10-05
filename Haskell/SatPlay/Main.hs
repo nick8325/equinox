@@ -1,22 +1,179 @@
 module SatPlay.Main where
 
+import qualified Main
 import Sat
+import Form
+import Name
+import List
+
+import Flags
+import qualified Data.Set as S
 
 main :: IO ()
-main = run $
-  do a   <- newVar 5
-     b   <- newVar 5
-     ab  <- times a b
-     require $ equal ab (number 27)
-     requireNot $ equal a (number 1)
-     requireNot $ equal b (number 1)
+main =
+  do putStrLn "SatPlay, version 1.0, 2009-10-02."
+     Main.main SatPlay solveProblem
 
-     ans <- solve []
-     if not ans
-       then lift (putStrLn "no model!")
-       else do n <- getModelNumber a
-               m <- getModelNumber b
-               lift (print (n,m))
+varRange 	= 3::Int
+varValues = map number [0..2^varRange]
+coefficientRange = 3::Int
+
+solveProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
+solveProblem cs = run $ do
+--	lift $ putStrLn $ show cs
+	let 
+		funsymbols  = S.toList $ S.filter isFunSymbol $ symbols cs 
+		predsymbols  = S.toList $ S.filter isPredSymbol $ symbols cs 
+	funreps <- makeFunReps funsymbols --funktionssymboler med respektive koefficienter (newVars)
+	addConstraints funreps cs 
+--	addPredConstraints predsymbols cs --ingenting händer här (än)...
+	ans <- solve []
+	if not ans then do
+			lift (putStrLn "no model!")
+			ls <- conflict
+			lift $ putStrLn $ show ls
+			lift $ return $ NoAnswerClause GaveUp	
+		 else do 
+				lift (putStrLn "model found!")
+				printFuns funreps
+				lift $ return Satisfiable
+	
+variables = ["X","Y","Z","V","W"]
+
+makeFunReps :: [Symbol] -> S [(Symbol,[Number])]
+makeFunReps []  = return []
+makeFunReps (x:xs) = do
+	let a = (arity x) + 1
+	vs 	<- newVars coefficientRange a
+	xvs	<- makeFunReps xs
+	return ((x,vs):xvs)
+
+newVars :: Int -> Int -> S [Number]
+newVars n 0 = return []
+newVars n m = do
+	vs <- newVars n (m-1)
+	v  <- newVar n
+	return (v:vs)
+
+addPredConstraints  :: [Symbol] -> [Clause] -> S()
+addPredConstraints [] _ = return ()
+addPredConstraints ps (c:cs) = do 
+	let	
+		ps'     = [p | p <- ps, elem p (S.toList (symbols c))]
+		vars 		= nub $ concat [getVarsSigned c' | c' <- c]
+		varMap  = varAssigns vars
+	addPredConstraint ps' c varMap
+	addPredConstraints ps cs 
+
+addPredConstraint _ _ _ = return () -- Decide what to do here!
+
+	
+varAssigns [] 		= [[]]
+varAssigns (v:vs) = 
+	let ms = varAssigns vs in -- all possible assignments for the variables that occur in the clause
+		concat [map ((v,i) :) ms | i <- varValues]
+
+addConstraints :: [(Symbol,[Number])] -> [Clause] -> S () 
+addConstraints _ [] = return ()
+addConstraints funreps (c:cs) = do
+	let		
+		vars 		= nub $ concat [getVarsSigned c' | c' <- c]
+		varMap  = varAssigns vars
+	addConstraint funreps c varMap --add the constraints of each clause
+	addConstraints funreps cs
+
+addConstraint :: [(Symbol,[Number])] -> [Signed Atom] -> [[(Symbol,Number)]]-> S ()
+addConstraint _ _ [] = return ()
+addConstraint funreps xs (v:vars) 	= do	
+	cs <- constructClauses funreps xs v
+	clause cs --lägger till clause cs för alla möjliga variabeltilldelningar av en klausul.
+	addConstraint funreps xs vars
+
+constructClauses :: [(Symbol,[Number])] -> [Signed Atom] -> [(Symbol,Number)] -> S [Bit]
+constructClauses _ [] _ = return []
+constructClauses funreps (x:xs) vars = do
+	b 	<- apply x funreps vars 
+	bs	<- constructClauses funreps xs vars
+	return (b:bs)
+
+apply (Neg t) funreps v = do
+	b <- apply (Pos t) funreps v
+	return $ ng b
+
+apply (Pos (t1 :=: t2)) funreps v = 
+	case (t1,t2) of
+		(Var s1, Var s2) -> case lookup s1 v of
+													Just n1	-> case lookup s2 v of
+																			Just n2 -> equal n1 n2
+		(Fun s1 ts1,t)  -> 
+			if t == truth then error $ show (t1,t2)-- what do we do here?
+			 else
+				do
+						args1 <- appArgs ts1 v funreps
+						case lookup s1 funreps of
+								Just ns1 -> do	
+										b1 <- eval ns1 args1
+										b2 <- (case t of
+														Var s2		-> case lookup s2 v of
+																					Just ns2 -> return ns2
+														Fun s2 ts2 -> case lookup s2 funreps of
+																						Just ns2 -> do
+																							args2 <- appArgs ts2 v funreps																													
+																							eval ns2 args2)
+										equal b2 b1
+
+		(x,y)						-> apply (Pos (y :=: x)) funreps v
+
+
+eval :: [Number] -> [Number] -> S Number
+eval [c] [] = return c
+eval (c:coeffs) (v:vars) = do
+	b 	<- times c v
+	b2 	<- eval coeffs vars
+	plus b0 b b2
+
+appArgs [] _ _ = return []
+appArgs ((Var x):xs) v funreps = case lookup x v of
+	Just n	-> do 
+		ns <- appArgs xs v funreps
+		return (n:ns)
+
+appArgs ((Fun f ts):xs) v funreps = case lookup f funreps of
+	Just ns -> do
+		args 	<- appArgs ts v funreps
+		n			<- eval ns args
+		xs'		<- appArgs xs v funreps
+		return (n:xs')
+
+getVarsSigned (Pos a) = getVarsAtom a
+getVarsSigned (Neg a) = getVarsAtom a
+
+getVarsAtom (t1 :=: t2) = nub ((getVarsTerm t1) ++ (getVarsTerm t2))
+getVarsTerm (Var x) = [x]
+getVarsTerm (Fun _ ts)   = nub $ concat [getVarsTerm v | v <- ts]
+
+printFuns [] = return ()
+printFuns ((f,vs):fs) = do
+	ns <- mapM getModelNumber vs	
+	let 
+		zips = zip ns variables
+		vs	 = listVars $ take ((length ns) - 1) variables
+		listVars [] = ""
+		listVars [x] = x
+		listVars (x:xs) = x ++ "," ++ listVars xs
+		str1 n = show f ++ "(" ++ vs ++ ") = " 
+		str2 []						= ""
+		str2 [_]				 = show $ last ns
+		str2 ((z,v):zs) = show z ++ v ++ " + " ++ (str2 zs)	
+	lift $ putStrLn $ (str1 ((length ns) -1)) ++ (str2 zips)
+	printFuns fs
+
+-------------------------------------------------------------------------------
+
+requireEqual :: Number -> Number -> S ()
+requireEqual a b = do	
+	e <- equal a b
+	[]	==> [e]
 
 require :: S Bit -> S ()
 require constr =
@@ -28,7 +185,7 @@ requireNot constr =
   do b <- constr
      [] ==> [ng b]
 
-data Bit    = Lit Lit | Bool Bool deriving Eq
+data Bit    = Lit Lit | Bool Bool deriving (Eq,Show)
 type Number = [Bit] -- lsb first (omvänt)   (011 = 2+4 = 6)
 
 b0, b1 :: Bit
@@ -71,8 +228,8 @@ plus c (x:xs) (y:ys) =
 
 (==>) :: [Bit] -> [Bit] -> S ()
 xs ==> ys = clause (map ng xs ++ ys)
- where
-  clause ls
+ 
+clause ls
     | Bool True `elem` ls = return ()
     | otherwise           = addClause [ x | Lit x <- ls ] >> return ()
 
@@ -115,6 +272,7 @@ timesBit a        xs =
 
 times :: Number -> Number -> S Number
 times []     ys = return []
+times _ [] 			= return []
 times (x:xs) ys =
   do p:ps <- timesBit x ys
      qs   <- times xs ys
@@ -142,4 +300,8 @@ allZero xs =
      map ng xs ==> [z]
      sequence_ [ [x] ==> [ng z] | x <- xs ]
      return z
+
+
+
+
 

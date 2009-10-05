@@ -55,8 +55,8 @@ main tool solveProblem =
        Just n ->
          do timeoutVar <- newEmptyMVar
 
-            pid1 <- forkIO $
-              do try (main' solveProblem) -- :: IO (Either IOError ())
+            pid1 <- forkIO $ 
+              do try (main' solveProblem) :: IO (Either IOError ())
                  putMVar timeoutVar False
 
             pid2 <- forkIO $

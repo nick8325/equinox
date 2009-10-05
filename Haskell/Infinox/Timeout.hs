@@ -109,7 +109,7 @@ timeOut2 n exe output args =
                putStrLn "Paradox still running..."
                return ()
             kill m = do
-               ex <- try (terminateProcess h)
+               ex <- try (terminateProcess h) :: IO (Either IOError ())
                case ex of
                   Left _ -> do 
                               threadDelay (n `div` 10) 

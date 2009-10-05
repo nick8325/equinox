@@ -1,0 +1,4 @@
+
+fof(a1,axiom, (![X,Y] : (f(X) = f(Y) => X = Y))).
+
+fof(a2,axiom, (?[Y] : ![X] : ~(f(X) = Y))).

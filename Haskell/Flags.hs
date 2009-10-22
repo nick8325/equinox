@@ -1,7 +1,7 @@
 module Flags
   ( Flags(..)
   , Tool(..)
-	, Method(InjNotSurj,SurjNotInj,Serial,Relation)
+	, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto)
   , getFlags
   , getTimeLeft
   , getTimeSpent
@@ -102,6 +102,7 @@ data Method
   | Serial
 	| Bijection
 	| Relation
+	| Auto
  deriving ( Eq, Show, Read, Bounded, Enum )
 
 initFlags :: Flags

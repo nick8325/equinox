@@ -24,8 +24,6 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 			subsets		=		collectSubsets pflag ps	--collect subset-predicates depending on flag given	
 --		putStrLn $ show relations
 		(result,refl_rels) <- tryFullDomain funs relations [] 
-
-	
 								--while testing the full domain - collect all reflexive relations to avoid
 								--testing them again!
 		case result of
@@ -42,9 +40,7 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 									_			-> return result
 			_		-> return $ toResult result
 
-
 	where
-			
 		tryFullDomain _ [] allrefls = return ([],allrefls)	
 		tryFullDomain funs relations refls = do
 			(psrs,rs) <- getPairs tempdir axiomfile noClash eflag verbose Nothing checkPR relations 
@@ -99,8 +95,6 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 		collectMatchingRelationsAndSubset p rs = 
 			getPairs tempdir axiomfile noClash eflag verbose (Just p) checkPR rs
 
-
-
 toResult []													= None
 toResult [(Just f,Just r,Nothing)]  = TF f r
 toResult [(Just f, Just r, Just p)] = TFF f r p
@@ -111,10 +105,6 @@ delSymbols [] _ = []
 delSymbols (r@(Atom ( (Fun s ts) :=: _)):rs) ss = if elem s ss 
 	then delSymbols rs ss else r:(delSymbols rs ss)
 delSymbols (r:rs) ss = delSymbols rs ss
-
-
-
-
 -------------------------------------------------------------------------------
 zippy [] _ = []
 --zip together triples from pairs with matching "p's"
@@ -124,7 +114,6 @@ zippy ((f,p):fsps) psrs =
 getPairs dir axiomfile noClash elim v p checkfun ts_or_rs = 
    mapUntilSuccess (checkfun dir axiomfile noClash elim v p) ts_or_rs
 -------------------------------------------------------------------------------
-
 
 checkPR :: FilePath -> FilePath -> String ->
    Int -> Bool -> Maybe Form -> Form -> IO [(Maybe Form, Form)]
@@ -140,7 +129,6 @@ checkPR dir axiomfile noClash to vb p r  = do
             b <- prove conj provefile to
             removeFile provefile
             if b then return (zip (repeat p) (genRelsXY r)) else return []
-
 
 checkFP dir axiomfile noClash to vb p f  = do
    let 
@@ -197,7 +185,6 @@ conjInjNotOnto (Just fun) (Just rel) pr =
             --p(X) & p(Y) => (r(f(X),f(Y) => r(X,Y)))
 
 
-
 --surjectivity and non-injectivity
 conjNotInjOnto (Just fun) _ pr =
 	let 
@@ -252,25 +239,12 @@ conjPimpliesRef rel Nothing =
 --p closed under f
 conjPClosedUnderF fun (Just pr) =
 	existsPred "P" pr $ \p -> 
-	--	(nt (forEvery x (p x))) /\ --p is not the whole domain! (too hard to prove?)
 			(existsFun "F" fun $ \f ->	
-															
-	
 			forEvery x (
 				p (f x) \/ nt (p x)
 			))
  where
   x = Var Sym.x
-
- 
-
-
-
-
-
-
-
-
 
 -------------------------------------------------------------------------------
 

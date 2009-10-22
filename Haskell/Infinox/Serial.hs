@@ -30,7 +30,6 @@ continueSerial tempdir sig problem  noClash rflag pflag v elim = do
 			rs' 			= 	nub $ concatMap genRelsXY rs
 										--convert to predicates containing (all combinations of) 
 										--variables "X" and "Y"
-	putStrLn $ show rs'
 	continueSerial' tempdir problem noClash (rs'++(map nt rs')) (rs'++(map nt rs')) ps v elim
 	
 continueSerial' _ _ _ _ _ [] _ _ = return None

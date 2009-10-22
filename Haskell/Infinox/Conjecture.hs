@@ -9,12 +9,14 @@ import Infinox.Types
 
 -----------------------------------------------------------------------------------------
 
---Applying a function/predicate containing variables X (and possibly Y) to 
---one or two arguments.
+--Applying a function/predicate containing variables X (and possibly Y and Z) to 
+--one or two or three arguments.
 (@@) :: Symbolic a => a -> [Term] -> a
-p @@ [x]   = subst (Sym.x |=> x) p
-p @@ [x,y] = subst ((Sym.x |=> x) |+| (Sym.y |=> y)) p
-_ @@ _     = error "@@"
+p @@ []		   = p
+p @@ [x]     = subst (Sym.x |=> x) p
+p @@ [x,y]   = subst ((Sym.x |=> x) |+| (Sym.y |=> y)) p
+p @@ [x,y,z] = subst ((Sym.x |=> x) |+| (Sym.y |=> y) |+| (Sym.z |=> z)) p
+p @@ xs      = error $ "@@: " ++ show xs
 
 -----------------------------------------------------------------------------------------
 

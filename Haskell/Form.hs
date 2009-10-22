@@ -125,12 +125,12 @@ isVarSymbol (_ ::: V _) = True
 isVarSymbol _           = False
 
 isPredSymbol :: Symbol -> Bool
-isPredSymbol (_ ::: (_ :-> t)) = t == bool
+isPredSymbol s@(_ ::: (_ :-> t)) = t == bool && arity s > 0
 isPredSymbol _                 = False
 
 isFunSymbol s = not (isVarSymbol s || isPredSymbol s)
-
 isConstantSymbol s = isFunSymbol s && arity s == 0
+
 
 ----------------------------------------------------------------------
 -- Term

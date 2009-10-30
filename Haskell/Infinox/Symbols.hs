@@ -11,6 +11,8 @@ x, y, z, f :: Symbol
 x = name "X" ::: V top
 y = name "Y" ::: V top
 z = name "Z" ::: V top
+v = name "V" ::: V top
+w = name "W" ::: V top
 f = name "F" ::: V top
 
 a, b, c :: Symbol

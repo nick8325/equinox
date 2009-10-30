@@ -128,7 +128,7 @@ isPredSymbol :: Symbol -> Bool
 isPredSymbol s@(_ ::: (_ :-> t)) = t == bool && arity s > 0
 isPredSymbol _                 = False
 
-isFunSymbol s = not (isVarSymbol s || isPredSymbol s)
+isFunSymbol s = not (isVarSymbol s || isPredSymbol s || s == (tr ::: ([] :-> bool)))
 isConstantSymbol s = isFunSymbol s && arity s == 0
 
 

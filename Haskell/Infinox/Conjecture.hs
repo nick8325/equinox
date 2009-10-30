@@ -12,11 +12,13 @@ import Infinox.Types
 --Applying a function/predicate containing variables X (and possibly Y and Z) to 
 --one or two or three arguments.
 (@@) :: Symbolic a => a -> [Term] -> a
-p @@ []		   = p
-p @@ [x]     = subst (Sym.x |=> x) p
-p @@ [x,y]   = subst ((Sym.x |=> x) |+| (Sym.y |=> y)) p
-p @@ [x,y,z] = subst ((Sym.x |=> x) |+| (Sym.y |=> y) |+| (Sym.z |=> z)) p
-p @@ xs      = error $ "@@: " ++ show xs
+p @@ []		   	= p
+p @@ [x]     	= subst (Sym.x |=> x) p
+p @@ [x,y]   	= subst ((Sym.x |=> x) |+| (Sym.y |=> y)) p
+p @@ [x,y,z] 	= subst ((Sym.x |=> x) |+| (Sym.y |=> y) |+| (Sym.z |=> z)) p
+p @@ [x,y,z,v] 		= subst ((Sym.x |=> x) |+| (Sym.y |=> y) |+| (Sym.z |=> z) |+| (Sym.v |=> v)) p
+p @@ [x,y,z,v,w] 	= subst ((Sym.x |=> x) |+| (Sym.y |=> y) |+| (Sym.z |=> z) |+| (Sym.v |=> v) |+| (Sym.w |=> w)) p
+p @@ xs      			= error $ "@@: " ++ show xs
 
 -----------------------------------------------------------------------------------------
 

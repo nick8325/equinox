@@ -112,50 +112,35 @@ conjSerial :: Relation -> Maybe Form -> Form
 conjSerial rel subset =
 	case subset of
 		Nothing	-> 
-			existsRel "R" rel $ \r ->  
-
-				(exist [x,y] (r x y))
-
-				/\
-
+			(exist x (x `eq` x)) /\
+			(existsRel "R" rel $ \r ->  
   		  forEvery x (nt (r x x)) --not reflexive
   		  /\ 
 
-			  (		(		(forEvery [x,y,z] ((nt (r x y)) \/ (nt (r y z)) \/ (r x z) )) 
-						/\ 
-								(forEvery [x,y] ((nt (r x y)) \/ (exist z (r y z))))
-						) 			
+			  (((forEvery [x,y,z] ((nt (r x y)) \/ (nt (r y z)) \/ (r x z) )) 
+				/\ (forEvery x (exist y (r x y)))) --transitive & serial
 			
-						\/ --or left-transitive & left-serial
+				\/ --or left-transitive & left-serial
 
-						(		(		forEvery [x,y,z] ((nt (r y x)) \/ (nt (r z y)) \/ (r z x) )) --left-transitive
-								/\ 
-										(forEvery [x,y] ((nt (r y x)) \/ (exist z (r z y)))
-								)
-						)
-				)
-		 		
-		--		/\ (forEvery x (exist y (r y x))))) --left-serial
+				((forEvery [x,y,z] ((nt (r y x)) \/ (nt (r z y)) \/ (r z x) )) --left-transitive
+				/\ (forEvery x (exist y (r y x)))))) --left-serial
 
 		Just pr	->
 			existsPred "P" pr $ \p -> 
 				existsRel "R" rel $ \r ->
-					exist [x,y] ((p x) /\ (p y) /\ r x y)--p non empty  
-					/\
-  		  	forEvery x ((nt (p x)) \/ nt (r x x)) --not reflexive in p
+					exist x (p x) /\ --p non empty  
+  		  	forEvery x ((nt (p x)) \/ nt (r x x)) --r not reflexive in p
   		  	/\ 
 
-			  	((forEvery [x,y,z] ( (nt (p x) \/ nt (p y) \/ nt (p z) ) 
-						\/ 
-					(((nt (r x y)) \/ (nt (r y z)) \/ (r x z) ) --r transitive in p
-								/\	((nt (r x y)) \/  ( exist z (p z /\ r y z)))) --serial in p
+			  	(((forEvery [x,y,z] ( (nt (p x) \/ nt (p y) \/ nt (p z)) \/ 
+																((nt (r x y)) \/ (nt (r y z)) \/ (r x z) ))) 
+					/\ (forEvery x (nt (p x) \/ exist y (p y /\ r x y)))) --transitive & serial in p
+				
+					\/ --or left-transitive & left-serial
 
-						\/  
-					(((nt (r y x)) \/ (nt (r z y)) \/ (r z x) ) --r transitive in p
-								/\	((nt (r y x)) \/  ( exist z (p z /\ r z y))))))) --serial in p--or left-transitive & left-serial
-
---					((forEvery [x,y,z] ((nt (p x) \/ nt (p y) \/ nt (p z)) \/ (nt (r y x)) \/ (nt (r z y)) \/ (r z x) )) --left-transitive in p
-	--				/\ (forEvery x (nt (p x) \/ (exist y (p y /\ r y x)))))) --left-serial in p
+					((forEvery [x,y,z] ((nt (p x) \/ nt (p y) \/ nt (p z)) \/ (nt (r y x)) 
+							\/ (nt (r z y)) \/ (r z x) )) --left-transitive in p
+					/\ (forEvery x (nt (p x) \/ (exist y (p y /\ r y x)))))) --left-serial in p
  where
   x = Var Sym.x
   y = Var Sym.y

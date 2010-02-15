@@ -1,4 +1,39 @@
 
 fof(a1,axiom, (![X,Y] : (f(X) = f(Y) => X = Y))).
 
-fof(a2,axiom, (?[Y] : ![X] : ~(f(X) = Y))).
+fof(a2,axiom, (?[Y] : ![X] : (f(X) != Y))).
+
+%fof(a1,axiom, (![X] : (?[Y] : (f(X) = Y)))).
+%fof(a2,axiom, (?[X] : (?[Y] : (f(X) = f(Y) & X != Y)))).
+%%thf(c4,conjecture, ?[G:$i>$i] : ( ((	![X:$i] : ( ![Y:$i] : (~((G @ X) = (G @ Y)) | (X = Y)))) & ( ![X:$i] : ?[Y:$i] : ~((G@X) = Y))) | ((?[X:$i] : ?[Y:$i] : ((X != Y) & ((G @ X) = (G @ Y)))) & %%(![Y:$i] : ?[X:$i] : ((G@X) = (G@Y))   )))).
+
+
+%% finns relation r : (total & injektiv) <==> ~(funktion & surjektiv) ? 
+
+
+
+%surjective = forEvery y (exist x (r x y))
+%injective	 = forEvery [x,y,z] $ (equal x y) \/ nt (r x z /\ r y z) --(nt (r x z)) \/ (nt (r y z)) \/ equal x y
+%total			 = forEvery x $ exist y $ r x y 
+%function	 = forEvery [x,y,z] $ (nt (r x y)) \/ (nt (r x z)) \/ equal y z 
+
+%%thf(c4,conjecture,  ?[R:$i>$i>$o] : 
+%%	( 	(( ![X:$i] : ?[Y:$i] : (R@X@Y) ) &
+%%			(![X:$i] : ![Y:$i] : (![Z:$i] : (X = Y) | ~((R@X@Z) & (R@Y@Z)))))
+ 
+%%	| 	((![X:$i] : ![Y:$i] : ![Z:$i] : ~(R@X@Y) | ~(R@X@Z) | (Y = Z)) & 
+%%			(![Y:$i] : ?[X:$i] : (R@X@Y))
+%%			)
+%%	)
+%%).
+
+
+
+%%|  
+%%	((![X:$i] : (![Y:$i] : (![Z:$i] : ~(R@X@Y) | ~(R@X@Z) | (Y = Z) 
+
+%%))) & (![Y:$i] : ?[X:$i] : R@X@Y))).  
+
+%% (total & injektiv \/ (funktion & surjektiv)) 
+%%		& 
+%%	 (~(total & injektiv) \/ ~(funktion & surjektiv))

@@ -14,7 +14,9 @@ import qualified Infinox.Symbols as Sym
 
 
 continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose eflag = do
+
 		let
+			
 			
 			ps				=		filter (leqfour . arity) (S.toList $ psymbs sig) --all predicates in the signature with arity <= 4
 			relations	=  	collectRelations rflag ps (hasEq sig) 
@@ -22,7 +24,7 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 										--after establishing reflexivity of a relation, relations with "X" and "Y"
 										--variables will be generated.
 			subsets		=		collectSubsets pflag ps	--collect subset-predicates depending on flag given	
---		putStrLn $ show relations
+
 		(result,refl_rels) <- tryFullDomain funs relations [] 
 								--while testing the full domain - collect all reflexive relations to avoid
 								--testing them again!

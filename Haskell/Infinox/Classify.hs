@@ -1,7 +1,7 @@
 module Infinox.Classify where
 
 import qualified Flags as F
-import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto))
+import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto,Leo))
 import IO
 import System (system)
 import System.Time 
@@ -16,8 +16,9 @@ import Infinox.Generate
 import Infinox.Relations
 import Infinox.Zoom 
 import Infinox.InjOnto
-import Infinox.Util
-import Infinox.Auto
+import Infinox.Util	
+import Infinox.Auto (continueAuto)
+import Infinox.Leo (classifyWithLeo)
 
 -----------------------------------------------------------------------------------------
 
@@ -30,25 +31,26 @@ classifyProblem cs = do
 		tempdir 					= (F.temp ?flags) ++ "/" ++ (subdir ((F.thisFile ?flags))) 
 		verbose						=  F.verbose ?flags > 0	
 		methods						=  F.method ?flags	
-		eflag							=  F.elimit ?flags
+		eflag						=  F.elimit ?flags
 		pflag 						=  F.subset ?flags
 		forms 						= map toForm cs
 		noClash 					= noClashString forms
 		axiomfile					= tempdir ++ "axiomfile"
-		termdepth					=	F.termdepth ?flags
+		termdepth					= F.termdepth ?flags
 		funflag						= F.function ?flags
 		relflag						= F.relation ?flags
 	
 	createDirectoryIfMissing False tempdir
+
+
 	
-	starttime   <- getClockTime
-
-	fs  				<- if (F.zoom ?flags) then do
-											putStrLn $ if verbose then "Zooming..." else ""
-											zoom tempdir forms noClash (F.plimit ?flags)
-									else do																			
-										return forms --the formulas in which to search for candidates
-
+	starttime   	<- getClockTime
+	fs  		<- if (F.zoom ?flags) then do
+											
+						putStrLn $ if verbose then "Zooming..." else ""
+						zoom tempdir forms noClash (F.plimit ?flags)
+			else return forms --the formulas in which to search for candidates																	
+			
 	let
 		sig 		= getSignature fs (F.function ?flags)
 		axioms 	= form2axioms forms noClash
@@ -57,8 +59,8 @@ classifyProblem cs = do
 	hSetBuffering h NoBuffering
 	hPutStr h axioms	
 	hClose h
-	result <- classifyWithMethods methods (axiomfile,tempdir, fs, noClash, verbose, sig, funflag, relflag,pflag ,termdepth, eflag)	
-	removeFile axiomfile
+	result <- classifyWithMethods methods 
+		(axiomfile,tempdir, fs, noClash, verbose, sig, funflag, relflag,pflag ,termdepth, eflag)	
 	finish starttime result tempdir (F.thisFile ?flags) (F.outfile ?flags)
 
 
@@ -86,7 +88,9 @@ classifyWithMethod m (axiomfile,tempdir, fs, noClash, verbose, sig, funflag, rel
 		 
 			else if m == Auto then
 				continueAuto tempdir noClash fs sig (F.relation ?flags) pflag verbose
-			 else undefined -- add new methods here!!
+			 else if m == Leo then do		
+				classifyWithLeo axiomfile
+			 	else undefined -- add new methods here!!
 	
 
 -----------------------------------------------------------------------------------------
@@ -96,11 +100,11 @@ finish time1 result dir file out = do
    let
       time = tdSec $ diffClockTimes time2 time1
    threadDelay 1000000
-   system $ "rm -r " ++  dir
+ --  system $ "rm -r " ++  dir
    maybeAppendFile out ( file ++ " : " ++ show result ++ " : " ++ show time ++ "\n" )
    case result of
     None				->	return $ NoAnswerClause GaveUp
-    _						->	return FinitelyUnsatisfiable	
+    _					->	return FinitelyUnsatisfiable	
    where
       maybeAppendFile Nothing _     =  return ()
       maybeAppendFile (Just f) x    =  appendFile f x

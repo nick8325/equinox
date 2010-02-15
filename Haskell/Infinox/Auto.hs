@@ -10,29 +10,70 @@ import IO
 import Infinox.Util
 import Output
 
+
+--metoden funkar inte för testfil:
+
+--(Testa med annan teorembevisare??)
+
+{-
+
+
+fof(a_0, axiom, ![Y] : (![X] : ((X = Y | f(X) != f(Y)) | ~dom(X)) | ~dom(Y))).
+fof(a_1, axiom, ![V] : (f(V) != sk2 | ~dom(V))).
+
+fof(a_2, axiom, dom(sk2)).
+fof(a_3, axiom, ![X] : (f(X) = app(fun_f,X) | ~dom(X))).
+
+fof(a3, axiom, ![X] : (![F] : (dom(X) => dom(app(F,X))))).
+
+
+
+fof(c, conjecture, ?[F] :
+ ( ![X] :
+      (dom(X) => dom(app(F,X)))
+ & ?[Z] :
+     (dom(Z) & ![X] :
+                    (dom(X) => app(F,X) != Z)
+     )
+ & ![X] :
+     (dom(X) => ![Y] :
+                    (dom(Y) => (X = Y | app(F,X) != app(F,Y)))
+     )
+ )).
+
+-}
+
+
 continueAuto tempdir noClash fs sig rflag pflag verbose = do
 	let 
 		ss 						= symbols fs
-		constants 		= S.toList $ S.filter isConstantSymbol ss
-		domclauses 		= addDomains domain constants fs 
+		giveup        = or [arity s > 5 | s <- S.toList ss] --if any symbol has arity > 5  - just give up!
+
+	if giveup then return None 
+		else 
+			do
+				let	 
+					constants 		= S.toList $ S.filter isConstantSymbol ss
+					domclauses 		= addDomains domain constants fs 
 								--for each constant c occuring in the problem, add a clause dom(c),
 								--where dom is a predicate symbol not occuring elsewhere in the problem.
 								--for each clause C, construct dom(x1) & ... & dom(xn) => C, where x1,..xn are all 
 								--variables occuring in C.
-		funsymbs		= S.toList (S.filter isFunSymbol ss)
-		app 				= Fun ((name ("app_" ++ noClash)) ::: ((take 2 (repeat top)) :-> bool)) (take 2 [x | x <- variables]) 
-		appclauses 	= addAppClauses funsymbs app domain noClash
+					funsymbs		= S.toList (S.filter isFunSymbol ss)
+					app 				= Fun ((name ("app_" ++ noClash)) ::: ((take 2 (repeat top)) :-> bool)) (take 2 [x | x <- variables]) 
+					appclauses 	= addAppClauses funsymbs app domain noClash
 									--for each function f, add the clause f(X) = app(f,X), etc..			
-		closeFuns		= addCloseClauses funsymbs domain 	
-		domain 			= prd ((name ("dom_" ++ noClash)) ::: ([top] :-> bool)) [Var ((name "X") ::: V top)]
-		axioms 			= form2axioms (domclauses ++ appclauses ++ closeFuns ) noClash
-		axiomfile 	= tempdir ++ "axiomfile2"
-	h <- openFile axiomfile WriteMode			
-	hSetBuffering h NoBuffering
-	hPutStr h axioms
-	hClose h
-	b <- prove (mkConjecture (Atom domain) noClash ) axiomfile 600
-	if b then return Some else return None
+					closeFuns		= addCloseClauses funsymbs domain 	
+					domain 			= prd ((name ("dom_" ++ noClash)) ::: ([top] :-> bool)) [Var ((name "X") ::: V top)]
+					axioms 			= form2axioms (domclauses ++ appclauses ++ closeFuns) noClash
+					axiomfile 	= tempdir ++ "axiomfile2"
+				
+				h <- openFile axiomfile WriteMode			
+				hSetBuffering h NoBuffering
+				hPutStr h axioms
+				hClose h
+				b <- equinoxprove (mkConjecture (Atom domain) noClash ) axiomfile
+				if b then return Some else return None
 
 addDomains :: Atom ->  [Symbol] -> [Form] -> [Form] 
 addDomains domain constants fs = 
@@ -64,9 +105,10 @@ applyDomainsToVars domain f = let appDom = applyDomainsToVars domain in
 		Or fs				 				-> Or $ S.map appDom fs
 		f1 `Equiv` f2			 	-> (appDom f1) `Equiv` (appDom f2)		
 		Not f'						 	-> Not $ appDom f'
-		Atom a							-> Atom a --Or $ S.insert f $ S.map Not $ S.fromList ([Atom (domain @@ [v]) | v <- vars' a])
+		Atom a							-> Atom a 
+--		Or $ S.insert f $ S.map Not $ S.fromList ([Atom (domain @@ [v]) | v <- vars' a])
 --		Or $ S.insert f $ S.map Not $ S.fromList ([Atom (domain @@ [v]) | v <- vars' f])
-			--dom(X1) & ... & dom(Xn) => f, where X1,.,Xn are all variable occurences in f.
+--		dom(X1) & ... & dom(Xn) => f, where X1,.,Xn are all variable occurences in f.
 
 
 addAppClauses :: [Symbol] -> Term -> Atom -> String -> [Form]
@@ -101,6 +143,47 @@ toVar s = Var ((name s) ::: (V top))
 
 mkConjecture domain noClash = 
 	let 
+		app = Fun ((name ("app_" ++ noClash)) ::: ([top,top] :-> top)) [x,y] 
+		x = toVar "X"
+		y = toVar "Y"
+		f = toVar "F"
+		z = toVar "Z"
+	in
+	"fof(" ++ "c, " ++ "conjecture" ++ 
+			", (" ++
+	"?[F] : (" ++ 
+			"![X] :  (" ++ show ((nt domain) \/ (domain @@ [(app @@ [f,x])])) ++
+			") & " ++
+			"((![X] : (![Y] :  (" ++ show ((nt domain) \/ (nt (domain @@ [y])) 
+														\/
+														(x `eq` y) \/  (nt ((app @@ [f,x]) `eq` (app @@ [f,y])))) ++
+			" & " ++
+			"(?[Z] : (" ++ show ((domain @@ [z]) /\
+											((nt domain) \/ (nt (app @@ [f,x] `eq` z)))) ++
+			")))))))))."
+
+
+
+
+
+
+{-
+ | " ++
+
+			"(![Y] : (" ++ 	show (nt domain @@ [y]) ++ " | " ++
+			"?[X] : (" ++   show (domain @@ [x] /\ (app @@ [f,x] `eq` y)) ++ ")) & " ++
+
+
+
+			"(?[X] : ( ?[Y] : (" ++ show (domain @@ [x] /\ domain @@ [y] /\
+				(app @@ [f,x] `eq` app @@ [f,y]) /\ (nt (x `eq` y))) ++ "))" 
+
+
+			++ "))))))."
+-}
+{-
+mkConjecture domain noClash = 
+	let 
 		x = toVar "X"
 		y = toVar "Y"
 		f = toVar "F"
@@ -109,76 +192,29 @@ mkConjecture domain noClash =
 	in
 	form2conjecture noClash 0 $
 		exists Sym.f $
-			forEvery (Var Sym.x) $ forEvery (Var Sym.y) (
+
+  		( forEvery (Var Sym.x) 
+      ((nt domain) \/ (domain @@ [(app @@ [f,x])])))
+
+			/\
+
+			(forEvery (Var Sym.x) ( forEvery (Var Sym.y) (
 				(nt domain) \/ (nt (domain @@ [y])) 
 				\/
 				(x `eq` y) \/  (nt ((app @@ [f,x]) `eq` (app @@ [f,y]))) 
 			)
 			/\
 			(exists Sym.z $ (domain @@ [z]) /\
-				((nt domain) \/ (nt (app @@ [f,x] `eq` z))))
-				
+				((nt domain) \/ (nt (app @@ [f,x] `eq` z))))))
 
-
-
-{-
-		exists Sym.f $ exists Sym.z ((domain @@ [z]) /\  (
-			forEvery (Var Sym.x) $ forEvery (Var Sym.y) $
-				(nt domain) \/ (nt (domain @@ [y])) \/ 
-
-			(((x `eq` y) \/  (nt ((app @@ [f,x]) `eq` (app @@ [f,y]))))
-		
-				/\
-			(
-				(nt (app @@ [f,x] `eq` z))))
-		))
--}
---		 \/ --or Surjective and non injective...
---				(exists Sym.x $ exists Sym.y $ domain /\ domain @@ [y] 
---			  	/\ (x `eq` y) /\ ((app @@ [f,x]) `eq` (app @@ [f,y]))
---				 /\
---				(forEvery [Var Sym.z] $ (nt (domain @@ [z])) \/ (exists Sym.x $ (domain @@ [x]) /\ (app @@ [f,x] `eq` z))))
-
+			\/
+			(forEvery (Var Sym.y) ( (nt domain @@ [y]) \/
+				(exists Sym.x (domain @@ [x] /\ (app @@ [f,x] `eq` y))))
+			/\
+			exists Sym.x (exists Sym.y (domain @@ [x] /\ domain @@ [y] /\
+				(app @@ [f,x] `eq` app @@ [f,y]) /\ (nt (x `eq` y))   ))
+			)
+-}				 
 eq t1 t2 = Atom (t1 :=: t2)
-
-{-
-fof(conjecture,conjecture, (
-  ?[F] : ( (![X,Y] : ((dom(X) & dom(Y)) => (app(F,X) = app(F,Y) => X=Y)))
-         & (?[A] : (dom(A) & ![X] : (dom(X) => app(F,X) != A)))
-         )
-)).
--}
-
-{-
-mkAppTerm :: Term -> Int -> Term -> Atom -> String -> Maybe Term
-mkAppTerm fun a app domain noClash = 
-	case a of
-		0	-> Nothing
-		n -> 
-			case mkAppTerm fun (a-1) app domain noClash of
-				Nothing 	-> Just $ app @@ [fun, toVar "X"]
-				Just t 		-> Just $ app @@ ([t,variables !! (n-1)])   
-
-
-addAppClause :: Symbol -> Term -> Int -> Term -> Atom -> String -> [Form]
-addAppClause f' fun a app domain noClash = 
-	case mkAppTerm fun a app domain noClash of
-		Just appterm 	-> [Atom $ Fun f' (take a variables) :=: appterm]
-		_							-> error "addAppClause"
--}	
-
-{-
-		ForAll (Bind s f') 	-> ForAll (Bind s (appDom f'))
-		Exists (Bind s f') 	-> Exists (Bind s (appDom f'))
-		And fs			 				-> And $ S.map appDom fs
-		Or fs				 				-> Or $ S.map appDom fs
-		f1 `Equiv` f2			 	-> (appDom f1) `Equiv` (appDom f2)		
-		Not f'						 	-> Not $ appDom f'
-		Atom a							-> Or $ S.insert f $ S.map Not $ S.fromList ([Atom (domain @@ [v]) | v <- vars' a])
---			Or $ S.insert f $ S.map Not $ S.fromList ([Atom (domain @@ [v]) | v <- vars' f])
-			--dom(X1) & ... & dom(Xn) => f, where X1,.,Xn are all variable occurences in f.
--}
-
-
 
 

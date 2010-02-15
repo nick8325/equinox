@@ -1,7 +1,7 @@
 module Flags
   ( Flags(..)
   , Tool(..)
-	, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto)
+	, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto,Leo)
   , getFlags
   , getTimeLeft
   , getTimeSpent
@@ -103,6 +103,7 @@ data Method
 	| Bijection
 	| Relation
 	| Auto
+	| Leo
  deriving ( Eq, Show, Read, Bounded, Enum )
 
 initFlags :: Flags
@@ -128,9 +129,9 @@ initFlags =
   , zoom         = False
   , termdepth    = 1
   , function     = "-"
-  , relation     = Just "-"
-  , subset       = Just "-"
-  , method       = [InjNotSurj,SurjNotInj,Serial]
+  , relation     = Nothing --Just "-"
+  , subset       = Nothing --Just "-"
+  , method       = [InjNotSurj,SurjNotInj,Serial,Auto,Leo]
 	, outfile			 = Nothing
 	, filelist		 = Nothing
   
@@ -261,7 +262,7 @@ options =
   , Option
     { long    = "zoom"
     , tools   = [Infinox]
-    , meaning = unit (\f -> f{ zoom = False })
+    , meaning = unit (\f -> f{ zoom = True })
     , help    = [ "Use 'zooming' to reduce the size of the problem."
                 , "Default: (off)"
                 ]

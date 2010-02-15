@@ -1,3 +1,6 @@
+
+--OBS! Ej Använd!!!
+
 module Infinox.Serial where
 
 import Form
@@ -21,16 +24,19 @@ continueSerial tempdir sig problem  noClash rflag pflag v elim = do
 	let
 			rflag'		=		case rflag of
 											Nothing 	-> Just "-"
-											Just "-"	-> Just "-"
 											_					-> rflag
 			psymbols	=		filter (leqfour . arity) (S.toList (psymbs sig)) 
+										--filter away all predicates w arity > 4
 			ps				=		Nothing : (map Just $ collectSubsets pflag psymbols)
 			rs        =  	collectRelations rflag' psymbols (hasEq sig)
 										--collect all predicates with at least two "X"
 			rs' 			= 	nub $ concatMap genRelsXY rs
 										--convert to predicates containing (all combinations of) 
 										--variables "X" and "Y"
-	continueSerial' tempdir problem noClash (rs'++(map nt rs')) (rs'++(map nt rs')) ps v elim
+			relations =  (rs'++(map nt rs')) 
+	continueSerial' tempdir problem noClash relations
+										relations ps v elim
+										
 	
 continueSerial' _ _ _ _ _ [] _ _ = return None
 	
@@ -66,7 +72,8 @@ conjSerial :: Relation -> Maybe Form -> Form
 conjSerial rel subset =
 	case subset of
 		Nothing	-> 
-			existsRel "R" rel $ \r ->  
+			(exist x (x `eq` x)) /\
+			(existsRel "R" rel $ \r ->  
   		  forEvery x (nt (r x x)) --not reflexive
   		  /\ 
 
@@ -76,13 +83,13 @@ conjSerial rel subset =
 				\/ --or left-transitive & left-serial
 
 				((forEvery [x,y,z] ((nt (r y x)) \/ (nt (r z y)) \/ (r z x) )) --left-transitive
-				/\ (forEvery x (exist y (r y x))))) --left-serial
+				/\ (forEvery x (exist y (r y x)))))) --left-serial
 
 		Just pr	->
 			existsPred "P" pr $ \p -> 
 				existsRel "R" rel $ \r ->
 					exist x (p x) /\ --p non empty  
-  		  	forEvery x ((nt (p x)) \/ nt (r x x)) --not reflexive in p
+  		  	forEvery x ((nt (p x)) \/ nt (r x x)) --r not reflexive in p
   		  	/\ 
 
 			  	(((forEvery [x,y,z] ( (nt (p x) \/ nt (p y) \/ nt (p z)) \/ 
@@ -91,10 +98,14 @@ conjSerial rel subset =
 				
 					\/ --or left-transitive & left-serial
 
-					((forEvery [x,y,z] ((nt (p x) \/ nt (p y) \/ nt (p z)) \/ (nt (r y x)) \/ (nt (r z y)) \/ (r z x) )) --left-transitive in p
+					((forEvery [x,y,z] ((nt (p x) \/ nt (p y) \/ nt (p z)) \/ (nt (r y x)) 
+							\/ (nt (r z y)) \/ (r z x) )) --left-transitive in p
 					/\ (forEvery x (nt (p x) \/ (exist y (p y /\ r y x)))))) --left-serial in p
  where
   x = Var Sym.x
   y = Var Sym.y
   z = Var Sym.z
+
+
+
 

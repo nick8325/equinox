@@ -15,6 +15,7 @@ module Sat
   , conflict      -- :: S [Lit]       -- use only after solve has failed to find a model!
   , addClause     -- :: [Lit] -> S Bool
   , solve         -- :: [Lit] -> S Bool
+	, solve2
   , simplify      -- :: Bool -> Bool -> S Bool
   , verbose       -- :: Int -> S Bool
 
@@ -67,6 +68,7 @@ import Foreign.Marshal.Alloc ( malloc, free )
 import System.IO             ( FilePath )
 import Foreign.Storable      ( Storable )
 import Control.Exception     ( finally )
+import Random
 
 
 import Form                  ( Signed(..), the, sign )
@@ -224,6 +226,10 @@ run m = withSolver (lower (simplify True True >> m)) -- with simplification
 --printStderr s = withCString s solver_print_stderr
 
 solve = solve_ True
+
+solve2 ls = do
+	b <- (lift (randomIO :: IO Bool))
+	solve_ b ls
 
 newLit         = MiniSatM s_newlit
 addClause ls     =

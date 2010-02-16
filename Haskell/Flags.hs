@@ -58,6 +58,7 @@ data Tool
   | Equinox
   | Infinox
 	| SatPlay
+	| Zoomer
  deriving ( Eq, Show )
 
 data Flags
@@ -87,6 +88,7 @@ data Flags
   , subset       :: Maybe String
   , method       :: [Method]
 	, outfile			 :: Maybe FilePath
+--	, leo					 :: Bool
 	
   
   -- primitive
@@ -134,6 +136,7 @@ initFlags =
   , method       = [InjNotSurj,SurjNotInj,Serial,Auto,Leo]
 	, outfile			 = Nothing
 	, filelist		 = Nothing
+--  , leo 				 = False
   
   -- primitive
   , thisFile     = ""
@@ -267,7 +270,16 @@ options =
                 , "Default: (off)"
                 ]
     }
-
+{-
+	, Option
+    { long    = "leo"
+    , tools   = [Infinox]
+    , meaning = unit (\f -> f{ leo = True })
+    , help    = [ "Use Leo to search for injective and non-surjective functions"
+                , "Default: (off)"
+                ]
+    }
+-}
   , Option
     { long    = "termdepth"
     , tools   = [Infinox]

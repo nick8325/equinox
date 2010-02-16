@@ -4,6 +4,8 @@ import IO
 import Form
 import Infinox.Util (finiteModel)
 import Infinox.Conjecture (form2axioms)
+import Random
+import Data.List
 
 -------------------------------------------------------------------------------
 
@@ -15,11 +17,24 @@ zoom dir fs noClash plimit   = do
 zoom' :: FilePath -> [Form] -> [[Form]] -> String -> Int -> Int -> IO [Form]
 zoom' dir best [] _ _ _  = return best
 zoom' dir best fs noClash plim n  = do  
-
    (f,count) <- smallestUnsat dir best fs noClash plim n 
-   
-   if f == best || count >= 500 then do return best else 
-      zoom' dir f (shrink f) noClash plim count 
+   if f == best then return f else do
+		f' <- permute f
+		zoom' dir f (shrink f') noClash plim count 
+
+permute :: Eq a => [a] -> IO [a]
+permute as = do 
+	g <- getStdGen
+	permute' g as
+
+permute' :: Eq a => StdGen -> [a] -> IO [a]
+permute' _ [] = return []
+permute' g  xs = do
+	let 
+		(a,g') 		= randomR (0,(length xs) -1) g 
+		el				= xs !! a
+	xs'			<- permute' g' (delete el xs)
+	return (el:xs')
 
 smallestUnsat _ best [] _ _ count  = return (best,count)
 smallestUnsat dir best (f:fs) noClash plim n  = do

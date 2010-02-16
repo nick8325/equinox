@@ -11,7 +11,7 @@ GHC     = ghc
 #-- Main
 
 
-main: paradox.exe equinox.exe infinox.exe satplay.exe
+main: paradox.exe equinox.exe infinox.exe satplay.exe zoomer.exe
 
 
 paradox: paradox.exe
@@ -19,6 +19,7 @@ equinox: equinox.exe
 infinox: infinox.exe
 equiparadox: equiparadox.exe
 satplay: satplay.exe
+zoomer: zoomer.exe
 
 Sat.o: Sat.hs
 	$(GHC) -fglasgow-exts --make Sat.hs
@@ -46,9 +47,13 @@ infinox.exe: *.hs Infinox/*.hs
 
 #-- SatPlay
 
-satplay.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+satplay.exe: Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HSAT) $(HFLAGS) -main-is SatPlay.Main.main --make SatPlay.Main -o satplay
                 
+#-- Zoomer
+
+zoomer.exe: Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
+	$(GHC) $(HSAT) $(HFLAGS) -main-is Zoomer.Main.main --make Zoomer.Main -o zoomer
 
 #-- Cleaning up
 

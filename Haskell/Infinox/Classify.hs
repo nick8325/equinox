@@ -1,7 +1,7 @@
 module Infinox.Classify where
 
 import qualified Flags as F
-import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto,Leo))
+import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto, Leo))
 import IO
 import System (system)
 import System.Time 
@@ -14,7 +14,7 @@ import Infinox.Conjecture
 import Output
 import Infinox.Generate
 import Infinox.Relations
-import Infinox.Zoom 
+import Infinox.Zoom
 import Infinox.InjOnto
 import Infinox.Util	
 import Infinox.Auto (continueAuto)
@@ -39,6 +39,7 @@ classifyProblem cs = do
 		termdepth					= F.termdepth ?flags
 		funflag						= F.function ?flags
 		relflag						= F.relation ?flags
+	--	leoflag						= F.leo ?flags
 	
 	createDirectoryIfMissing False tempdir
 
@@ -62,7 +63,23 @@ classifyProblem cs = do
 	result <- classifyWithMethods methods 
 		(axiomfile,tempdir, fs, noClash, verbose, sig, funflag, relflag,pflag ,termdepth, eflag)	
 	finish starttime result tempdir (F.thisFile ?flags) (F.outfile ?flags)
-
+{-	 
+classifyWithLeo axiomfile  = do
+	let
+		conj = "thf(c4,conjecture, ?[G:$i>$i] : ( (![X:$i] : (![Y:$i] : (~((G @ X) = (G @ Y)) | (X = Y)))) & (?[Y:$i] : ![X:$i] : ~((G@X) = Y))))."
+	h' <- try $ openFile axiomfile AppendMode			
+	case h' of 
+		Left e -> do 
+			return None
+		Right h -> do
+			hSetBuffering h NoBuffering
+			hPutStr h conj	
+			hClose h		
+			b <- leoprove conj axiomfile
+			if b then return Some
+				else return None 
+-}	
+		
 
 classifyWithMethods [] _ = return None
 classifyWithMethods (m:ms) args  = do
@@ -71,6 +88,8 @@ classifyWithMethods (m:ms) args  = do
 		None -> classifyWithMethods ms args
 		_		 -> return result
 
+
+--classifyWithMethod Leo (axiomfile,_,_,_,_,_,_,_,_,_,_) = classifyWithLeo axiomfile
 
 classifyWithMethod m (axiomfile,tempdir, fs, noClash, verbose, sig, funflag, relflag, pflag, depthflag, eflag)  = 
 	if m == Serial || m == Relation then do

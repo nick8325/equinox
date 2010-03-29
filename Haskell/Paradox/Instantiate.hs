@@ -69,6 +69,14 @@ instantiate flags predefs cs qcs =
   
   con k = Fun (elt k) []
   
+  listType = head $
+    [ tp | nil ::: ([] :-> tp) <- S.toList syms, nil == name "$nil" ] ++
+    [ Type (prim "list") Nothing Full ]
+
+  elemType = head $
+    [ tp | head ::: ([_] :-> tp) <- S.toList syms, head == name "$head" ] ++
+    [ Type (prim "elem") Nothing Full ]
+
   symmetries :: [[Clause]]
   symmetries =
     transp
@@ -79,6 +87,47 @@ instantiate flags predefs cs qcs =
     transp []  = repeat []
     transp xss = concat [ x | x:_ <- xss ] : transp [ xs | _:xs <- xss ]
    
+    symmForType tp _ | tp == listType =
+      -- d == 1
+      [ [ [ Pos (fnil :=: con 1) ]
+        ]
+      ] ++
+      -- d >= 2
+      [ [ [ Pos (ftail (con k,con i)) | i <- [1..k-1] ]
+        ] ++
+        [ [ Neg (ftail (con i,con k)) ]
+        | i <- [1..k]
+        ] ++
+        [ Neg (ftail (con (i+1), con ti1))
+        : [ Pos (ftail (con i, con j))
+          | j <- [1..ti1]
+          ]
+        | i <- [2..k-1]
+        , ti1 <- if i < k-1 then [k-1] else [1..k-1]
+        ] ++
+        [ [ Neg (fhead (con i)     :=: con hd1)
+          , Neg (fhead (con (i+1)) :=: con hd2)
+          , Neg (ftail (con i, con tl))
+          , Neg (ftail (con (i+1),con tl))
+          ]
+        | i   <- [2..k-1]
+        , hd1 <- if i < k-1 then [k] else [1..k]
+        , hd2 <- [1..hd1]
+        , tl  <- [1..i-1]
+        ] ++
+        [ [ Neg (ftail (con k, con i1))
+          , Neg (ftail (con k, con i2))
+          ]
+        | i1 <- [1..k-1]
+        , i2 <- [i1+1..k-1]
+        ]
+      | k <- [2..]
+      ]
+     where
+      fnil           = Fun (name "$nil"   ::: ([] :-> listType)) []
+      ftail (xs,xs') = prd (name "$tail"  ::: ([listType,listType] :-> bool)) [xs,xs']
+      fhead xs       = Fun (name "$head"  ::: ([listType] :-> elemType)) [xs]
+      
     symmForType tp predef =
       zipWith (\k f -> f k) [1..]
         -- do not use symmetries before predef size
@@ -121,7 +170,8 @@ instantiate flags predefs cs qcs =
                       , n == 1
                       ]
                ]
-           | ((f,n):_) <- [allFuns]
+           | tp /= elemType
+           , ((f,n):_) <- [allFuns]
            , n > 0
            ]
      where

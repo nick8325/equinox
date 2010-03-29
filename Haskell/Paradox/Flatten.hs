@@ -95,9 +95,16 @@ macify cs = ([(t,length ts)|(t,ts) <- cliques], flattenedCs, functionCs)
     ]
 
   cliques =
-    [ (t,findClique cs units)
+    [ (t, if t == listType then [ {- Fun (name "$undef" ::: ([] :-> listType)) []
+                                , -} Fun (name "$nil"   ::: ([] :-> listType)) []
+                                ]
+                           else findClique cs units)
     | (t,cs) <- constants
     ]
+
+  listType = head $
+    [ tp | nil ::: ([] :-> tp) <- S.toList syms, nil == name "$nil" ] ++
+    [ Type (prim "list") Nothing Full ]
 
   assigns =
     [ (t,i)

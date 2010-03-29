@@ -175,9 +175,14 @@ pname p =
      stdName
  where
   stdName =
-    do c <- satisfy (\c -> p c && isIdfChar c)
-       s <- munch isIdfChar
-       return (c:s)
+    do mc <- option [] ((:[]) `fmap` char '$')
+       c  <- satisfy (\c -> p c && isIdfChar c)
+       s  <- munch isIdfChar
+       let f = mc ++ (c:s)
+       if f `elem` ["$false", "$true"]
+         then fail ""
+         else return ()
+       return (mc ++ (c:s))
    <|>
     do if not (p '\'') then fail "name" else return ()
        string "\'"

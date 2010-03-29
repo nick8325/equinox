@@ -16,6 +16,7 @@ module Equinox.TermSat
   , getModelRep   -- :: Con -> T Con  -- use only after model has been found!
   , conflict      -- :: T [Lit]
   , getModelTable -- :: Symbol -> T [([Con],Con)]
+  , getModelTables -- :: T (Map Symbol [([Con],Con)])
   , addClause     -- :: [Lit] -> T ()
   , solve         -- :: Flags -> [Lit] -> T Bool
   , simplify      -- :: Bool -> Bool -> T Bool
@@ -136,6 +137,11 @@ getModelTable f =
        case M.lookup f (model s) of
          Just tab -> tab
          Nothing  -> []
+
+getModelTables :: T (Map Symbol [([Con],Con)])
+getModelTables =
+  do s <- getState
+     return (model s)
 
 addClause :: [Lit] -> T ()
 addClause xs = liftC (C.addClause xs)

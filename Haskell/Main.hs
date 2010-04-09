@@ -37,7 +37,7 @@ import Output
 ---------------------------------------------------------------------------
 -- main
 
-main :: Tool -> ((?flags :: Flags) => [Clause] -> IO ClauseAnswer) -> IO ()
+main :: Tool -> ((?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer) -> IO ()
 main tool solveProblem =
   do hSetBuffering stdout LineBuffering
      theFlags <- getFlags tool
@@ -75,7 +75,7 @@ main tool solveProblem =
        Nothing ->
          do main' solveProblem
 
-main' :: (?flags :: Flags) => ((?flags :: Flags) => [Clause] -> IO ClauseAnswer) -> IO ()
+main' :: (?flags :: Flags) => ((?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer) -> IO ()
 main' solveProblem =
   do require (not (null (files ?flags))) $
        putWarning "No input files specified! Try --help."
@@ -94,12 +94,12 @@ main' solveProblem =
             case obligs of
               -- Satisfiable/Unsatisfiable
               [] ->
-                do ans <- solveProblem theory
+                do ans <- solveProblem theory []
                    putResult (show ans)
               
               -- CounterSatisfiable/Theorem
               [oblig] ->
-                do ans <- solveProblem (theory ++ oblig)
+                do ans <- solveProblem theory oblig
                    putResult (show (toConjectureAnswer ans))
               
               -- Unknown/Theorem
@@ -109,7 +109,7 @@ main' solveProblem =
                        
                        solveAll i (oblig:obligs) =
                          do putSubHeader ("Part " ++ show i ++ "/" ++ show n)
-                            ans <- solveProblem (theory ++ oblig)
+                            ans <- solveProblem theory oblig
                             putOfficial ("PARTIAL (" ++ show i ++ "/" ++ show n ++ "): " ++ show (toConjectureAnswer ans))
                             case ans of
                               Unsatisfiable -> solveAll (i+1) obligs

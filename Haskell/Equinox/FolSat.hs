@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import Form
 import qualified Sat
-import Name( prim, (%) )
+import Name( name, prim, (%) )
 import List hiding ( union, insert, delete )
 import Maybe
 import Equinox.Fair
@@ -40,9 +40,10 @@ import Data.Maybe( isJust, fromJust )
 import IO
 import Flags
 import Control.Monad
+import Equinox.PSequence
 
-prove :: Flags -> [Clause] -> IO ClauseAnswer
-prove flags cs' =
+prove :: Flags -> [Clause] -> [Clause] -> IO ClauseAnswer
+prove flags theory oblig =
   run $
     do true <- newCon "$true"
        st   <- case [ c | c <- S.toList syms, isFunSymbol c, arity c == 0 ] of
@@ -64,7 +65,7 @@ prove flags cs' =
        
        sequence_
          [ addGroundTerm x
-         | c <- nonGroundCs
+         | c <- oblig -- was: nonGroundCs
          , l <- c
          , a :=: b <- [the l]
          , x <- [a,b]
@@ -81,11 +82,20 @@ prove flags cs' =
            refineBasic = refine flags (Refine False False True  False) (true,st) syms getModelCons nonGroundCs
 
        lift (putStrLn "#elt|m|#instances")
-       r <- cegar Nothing                 refineGuess
-          $ cegar (Just (strength flags)) refineFun
-          $ cegar Nothing                 refinePred
-          $ cegar Nothing                 refineBasic
-          $ Just `fmap` solve flags []
+       r <- cegar Nothing                 Nothing refineGuess
+          $ cegar (Just (strength flags)) Nothing refineFun
+          $ cegar Nothing                 Nothing refinePred
+          $ cegar Nothing                 Nothing refineBasic
+          $ Just `fmap` do ans <- getTable answer
+                           b <- solve flags [ y T.:/=: true | (_,y) <- ans ]
+                           ls <- conflict
+                           if not b && not (null ls) then
+                             do lift $ putStrLn $ ("+++ ANSWER: " ++) $
+                                  concat $ intersperse " | " $
+                                    [ "(" ++ concat (intersperse "," (map show xs)) ++ ")" | (xs,y) <- ans, (y T.:=: true) `elem` ls ]
+                            else
+                             do return ()
+                           return b
 
        return $ case r of
                   Just False -> Unsatisfiable
@@ -95,11 +105,17 @@ prove flags cs' =
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
   
-  cs = concatMap (norm []) cs'
+  cs = concatMap (norm []) (theory ++ oblig)
   
   (groundCs,nonGroundCs) = partition isGround cs
   
   syms = symbols cs
+  
+  answer = head $ [ ans
+                  | ans@(nam ::: (_ :-> t)) <- S.toList syms
+                  , t == bool
+                  , nam == name "$answer"
+                  ] ++ [ name "$no_answer" ::: ([] :-> bool) ]
   
   fs = S.filter (\f ->
     case f of
@@ -235,14 +251,15 @@ matches x xys = [ y | (x',y) <- xys, x == x' ]
 
 type Model = Map Symbol [([Con],Con)]
 
-cegar :: Maybe Int -> T Bool -> T (Maybe Bool) -> T (Maybe Bool)
-cegar mk refine solve =
+cegar :: Maybe Int -> Maybe Model -> (Maybe Model -> T Bool) -> T (Maybe Bool) -> T (Maybe Bool)
+cegar mk mmodel refine solve =
   do mb <- solve
      case mb of
        Just True | mk /= Just 0 ->
-         do r <- refine
+         do model' <- getModelTables
+            r <- refine mmodel
             if r then
-              cegar (subtract 1 `fmap` mk) refine solve
+              cegar (subtract 1 `fmap` mk) (Just model') refine solve
              else
               return (Just True)
        
@@ -280,8 +297,8 @@ letter (Refine True  False _    _) = "P"
 letter (Refine _     _     True _) = "G"
 letter (Refine _     True  _    _) = "L"
 
-refine :: Flags -> Refine -> (Con,Con) -> Set Symbol -> T [Con] -> [[Signed Atom]] -> T Bool
-refine flags opts (true,st') syms getCons cs =
+refine :: Flags -> Refine -> (Con,Con) -> Set Symbol -> T [Con] -> [[Signed Atom]] -> Maybe Model -> T Bool
+refine flags opts (true,st') syms getCons cs mOldModel =
   do cons' <- getCons
      st    <- getModelRep st'
      let cons = st : (cons' \\ [st])
@@ -308,14 +325,37 @@ refine flags opts (true,st') syms getCons cs =
        ]
      -}
      
-     b <- tryAll [ check opts c true cons st
-                 | c <- cs
-                 ]
+     model <- getModelTables
+     let sameFs = S.fromList
+                  [ f
+                  | not (minimal opts) -- when minimizing, we know nothing
+                  , Just model' <- [mOldModel]
+                  , f <- S.toList fs
+                  , let how m = fmap sort (M.lookup f m :: Maybe [([Con],Con)])
+                  , how model == how model'
+                  ]
+
+     subss <- lift $ psequence (nrOfThreads flags)
+                [ if all (`S.member` sameFs) fs
+                    then (0, \send -> do send '_'
+                                         return [])
+                    else ( S.size (free c)
+                         , \send ->
+                           do subs <- check opts send model c true cons st
+                              return [ (c,sub) | sub <- subs ]
+                         )
+                | c <- cs
+                , let fs = filter (not . isVarSymbol) (S.toList (symbols c))
+                ]
+     
+     let subs = concat subss
+     sequence_ [ addClauseSub true sub cl | (cl,sub) <- subs ]
      lift (putStrLn "")
-     if not b && isModelPoint opts && isJust (mfile flags)
+
+     if null subs && isModelPoint opts && isJust (mfile flags)
        then writeModel (fromJust (mfile flags)) true (S.toList fs)
        else return ()
-     return b
+     return (not (null subs))
  where
   fs = S.filter (\f ->
     case f of
@@ -348,29 +388,38 @@ writeModel file true fs =
 
 ----------------------------------------------------------------------------
 {- HERE BEGINS THE NEW STUFF -}
-check :: Refine -> [Signed Atom] -> Con -> [Con] -> Con -> T Bool
-check opts cl true cons st
+check :: Refine -> (Char -> IO ()) -> Map Symbol [([Con],Con)] -> [Signed Atom] -> Con -> [Con] -> Con -> IO [Map Symbol Con]
+check opts send fmap' cl true cons st
   | liberalPred opts && not (liberalFun opts) && all (not . isPredSymbol) fs =
-  do lift (putStr " " >> hFlush stdout)
-     return False
+  do send ' '
+     return []
   
   | otherwise =
-  do lift (putStr "." >> hFlush stdout)
-     ts <- sequence [ getModelTable' true f | f <- fs ]
-     let fmap = M.fromList (fs `zip` ts)
-     subs <- lift $ Sat.run $
+  do send '.'
+     Sat.run $
        do vs <- sequence [ newValue cons | x <- xs ]
           let vmap = M.fromList (xs `zip` vs)
           dets <- sequence [ buildLit opts st true fmap vmap l | l <- cl ]
-          let findAllSubs i | i > 1000 =
+          let xds = M.toList $ M.unionsWith (++) [ M.map (:[]) dt | dt <- concat dets ]
+          ds <- sequence [ if guess opts then
+                             do d <- Sat.newLit
+                                Sat.addClause (d : ds)
+                                return d
+                            else
+                             do Sat.addClause ds
+                                return Sat.mkFalse
+                         | (x,ds) <- xds
+                         ]
+
+          let findAllSubs i | i > 100 = -- an arbitrary choice! just testing
                 -- ouch
-                do Sat.lift (putStr ("\b>") >> hFlush stdout)
+                do Sat.lift (send '>')
                    return []
           
               findAllSubs i =
                 do b <- Sat.solve []
                    if b then
-                     do Sat.lift (putStr ("\b" ++ showOne (i+1)) >> hFlush stdout)
+                     do Sat.lift (showOne (i+1))
                         cs <- sequence [ getModelValueValue v | v <- vs ]
                         let sub = M.fromList (xs `zip` cs)
                         Sat.addClause (map Sat.neg (zipWith (=?) vs cs))
@@ -380,17 +429,21 @@ check opts cl true cons st
                     else
                      do return []
                where
-                showOne i | i <=   9  = show i
-                          | i <=  25  = "X"
-                          | i <=  75  = "L"
-                          | i <= 250  = "C"
-                          | i <= 750  = "D"
-                          | i <= 2000 = "M"
-                          | otherwise = "#"
+                showOne i | i <=    9 = send (head (show i))
+                          | i ==   10 = send 'X'
+                          | i ==   25 = send 'L'
+                          | i ==   75 = send 'C'
+                          | i ==  250 = send 'D'
+                          | i ==  750 = send 'M'
+                          | i == 2000 = send '#'
+                          | otherwise = return ()
               
               findMinSub [] cs =
-                do Sat.lift (putStr "\b*" >> hFlush stdout)
-                   return [M.fromList (xs `zip` cs)]
+                do Sat.lift (send '*')
+                   -- EXPERIMENTAL
+                   sequence_ [ Sat.addClause [Sat.neg (v =? c)] | (v,c) <- vs `zip` cs ]
+                   subs <- findAllSubs 1
+                   return (M.fromList (xs `zip` cs) : subs)
               
               findMinSub (c:cons) cs =
                 do let nrOf_c = length [ c' | c' <- cs, c' == c ]
@@ -407,38 +460,43 @@ check opts cl true cons st
               findMinSubs =
                 do b <- Sat.solve []
                    if b then
-                     do Sat.lift (putStr "\b+" >> hFlush stdout)
+                     do Sat.lift (send '+')
+                        -- {-
+                        -- EXPERIMENTAL
+                        let optim =
+                              do dfs <- sequence [ Sat.getModelValue d | d <- ds ]
+                                 let nrOf_d = length [ df | df <- dfs, df ]
+                                 extra <- Sat.newLit
+                                 atMost nrOf_d (extra : ds)
+                                 b <- Sat.solve [extra]
+                                 if b then optim else return ()
+                         in optim
+                        -- -}
                         cs <- sequence [ getModelValueValue v | v <- vs ]
                         findMinSub (reverse (sort cons)) cs
                     else
                      do return []
-
-          when (not (guess opts)) $
-            do let xds = M.toList $ M.unionsWith (++) [ M.map (:[]) dt | dt <- concat dets ]
-               sequence_ [ Sat.addClause ds | (x,ds) <- xds ]
           
           if minimal opts
             then findMinSubs
             else findAllSubs 0
-
-     sequence_ [ addClauseSub true sub cl | sub <- subs ]
-     return (not (null subs))
  where
-  fs = filter (not . isVarSymbol) (S.toList (symbols cl))
-  xs = S.toList (free cl)
-
-getModelTable' :: Con -> Symbol -> T [([Con],Con)]
-getModelTable' true f =
-  do tab <- getModelTable f
-     return $ if isPredSymbol f
-                then fixFalses tab
-                else tab
- where
-  fixFalses tab = [ (xs,fix y) | (xs,y) <- tab ]
+  fs   = filter (not . isVarSymbol) (S.toList (symbols cl))
+  xs   = S.toList (free cl)
+  fmap = M.fromList [ (f, if isPredSymbol f
+                            then fixFalses tab
+                            else tab)
+                    | f <- fs
+                    , let tab = case M.lookup f fmap' of
+                                  Nothing -> []
+                                  Just t  -> t
+                    ]
    where
-    false = head [ y | (_,y) <- tab, y /= true ]
-    fix y | y == true = true
-          | otherwise = false
+    fixFalses tab = [ (xs,fix y) | (xs,y) <- tab ]
+     where
+      false = head [ y | (_,y) <- tab, y /= true ]
+      fix y | y == true = true
+            | otherwise = false
 
 atMost :: Int -> [Sat.Lit] -> Sat.S ()
 atMost k _ | k < 0 =
@@ -599,7 +657,6 @@ getModelValueValue [(x,_)] =
 getModelValueValue ((x,l):xls) =
   do b <- Sat.getModelValue l
      if b then return x else getModelValueValue xls
-  
 
 {- HERE ENDS THE NEW STUFF -}
 {- REPLACE WITH THE BELOW TO GET BACK TO OLD STUFF -}

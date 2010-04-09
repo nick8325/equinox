@@ -103,7 +103,7 @@ wapp ws = MkWeight (1 + maximum (0 : map depth ws)) (1 + sum (map siz ws))
 
 -- Debugging ON
 
-{-
+-- {-
 data Con
   = Con !Weight !Int String
 
@@ -121,11 +121,11 @@ instance Ord Con where
 
 instance Show Con where
   show (Con _ _ s) = s -- ++ "#" ++ show n
--}
+-- -}
 
 -- Debugging OFF
 
--- {-
+{-
 data Con
   = Con !Weight !Int
  deriving ( Ord )
@@ -141,7 +141,7 @@ con n w s = Con w n
 
 instance Show Con where
   show (Con _ n) = "#" ++ show n
--- -}
+-}
 
 data State
   = MkState

@@ -68,8 +68,8 @@ main =
 -------------------------------------------------------------------------
 -- problem
 
-solveProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
-solveProblem csIn =    
+solveProblem :: (?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer
+solveProblem theory oblig =    
   do -- {-
      putStrLn "==> Input clauses"
      sequence_ [ putStrLn (showClause c) | c <- csIn ]
@@ -106,6 +106,7 @@ solveProblem csIn =
  where
   flags = ?flags
 
+  csIn                       = theory ++ oblig
   csSimp                     = concatMap simplify csIn
   (predsPure,csPure)         = purify csSimp
   mTypeResult                = types csPure

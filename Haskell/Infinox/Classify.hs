@@ -22,8 +22,8 @@ import Infinox.Leo (classifyWithLeo)
 
 -----------------------------------------------------------------------------------------
 
-classifyProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
-classifyProblem cs = do
+classifyProblem :: (?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer
+classifyProblem theory oblig = let cs = theory ++ oblig in do
 
 	createDirectoryIfMissing False (F.temp ?flags)
 

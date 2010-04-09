@@ -349,6 +349,11 @@ formula =
           t <- ptype
           token ","
           f <- if lang == "fof" then form (Just S.empty) else claus
+          option () (do token ","
+                        let junk =
+                              do munch (`notElem` "()")
+                                 option () (do token "("; junk; token ")"; junk)
+                         in junk)
           return (Input t s f)
      token "."
      return x
@@ -364,7 +369,7 @@ formula =
     , ("theorem",            Fact)  -- I see no reason to distinguish these
     , ("lemma",              Fact)  -- ..
     , ("hypothesis",         Fact)  -- ..
-    , ("definition",         Fact)  -- ..
+    , ("definition",         Fact)  -- TODO: treat this one specially
     , ("conjecture",         Conjecture)
     , ("negated_conjecture", NegatedConjecture)
     ]

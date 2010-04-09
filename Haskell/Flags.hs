@@ -36,6 +36,10 @@ import System.Environment
   ( getArgs
   )
 
+import GHC.Environment
+  ( getFullArgs
+  )
+
 import System
 
 import List
@@ -76,7 +80,8 @@ data Flags
   , progress     :: Bool
   , tstp         :: Bool
   , temp         :: FilePath
-  , filelist		 :: Maybe FilePath
+  , filelist     :: Maybe FilePath
+  , nrOfThreads  :: Int
   
   -- infinox
   , elimit       :: Int
@@ -124,6 +129,7 @@ initFlags =
   , progress     = True
   , tstp         = False
   , temp         = "temp"
+  , nrOfThreads  = 1
 
   -- infinox
   , elimit       = 2
@@ -403,7 +409,10 @@ getFlags tool =
             exitWith (ExitFailure (-1))
        
        Right f ->
-         do return f{ start = unPico picoT }
+         do t <- getNrOfThreads
+            return f{ start       = unPico picoT
+                    , nrOfThreads = t
+                    }
 
 getTimeLeft :: Flags -> IO Int
 getTimeLeft flags =
@@ -436,6 +445,19 @@ unPico = let c = 10^12 in (`div` c)
 
 unPico' :: Integer {- picoseconds -} -> Integer {- 0.1 seconds -}
 unPico' = let c = 10^11 in (`div` c)
+
+-- bweeeuh, do I really have to do this?
+getNrOfThreads :: IO Int
+getNrOfThreads =
+  do xs <- getFullArgs
+     return (threads False 1 xs)
+ where
+  threads rts t []                                      = t
+  threads rts t ("+RTS" :xs)                            = threads True t xs
+  threads rts t ("-RTS" :xs)                            = threads False t xs
+  threads rts t ("--RTS":xs)                            = t
+  threads rts t (('-':'N':n):xs) | rts && all isDigit n = read n
+  threads rts t (_:xs)                                  = threads rts t xs
 
 -------------------------------------------------------------------------
 -- arg

@@ -6,7 +6,7 @@ INST    = ../instantiate
 OBJS    = $(MINISAT)/Solver.or $(MINISAT)/Prop.or $(INST)/MiniSatWrapper.or $(INST)/MiniSatInstantiateClause.or
 HFLAGS  = -fglasgow-exts -O2 -static -threaded
 HSAT    = -optl -static -lstdc++ -I../instantiate -I$(MINISAT) $(OBJS)
-GHC     = ghc
+GHC     = ghc-6.10.4
 
 #-- Main
 
@@ -37,7 +37,7 @@ paradox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base
 #-- Equinox
 
 equinox.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) -main-is Equinox.Main.main --make Equinox.Main -o equinox
+	$(GHC) $(HSAT) $(HFLAGS) -threaded -main-is Equinox.Main.main --make Equinox.Main -o equinox
                 
 #-- Infinox
 

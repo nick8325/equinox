@@ -40,10 +40,10 @@ main =
 ---------------------------------------------------------------------------
 -- solve
 
-solveProblem :: (?flags :: Flags) => [Clause] -> IO ClauseAnswer
-solveProblem cs =
+solveProblem :: (?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer
+solveProblem theory oblig =
   do -- sequence_ [ putStrLn (showClause c) | c <- cs ]
-     prove ?flags cs
+     prove ?flags theory oblig
 
 ---------------------------------------------------------------------------
 -- the end.

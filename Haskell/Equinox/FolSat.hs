@@ -85,7 +85,7 @@ prove flags theory oblig =
        r <- cegar Nothing                 Nothing refineGuess
           $ cegar (Just (strength flags)) Nothing refineFun
           $ cegar Nothing                 Nothing refinePred
-          $ cegar Nothing                 Nothing refineBasic
+          -- $ cegar Nothing                 Nothing refineBasic
           $ Just `fmap` do ans <- getTable answer
                            b <- solve flags [ y T.:/=: true | (_,y) <- ans ]
                            ls <- conflict
@@ -300,6 +300,7 @@ letter (Refine _     True  _    _) = "L"
 refine :: Flags -> Refine -> (Con,Con) -> Set Symbol -> T [Con] -> [[Signed Atom]] -> Maybe Model -> T Bool
 refine flags opts (true,st') syms getCons cs mOldModel =
   do cons' <- getCons
+     lift (print cons')
      st    <- getModelRep st'
      let cons = st : (cons' \\ [st])
      lift (putStr ( let s = show (length cons)
@@ -390,23 +391,25 @@ writeModel file true fs =
 {- HERE BEGINS THE NEW STUFF -}
 check :: Refine -> (Char -> IO ()) -> Map Symbol [([Con],Con)] -> [Signed Atom] -> Con -> [Con] -> Con -> IO [Map Symbol Con]
 check opts send fmap' cl true cons st
-  | liberalPred opts && not (liberalFun opts) && all (not . isPredSymbol) fs =
-  do send ' '
-     return []
+  -- | liberalPred opts && not (liberalFun opts) && all (not . isPredSymbol) fs =
+  -- do send ' '
+  --   return []
   
   | otherwise =
   do send '.'
      Sat.run $
        do vs <- sequence [ newValue cons | x <- xs ]
           let vmap = M.fromList (xs `zip` vs)
-          dets <- sequence [ buildLit opts st true fmap vmap l | l <- cl ]
-          let xds = M.toList $ M.unionsWith (++) [ M.map (:[]) dt | dt <- concat dets ]
+          detdfs <- sequence [ buildLit opts st true fmap vmap l | l <- cl ]
+          let (dets,dfs) = unzip detdfs
+              xds        = M.toList $ M.unionsWith (++) [ M.map (:[]) dt | dt <- concat dets ]
+          df <- conj dfs
           ds <- sequence [ if guess opts then
                              do d <- Sat.newLit
-                                Sat.addClause (d : ds)
+                                Sat.addClause (df : d : ds)
                                 return d
                             else
-                             do Sat.addClause ds
+                             do Sat.addClause (df : ds)
                                 return Sat.mkFalse
                          | (x,ds) <- xds
                          ]
@@ -523,38 +526,41 @@ atMost k ls =
   lsa = take (k+1) ls
   lsb = drop (k+1) ls
 
-buildLit :: Refine -> Con -> Con -> Map Symbol [([Con],Con)] -> Map Symbol (Value Con) -> Signed Atom -> Sat.S [Map Symbol Sat.Lit]
+buildLit :: Refine -> Con -> Con -> Map Symbol [([Con],Con)] -> Map Symbol (Value Con) -> Signed Atom -> Sat.S ([Map Symbol Sat.Lit], Sat.Lit)
 buildLit opts st true fmap vmap (Pos (s :=: t)) =
-  do (v,detsv) <- build opts st true fmap vmap s
-     (w,detsw) <- build opts st true fmap vmap t
+  do (v,detsv,dfs) <- build opts st true fmap vmap s
+     (w,detsw,dft) <- build opts st true fmap vmap t
      v /=! w
+     df <- conj [dfs,dft]
      return ( [ detsv | not (isVar s) ]
            ++ [ detsw | not (isVar t) ]
+            , df
             )
  where
   isVar (Var _) = True
   isVar _       = False
 
 buildLit opts st true fmap vmap (Neg (s :=: t)) =
-  do (v,detsv) <- build opts st true fmap vmap s
-     (w,detsw) <- build opts st true fmap vmap t
+  do (v,detsv,dfs) <- build opts st true fmap vmap s
+     (w,detsw,dft) <- build opts st true fmap vmap t
      v =! w
-     return [ detsv, detsw ]
+     df <- conj [dfs,dft]
+     return ([ detsv, detsw ], df)
 
-build :: Refine -> Con -> Con -> Map Symbol [([Con],Con)] -> Map Symbol (Value Con) -> Term -> Sat.S (Value Con, Map Symbol Sat.Lit)
+build :: Refine -> Con -> Con -> Map Symbol [([Con],Con)] -> Map Symbol (Value Con) -> Term -> Sat.S (Value Con, Map Symbol Sat.Lit, Sat.Lit)
 build opts st true fmap vmap t | t == truth =
   do t <- newValue [true]
-     return (t, M.fromList [])
+     return (t, M.fromList [], Sat.mkTrue)
 
 build opts st true fmap vmap (Var x) =
-  do return (val, M.fromList [(x, Sat.mkTrue)])
+  do return (val, M.fromList [(x, Sat.mkTrue)], Sat.mkTrue)
  where
   Just val = M.lookup x vmap
 
 build opts st true fmap vmap (Fun f ts) =
   do z   <- newValue image
      vgs <- sequence [ build opts st true fmap vmap t | t <- ts ]
-     let (vs,dets) = unzip vgs
+     let (vs,dets,dfs) = unzip3 vgs
      es  <- sequence [ do e <- conj (zipWith (=?) vs xs)
                           Sat.addClause [Sat.neg e, z =? y]
                           return e
@@ -574,7 +580,8 @@ build opts st true fmap vmap (Fun f ts) =
                          conj [det, Sat.neg g]
                     | x <- xs
                     ]
-     return (z, M.fromList (xs `zip` ds))
+     df <- conj (Sat.neg g : dfs)
+     return (z, M.fromList (xs `zip` ds), df)
  where
   Just tab = M.lookup f fmap
   image    = df : map snd tab

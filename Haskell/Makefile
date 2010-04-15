@@ -11,7 +11,7 @@ GHC     = ghc-6.10.4
 #-- Main
 
 
-main: paradox.exe equinox.exe infinox.exe satplay.exe zoomer.exe
+main: paradox.exe equinox.exe infinox.exe
 
 
 paradox: paradox.exe

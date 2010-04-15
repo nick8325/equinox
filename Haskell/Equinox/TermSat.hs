@@ -181,11 +181,17 @@ solve flags xs = sat xs
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
   
+  putTemp s = lift $
+    do putStr s
+       hFlush stdout
+       putStr (replicate (length s) '\b')
+  
   sat xs =
     do putLn 3 "--> TermSat: solving..."
        b <- liftC (C.solve flags xs)
        if b
          then do putLn 3 "--> TermSat: checking..."
+                 putTemp "(fun)"
                  check xs
          else do return False
  

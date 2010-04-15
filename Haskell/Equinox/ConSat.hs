@@ -337,8 +337,14 @@ solve flags xs =
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
   
+  putTemp s = lift $
+    do putStr s
+       hFlush stdout
+       putStr (replicate (length s) '\b')
+
   sat xs =
     do putLn 4 "--> ConSat: solving..."
+       putTemp "(sat)"
        b <- liftS (Sat.solve xs)
        if b
          then check xs
@@ -346,6 +352,7 @@ solve flags xs =
 
   check xs =
     do putLn 4 "--> ConSat: checking..."
+       putTemp "(con)"
        
        -- gather & set permanent positive equalities
        s <- getState

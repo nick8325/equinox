@@ -300,7 +300,7 @@ letter (Refine _     True  _    _) = "L"
 refine :: Flags -> Refine -> (Con,Con) -> Set Symbol -> T [Con] -> [[Signed Atom]] -> Maybe Model -> T Bool
 refine flags opts (true,st') syms getCons cs mOldModel =
   do cons' <- getCons
-     lift (print cons')
+     --lift (print cons')
      st    <- getModelRep st'
      let cons = st : (cons' \\ [st])
      lift (putStr ( let s = show (length cons)

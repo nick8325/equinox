@@ -336,6 +336,19 @@ claus =
   orl [a] = a
   orl as  = Or (S.fromList as)
 
+exiForm :: P Form
+exiForm =
+  do parens exiForm
+ <|>
+  do token "?"
+     vs <- bracks (vname `sepBy` token ",")
+     token ":"
+     f <- funit (Just (S.fromList vs))
+     let xs  = map (\v -> name v ::: V top) vs
+         ans = Atom (prd (name "$answer" ::: ([ top | x <- xs ] :-> bool)) (map Var xs))
+     return (foldr exists (nt ans /\ f) xs)
+ <?> "existential quantification"
+
 -- formulas and clauses
 
 formula :: P (Input Form)
@@ -346,9 +359,13 @@ formula =
           s <- pname (const True) <|> (token (show "") >> return "")
           token ","
           white
-          t <- ptype
+          (st,t) <- ptype
           token ","
-          f <- if lang == "fof" then form (Just S.empty) else claus
+          let body
+                | lang == "fof" && st == "question" = exiForm
+                | lang == "fof"                     = form (Just S.empty)
+                | otherwise                         = claus
+          f <- body
           option () (do token ","
                         let junk =
                               do munch (`notElem` "()")
@@ -360,7 +377,7 @@ formula =
  where
   ptype = choice
     [ do token s
-         return t
+         return (s,t)
     | (s,t) <- typeList
     ]
   
@@ -371,6 +388,7 @@ formula =
     , ("hypothesis",         Fact)  -- ..
     , ("definition",         Fact)  -- TODO: treat this one specially
     , ("conjecture",         Conjecture)
+    , ("question",           Conjecture)
     , ("negated_conjecture", NegatedConjecture)
     ]
 

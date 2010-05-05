@@ -89,6 +89,7 @@ main' solveProblem =
             let (theory,obligs) = clausify ins
                 n               = length obligs
             let ?flags          = ?flags{ thisFile = file }
+            --sequence_ [ print t | t <- theory ]
             
             putOfficial ("SOLVING: " ++ file)
             case obligs of

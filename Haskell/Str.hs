@@ -52,7 +52,7 @@ instance Show Str where
 -}
 ---------------------------------------------------------------------------
 -- str spec that maintains same order
-{-
+-- {-
 data Str = Str String [Int] 
 
 str :: String -> Str
@@ -71,10 +71,10 @@ instance Ord Str where
   Str s1 c1 `compare` Str s2 c2
     | s1 == s2  = EQ
     | otherwise = c1 `compare` c2
--}
+-- -}
 ---------------------------------------------------------------------------
 -- str
--- {-
+{-
 data Str
   = MkAtom !Int [Int] String
 
@@ -119,7 +119,7 @@ str =
                      n' `seq` writeIORef cnt n'
                      writeIORef tab (M.insert s at t)
                      return at
--- -}
+-}
 ---------------------------------------------------------------------------
 -- hash stuff
 

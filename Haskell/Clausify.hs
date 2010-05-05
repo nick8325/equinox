@@ -27,18 +27,18 @@ clausify inps = run $ clausifyInputs nil nil inps
   
   -- Here, one could imagine adding NegatedConjecture as ONE oblig also ...
   clausifyInputs theory obligs (inp:inps) | kind inp /= Conjecture =
-    do cs <- clausForm (what inp)
+    do cs <- clausForm (tag inp) (what inp)
        clausifyInputs (theory +++ fromList cs) obligs inps
 
   clausifyInputs theory obligs (inp:inps) =
-    do clausifyObligs theory obligs (split' (what inp)) inps
+    do clausifyObligs theory obligs (tag inp) (split' (what inp)) inps
 
-  clausifyObligs theory obligs [] inps =
+  clausifyObligs theory obligs s [] inps =
     do clausifyInputs theory obligs inps
   
-  clausifyObligs theory obligs (a:as) inps =
-    do cs <- clausForm (nt a)
-       clausifyObligs theory (obligs +++ fromList [cs]) as inps
+  clausifyObligs theory obligs s (a:as) inps =
+    do cs <- clausForm s (nt a)
+       clausifyObligs theory (obligs +++ fromList [cs]) s as inps
 
   split' a | splitting ?flags = if null split_a then [true] else split_a
    where
@@ -49,15 +49,18 @@ clean :: Clause -> Clause
 clean cl = nub (subst sub cl)
  where
   xs  = free cl
-  sub = makeTab ids S.empty (S.toList xs)
+  sub = makeTab ids S.empty ([1..] `zip` S.toList xs)
  
-  makeTab sub used []                 = sub
-  makeTab sub used ((x@(n ::: t)):xs) = makeTab sub' (S.insert n' used) xs
+  makeTab sub used []                   = sub
+  makeTab sub used ((i,x@(n ::: t)):xs) = makeTab sub' (S.insert n' used) xs
    where
     strippedN = strip n
     
     n' = head [ n'
-              | n' <- strippedN : [ strippedN % i | i <- [1..] ]
+              | let new j = "SV" ++ show i
+                         ++ "_" ++ show strippedN
+                         ++ (if j == 0 then "" else show j)
+              , n' <- strippedN : [ name (new j) | j <- [1..] ]
               , not (n' `S.member` used)
               ]
     
@@ -116,13 +119,14 @@ split p =
 ----------------------------------------------------------------------
 -- core clausification algorithm
 
-clausForm :: Form -> M [Clause]
-clausForm p =
-  do noEquivPs       <-             removeEquiv       p
-     noExistsPs      <-  sequence [ removeExists      p | p <- noEquivPs ]
-     noExpensiveOrPs <- csequence [ removeExpensiveOr p | p <- noExistsPs ]
-     noForAllPs      <-  sequence [ removeForAll      p | p <- noExpensiveOrPs ]
-     return (concat [ cnf p | p <- noForAllPs ])
+clausForm :: String -> Form -> M [Clause]
+clausForm s p =
+  withName s $
+    do noEquivPs       <-             removeEquiv       p
+       noExistsPs      <-  sequence [ removeExists      p | p <- noEquivPs ]
+       noExpensiveOrPs <- csequence [ removeExpensiveOr p | p <- noExistsPs ]
+       noForAllPs      <-  sequence [ removeForAll      p | p <- noExpensiveOrPs ]
+       return (concat [ cnf p | p <- noForAllPs ])
  where
   csequence = fmap concat . sequence
 
@@ -197,7 +201,7 @@ makeCopyable inEquiv pos neg
        return (nil,pos',neg')
 
   | otherwise =
-    do dp <- Atom `fmap` literal (name "d_eq") (free pos)
+    do dp <- Atom `fmap` literal "equiv" (free pos)
        return (fromList [nt dp \/ pos, dp \/ neg],dp, nt dp)
  where
   -- a formula is small if it is already a literal
@@ -304,7 +308,7 @@ makeOr fcs
     do return (nil, Or (S.fromList (map fst fcs1)), orCost (map snd fcs1))
 
   | otherwise =
-    do d <- Atom `fmap` literal (name "d_or") (free (map fst fcs2))
+    do d <- Atom `fmap` literal "or" (free (map fst fcs2))
        (defs,p,_) <- makeOr ((nt d,unitCost):fcs2)
        return ( defs+++fromList [p]
               , Or (S.fromList (d : map fst fcs1))
@@ -364,35 +368,49 @@ cross (cs:css) = [ c1++c2 | c1 <- cs, c2 <- cross css ]
 ----------------------------------------------------------------------
 -- monad
 
-type M = State Int
+newtype M a = M (String -> Int -> (a, Int))
+
+instance Functor M where
+  fmap f (M h) = M (\s n -> let (x,n') = h s n in (f x, n'))
+
+instance Monad M where
+  return x =
+    M (\s n -> (x, n))
+  
+  M h >>= f =
+    M (\s n -> let (x,n') = h s n; M h' = f x in h' s n')
 
 run :: M a -> a
-run m = evalState m 0
+run (M h) = let (x,_) = h "" 0 in x
 
 next :: M Int
-next =
-  do i <- get
-     let i' = i+1
-     i' `seq` put i'
-     return i
+next = M (\s n -> let n'=n+1 in (n,n'))
+
+withName :: String -> M a -> M a
+withName s (M h) = M (\_ n -> h s n)
+
+getName :: M String
+getName = M (\s n -> (s,n))
 
 fresh :: Symbol -> M Symbol
-fresh (x ::: t) =
+fresh (v ::: t) =
   do i <- next
-     return ((x % i) ::: t)
+     return ((v % i) ::: t)
 
 skolem :: Symbol -> Set Symbol -> M Term
-skolem (_ ::: V t) vs =
+skolem (v ::: V t) vs =
   do i <- next
-     let f = (sk % i) ::: ([ t | _ ::: V t <- args ] :-> t)
+     s <- getName
+     let f = name ("sK" ++ show i ++ concat [ "_" ++ t | t <- [s,show v], not (null t) ]) ::: ([ t | _ ::: V t <- args ] :-> t)
      return (Fun f [ Var v | v <- args ])
  where
   args = S.toList vs
 
-literal :: Name -> Set Symbol -> M Atom
-literal dp vs =
+literal :: String -> Set Symbol -> M Atom
+literal w vs =
   do i <- next
-     let p = (dp % i) ::: ([ t | _ ::: V t <- args ] :-> bool)
+     s <- getName
+     let p = (name ("sP" ++ show i ++ concat [ "_" ++ t | t <- [s,w], not (null t) ])) ::: ([ t | _ ::: V t <- args ] :-> bool)
      return (prd p [ Var v | v <- args ])
  where
   args = S.toList vs

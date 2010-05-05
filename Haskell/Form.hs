@@ -546,13 +546,13 @@ instance Symbolic a => Symbolic (Bind a) where
    where
     Subst vs mp = sub
    
-    forbidden = vs `S.union` free a
+    forbidden = vs `S.union` (S.delete v (free a))
 
     allowed   = [ v'
                 | let n ::: t = v
                 , v' <- v
-                      : [ name [c] ::: t | c <- ['V'..'Z'] ]
-                     ++ [ (n % i) ::: t | i <- [0..] ]
+                     -- : [ name [c] ::: t | c <- ['V'..'Z'] ]
+                      : [ (n % i) ::: t | i <- [0..] ]
                 , not (v' `S.member` forbidden) 
                 ]
 

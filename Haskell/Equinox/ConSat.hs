@@ -344,7 +344,7 @@ solve flags xs =
 
   sat xs =
     do putLn 4 "--> ConSat: solving..."
-       putTemp "(sat)"
+       putTemp "(SAT)"
        b <- liftS (Sat.solve xs)
        if b
          then check xs
@@ -352,7 +352,7 @@ solve flags xs =
 
   check xs =
     do putLn 4 "--> ConSat: checking..."
-       putTemp "(con)"
+       putTemp "(equ)"
        
        -- gather & set permanent positive equalities
        s <- getState

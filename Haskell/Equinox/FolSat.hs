@@ -41,31 +41,39 @@ import IO
 import Flags
 import Control.Monad
 import Equinox.PSequence
+import Equinox.TopSort
 
 prove :: Flags -> [Clause] -> [Clause] -> IO ClauseAnswer
 prove flags theory oblig =
   run $
     do true <- newCon "$true"
-       st   <- case [ c | c <- S.toList syms, isFunSymbol c, arity c == 0 ] of
+       st   <- {- case [ c | c <- S.toList syms, isFunSymbol c, arity c == 0 ] of
                  c:_ -> c `app` []
-                 _   -> star `app` []
+                 _   -> -} star `app` []
        
+       --lift (print "hej")
+       --sequence_
+       --  [ do lift (print c)
+       --  | c <- theory
+       --  ]
+       --lift (print "hopp")
        sequence_
          [ do put 1 "P: "
               addClauseSub true M.empty c
          | c <- groundCs
          ]
 
-       {-
+       -- {-
        sequence_
-         [ do lift (print c)
+         [ do lift (print dc)
          | c <- nonGroundCs
+         , dc <- mkDClause c
          ]
-       -}
+       -- -}
        
        sequence_
          [ addGroundTerm x
-         | c <- oblig -- was: nonGroundCs
+         | c <- nonGroundCs -- was: oblig
          , l <- c
          , a :=: b <- [the l]
          , x <- [a,b]
@@ -125,6 +133,115 @@ prove flags theory oblig =
 trueX, star :: Symbol
 trueX = prim "True" ::: V bool
 star  = prim "*" ::: ([] :-> top)
+
+data DClause
+  = DClause
+  { quants  :: [Symbol]
+  , fquants :: [Symbol]
+  , defs    :: [(Symbol,Term)]
+  , lits    :: [Signed Atom]
+  }
+ deriving ( Eq )
+
+instance Show DClause where
+  show dc = concat $
+    [ "![" ++ concat (intersperse "," (map show' (quants dc))) ++ "]: "
+    | not (null (quants dc))
+    , let show' x | x `elem` fquants dc = "*" ++ show x
+                  | otherwise           = show x
+    ] ++
+    [ "let " ++ concat (intersperse "; " (map show' (defs dc))) ++ " in "
+    | not (null (defs dc))
+    , let show' (x,t) = show x ++ "=" ++ show t
+    ] ++
+    [ concat (intersperse " | " (map show (lits dc)))
+    | let show' (x,y) = show x ++ "=" ++ show y
+    ]
+
+mkDClause :: [Signed Atom] -> [DClause]
+mkDClause ls = lits [] [] ls
+ where
+  lits defs ms [] =
+    [ DClause
+      { quants  = S.toList vs
+      , fquants = [] {- S.toList (vs `S.difference` ws)
+                  [
+                  | 
+                  ] -}
+      , defs    = [ (x,t)
+                  | x <- xs
+                  , Just t <- [M.lookup x table]
+                  ]
+      , lits    = [ Neg (Var x :=: t)
+                  | x <- S.toList cyc
+                  , Just t <- [M.lookup x table]
+                  ]
+               ++ ms1
+               ++ ms
+      }
+    ]
+   where
+    (defs1,ms1) = splitDefs S.empty defs
+    table       = M.fromList defs1
+    graph       = M.fromList [ (x, S.toList (free t)) | (x,t) <- defs1 ]
+    (cyc,xs)    = topsort graph
+    defd        = S.fromList xs
+    vs          = free (map snd defs,ms) `S.difference` defd
+    --ws          = S.fromList $ [ x | (x,t) <- defs, y <- x : S.toList (free t)
+  
+  -- simplifications
+  lits defs ms (Pos (s :=: t) : ls) | s == t =
+    []
+  
+  lits defs ms (Neg (s :=: t) : ls) | s == t =
+    lits defs ms ls
+  
+  -- candidates for definitions
+  lits defs ms (Neg (Var x :=: t) : ls) =
+    lits ((x,t):defs) ms ls
+
+  lits defs ms (Neg (s :=: Var y) : ls) =
+    lits ((y,s):defs) ms ls
+
+  -- other literals
+  lits defs ms (l : ls) =
+    lits defs (l:ms) ls
+  
+  -- turn "let x=s;x=t; .. in .." into "let x=s;.. in x/=t|.."
+  splitDefs defd [] =
+    ([],[])
+    
+  splitDefs defd ((x,t):defs) | x `S.member` defd =
+    (defs', Neg (Var x :=: t) : ms')
+   where
+    (defs',ms') = splitDefs defd defs
+    
+  splitDefs defd ((x,t):defs) =
+    ((x,t):defs', ms')
+   where
+    (defs',ms') = splitDefs (S.insert x defd) defs
+
+{-
+  -- ground splitting clauses
+  splitClauses n dc =
+    case quants dc of
+      []   -> [dc]
+      x:xs -> split n x xs dc
+   where
+    split n x xs dc = gather x xs (
+     where
+      table = M.fromList (defs dc)
+      depst = getdeps (M.fromList [(x,S.empty)|x<-quants dc]) (defs dc)
+       where
+        getdeps t []           = t
+        getdeps t ((x,s):defs) = getdeps (M.insert x (vs `S.union` depsvs) t) defs
+         where
+          vs     = free s
+          depsvs = S.unions [ ws | v <- S.toList vs, Just ws <- [M.lookup v t] ]
+      deps x = fromJust (M.lookup x depst)
+      neqs' = [ (x,y, S.fromList [x,y] `S.union` deps x `S.union` deps y) | (x,y) <- neqs dc ]
+      eqs'  = [ (x,y, S.fromList [x,y] `S.union` deps x `S.union` deps y) | (x,y) <- eqs dc  ]
+-}
 
 norm :: [Signed Atom] -> [Signed Atom] -> [[Signed Atom]]
 norm ls' [] =
@@ -329,15 +446,14 @@ refine flags opts (true,st') syms getCons cs mOldModel =
      model <- getModelTables
      let sameFs = S.fromList
                   [ f
-                  | not (minimal opts) -- when minimizing, we know nothing
-                  , Just model' <- [mOldModel]
+                  | Just model' <- [mOldModel]
                   , f <- S.toList fs
                   , let how m = fmap sort (M.lookup f m :: Maybe [([Con],Con)])
                   , how model == how model'
                   ]
 
      subss <- lift $ psequence (nrOfThreads flags)
-                [ if all (`S.member` sameFs) fs
+                [ if not (hasFreeVar c) && all (`S.member` sameFs) fs
                     then (0, \send -> do send '_'
                                          return [])
                     else ( S.size (free c)
@@ -358,6 +474,15 @@ refine flags opts (true,st') syms getCons cs mOldModel =
        else return ()
      return (not (null subs))
  where
+  hasFreeVar c = any (\x -> all (notBound x) c) xs
+   where
+    xs = S.toList (free c)
+
+    notBound x (Pos (Var _ :=: Var _)) = True
+    notBound x (Pos (Var _ :=: t))     = not (x `S.member` free t)
+    notBound x (Pos (s     :=: Var _)) = not (x `S.member` free s)
+    notBound x atom                    = not (x `S.member` free atom)
+
   fs = S.filter (\f ->
     case f of
       _ ::: (_ :-> t) -> True
@@ -561,32 +686,57 @@ build opts st true fmap vmap (Fun f ts) =
   do z   <- newValue image
      vgs <- sequence [ build opts st true fmap vmap t | t <- ts ]
      let (vs,dets,dfs) = unzip3 vgs
-     es  <- sequence [ do e <- conj (zipWith (=?) vs xs)
-                          Sat.addClause [Sat.neg e, z =? y]
-                          return e
-                     | (xs,y) <- tab
-                     ]
-     g <- if ( isFunSymbol  f && liberalFun opts 
-            || isPredSymbol f && liberalPred opts
-             ) then
-            do de <- conj (map Sat.neg es)
-               Sat.addClause [Sat.neg de, z =? df]
-               return de
-           else
-            do Sat.addClause es
-               return Sat.mkFalse
-     let xs = S.toList (S.unions (map M.keysSet dets))
-     ds <- sequence [ do det <- disj [ d | dt <- dets, Just d <- [M.lookup x dt] ]
-                         conj [det, Sat.neg g]
+     
+     let entries hist [] =
+           do return []
+         
+         entries hist ((xs,y):tab) =
+           do e <- conj ( [ v =? x    | (v,x) <- vs `zip` xs, not liberal || x /= st ]
+                       ++ [ Sat.neg e | (zs,e) <- hist, and (zipWith over zs xs) ]
+                        )
+              Sat.addClause [Sat.neg e, z =? y]
+              es <- entries ((xs,e):hist) tab
+              return (e:es)
+      
+         x `over` y = (liberal && (x==st || y==st)) || x==y
+      
+     es <- entries [] tab
+     Sat.addClause es
+     ds <- sequence
+           [ disj [ if xs!!i == st
+                      then v =? st
+                      else e
+                  | (e,(xs,_)) <- es `zip` tab
+                  ]
+           | (i,v) <- [0..] `zip` vs
+           ]
+     d     <- conj (dfs ++ ds)
+     dets' <- sequence [ do xys <- sequence [ do yd <- conj [y,d]
+                                                 return (x,yd)
+                                            | (x,y) <- M.toList det
+                                            ]
+                            return (M.fromList xys) 
+                       | (det,d) <- dets `zip` ds
+                       ]
+     let xs = S.toList (S.unions (map M.keysSet dets'))
+     ds <- sequence [ disj [ d | dt <- dets', Just d <- [M.lookup x dt] ]
                     | x <- xs
                     ]
-     df <- conj (Sat.neg g : dfs)
-     return (z, M.fromList (xs `zip` ds), df)
+     return (z, M.fromList (xs `zip` ds), d)
  where
-  Just tab = M.lookup f fmap
-  image    = df : map snd tab
+  liberal   = isFunSymbol  f && liberalFun opts
+           || isPredSymbol f && liberalPred opts
+  Just tab' = M.lookup f fmap
+  image     = df : map snd tab'
   
-  df | otherwise {- isFunSymbol f -} = occursMost st (map snd tab)
+  tab = ( map snd $ sort
+          [ (number (==st) xs,(xs,y))
+          | (xs,y) <- tab'
+          ] ) ++ [(replicate (arity f) st, df) | liberal]
+   where
+    number p = length . filter p
+  
+  df | otherwise {- isFunSymbol f -} = occursMost st (map snd tab')
      | otherwise     = st
                
 occursMost :: Ord a => a -> [a] -> a
@@ -596,7 +746,7 @@ occursMost _ xs = snd . head . reverse . sort . map (\xs -> (length xs, head xs)
 conj, disj :: [Sat.Lit] -> Sat.S Sat.Lit
 conj xs
   | Sat.mkFalse `elem` xs = return Sat.mkFalse
-  | otherwise             = conj' [ x | x <- xs, x /= Sat.mkTrue ]
+  | otherwise             = conj' (nub [ x | x <- xs, x /= Sat.mkTrue ])
  where
   conj' [] =
     do return Sat.mkTrue

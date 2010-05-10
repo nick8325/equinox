@@ -63,13 +63,13 @@ prove flags theory oblig =
          | c <- groundCs
          ]
 
-       -- {-
+       {-
        sequence_
          [ do lift (print dc)
          | c <- nonGroundCs
          , dc <- mkDClause c
          ]
-       -- -}
+       -}
        
        sequence_
          [ addGroundTerm x
@@ -185,7 +185,7 @@ mkDClause ls = lits [] [] ls
     table       = M.fromList defs1
     graph       = M.fromList [ (x, S.toList (free t)) | (x,t) <- defs1 ]
     (cyc,xs)    = topsort graph
-    defd        = S.fromList xs
+    defd        = M.keysSet table `S.difference` cyc 
     vs          = free (map snd defs,ms) `S.difference` defd
     --ws          = S.fromList $ [ x | (x,t) <- defs, y <- x : S.toList (free t)
   
@@ -427,21 +427,7 @@ refine flags opts (true,st') syms getCons cs mOldModel =
                  ++ "|"
                   ) >> hFlush stdout)
      
-     --lift (putStrLn ("domain = " ++ show cons))
-     {-
-     sequence_
-       [ do tab <- getModelTable f
-            lift (putStrLn ("table for " ++ show f ++ ", isPredSymbol=" ++ show (isPredSymbol f)))
-            sequence_
-              [ lift (putStrLn (show f ++ "("
-                                       ++ concat (intersperse "," (map show xs))
-                                       ++ ") = "
-                                       ++ show y))
-              | (xs,y) <- reverse (sort tab)
-              ]
-       | f <- S.toList fs
-       ]
-     -}
+     writeModel "model" true (S.toList fs)
      
      model <- getModelTables
      let sameFs = S.fromList
@@ -494,6 +480,7 @@ writeModel file true fs =
               [ do tab <- getModelTable f
                    return (table f tab)
               | f <- fs
+              , arity f > 0 || isPredSymbol f
               ]
      lift (writeFile file (unlines (concat (intersperse [""] lls))))
  where
@@ -505,7 +492,7 @@ writeModel file true fs =
                        ]
     | otherwise      = [ app f xs
                       ++ " = "
-                      ++ show y
+                      ++ (if show y == app f xs then "<..>" else show y)
                        | (xs,y) <- tab
                        ]
 
@@ -529,14 +516,15 @@ check opts send fmap' cl true cons st
           let (dets,dfs) = unzip detdfs
               xds        = M.toList $ M.unionsWith (++) [ M.map (:[]) dt | dt <- concat dets ]
           df <- conj dfs
-          ds <- sequence [ if guess opts then
-                             do d <- Sat.newLit
-                                Sat.addClause (df : d : ds)
-                                return d
-                            else
-                             do Sat.addClause (df : ds)
-                                return Sat.mkFalse
+          ds <- sequence [ do if guess opts then
+                                do d <- Sat.newLit
+                                   Sat.addClause (df : d : v =? st : ds)
+                                   return d
+                               else
+                                do Sat.addClause (df : [ v =? st | liberalFun opts ] ++ ds)
+                                   return Sat.mkFalse
                          | (x,ds) <- xds
+                         , Just v <- [M.lookup x vmap]
                          ]
 
           let findAllSubs i | i > 100 = -- an arbitrary choice! just testing

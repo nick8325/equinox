@@ -439,7 +439,7 @@ refine flags opts (true,st') syms getCons cs mOldModel =
                   ]
 
      subss <- lift $ psequence (nrOfThreads flags)
-                [ if not (hasFreeVar c) && all (`S.member` sameFs) fs
+                [ if not (minimal opts) && not (hasFreeVar c) && all (`S.member` sameFs) fs
                     then (0, \send -> do send '_'
                                          return [])
                     else ( S.size (free c)
@@ -508,8 +508,7 @@ check opts send fmap' cl true cons st
   --   return []
   
   | otherwise =
-  do send '.'
-     Sat.run $
+  do Sat.run $
        do vs <- sequence [ newValue cons | x <- xs ]
           let vmap = M.fromList (xs `zip` vs)
           detdfs <- sequence [ buildLit opts st true fmap vmap l | l <- cl ]
@@ -543,7 +542,8 @@ check opts send fmap' cl true cons st
                         subs <- findAllSubs (i+1)
                         return (sub:subs)
                     else
-                     do return []
+                     do if i == 0 then Sat.lift (send '.') else return ()
+                        return []
                where
                 showOne i | i <=    9 = send (head (show i))
                           | i ==   10 = send 'X'
@@ -594,8 +594,10 @@ check opts send fmap' cl true cons st
                      do return []
           
           if minimal opts
-            then findMinSubs
-            else findAllSubs 0
+            then do Sat.lift (send '.')
+                    findMinSubs
+            else do Sat.lift (send '-')
+                    findAllSubs 0
  where
   fs   = filter (not . isVarSymbol) (S.toList (symbols cl))
   xs   = S.toList (free cl)

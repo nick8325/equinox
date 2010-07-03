@@ -6,7 +6,7 @@ INST    = ../instantiate
 OBJS    = $(MINISAT)/Solver.or $(MINISAT)/Prop.or $(INST)/MiniSatWrapper.or $(INST)/MiniSatInstantiateClause.or
 HFLAGS  = -fglasgow-exts -O2 -static -threaded
 HSAT    = -optl -static -lstdc++ -I../instantiate -I$(MINISAT) $(OBJS)
-GHC     = ghc-6.10.4
+GHC     = ghc
 
 #-- Main
 

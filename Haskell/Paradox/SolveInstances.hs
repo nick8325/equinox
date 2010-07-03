@@ -222,7 +222,7 @@ printTheModel flags k ref predsPure =
                                  ++ " "
                                  ++ (if null xs then ""
                                                 else "![" ++ concat (intersperse "," xs) ++ "] : ")
-                                 ++ ent
+                                 ++ "(" ++ ent ++ ")"
                                   )
                        | (c,(xs,ent)) <- ('(' : repeat '&') `zip` tab
                        ]

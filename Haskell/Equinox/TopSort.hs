@@ -11,7 +11,7 @@ import Data.Map as M
 import Data.Set(Set)
 import Data.Set as S
 import Data.List
-import Test.QuickCheck
+--import Test.QuickCheck
 
 type Graph a = Map a [a]
 
@@ -45,6 +45,7 @@ topsort g = (cyc, deps)
     (cycx,  depsx,  seenx)  = process seen (S.insert x busy) (follow g x)
     (cycxs, depsxs, seenxs) = process (S.insert x seenx) busy xs
 
+{-
 prop_Topsort_sorts g' =
   let g           = M.fromList (g' :: [(Int,[Int])])
       (cyc, deps) = topsort g in
@@ -65,4 +66,4 @@ prop_Topsort_noDoubles g' =
       (cyc, deps) = topsort g
       xs          = S.toList cyc ++ deps in
     xs == nub xs
-
+-}

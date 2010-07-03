@@ -70,7 +70,7 @@ main =
 
 solveProblem :: (?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer
 solveProblem theory oblig =    
-  do -- {-
+  do {-
      putStrLn "==> Input clauses"
      sequence_ [ putStrLn (showClause c) | c <- csIn ]
      print (length csIn)
@@ -91,7 +91,7 @@ solveProblem theory oblig =
      sequence_ [ putStrLn (show c) | c <- qcs ]
      print (length fcs + length qcs)
      putStrLn "==> Solving..."
-     -- -}
+     -}
      (r,k) <- solveInstances
                 flags
                 predsPure

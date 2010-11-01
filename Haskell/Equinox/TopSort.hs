@@ -11,7 +11,9 @@ import Data.Map as M
 import Data.Set(Set)
 import Data.Set as S
 import Data.List
---import Test.QuickCheck
+
+import Test.QuickCheck
+
 
 type Graph a = Map a [a]
 

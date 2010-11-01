@@ -11,8 +11,8 @@ import Data.List
 
 zoom :: FilePath -> [Form] -> String -> Int -> IO [Form]
 zoom dir fs noClash plimit   = do
-		
-	zoom' dir fs  (shrink fs) noClash plimit 0 
+	cs <- zoom' dir fs  (shrink fs) noClash plimit 0 
+	return $ sort cs 
 
 zoom' :: FilePath -> [Form] -> [[Form]] -> String -> Int -> Int -> IO [Form]
 zoom' dir best [] _ _ _  = return best
@@ -38,20 +38,15 @@ permute' g  xs = do
 
 smallestUnsat _ best [] _ _ count  = return (best,count)
 smallestUnsat dir best (f:fs) noClash plim n  = do
- 
-   h <- openFile (dir ++ "zoom"++(show n)) WriteMode
- 
-   hPutStr h $ (form2axioms f noClash)
-  
-   hClose h
-  
-   b <- finiteModel (dir ++ "zoom"++(show n)) plim
-
-   if b then do
-	
-	smallestUnsat dir best fs noClash plim (n+1)  
-     --if finite model - discard f and try the other shrinked lists
-    else return (f,n+1) --if no finite model - return f
+   if n >= 350 then return (best,n) else do
+    h <- openFile (dir ++ "zoom"++(show n)) WriteMode
+    hPutStr h $ (form2axioms f noClash)
+    hClose h
+    b <- finiteModel (dir ++ "zoom"++(show n)) plim
+    if b then do
+	 smallestUnsat dir best fs noClash plim (n+1)  
+      --if finite model - discard f and try the other shrinked lists
+     else return (f,n+1) --if no finite model - return f
 
 	
 shrink :: [a] -> [[a]]

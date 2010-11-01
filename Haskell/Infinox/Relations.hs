@@ -1,7 +1,7 @@
 module Infinox.Relations where
 
 import Form
-import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation))
+import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation, Trans))
 import Infinox.Conjecture
 import Infinox.Generate
 import Infinox.Util
@@ -72,6 +72,17 @@ checkProperty Relation tempdir problem noClash r p v elim = do
 	removeFile provefile
 	return b
 
+checkProperty Trans tempdir problem noClash r p v elim = do
+	let 
+		conj = form2conjecture noClash 0 (conjTrans r p)
+		provefile = tempdir ++ "checktrans"
+	system $ "cp " ++ problem ++ " " ++ provefile
+	maybePrint v "Checking antisymmetry, transitivity, totality and double seriality: " (Just r)
+	maybePrint v "under " p	
+	b <- prove conj provefile elim
+	removeFile provefile
+	return b
+
 -------------------------------------------------------------------------------	
 
 equal = \x -> \y -> Atom (x :=: y)
@@ -101,6 +112,28 @@ conjRelation rel subset =
 														((nt (r x y)) \/ (nt (r x z)) \/ equal y z) 
 					in
 						((total /\ injective) `Equiv`  (nt (surjective /\ function)))	
+	 where
+	  x = Var Sym.x
+	  y = Var Sym.y
+	  z = Var Sym.z
+
+conjTrans :: Relation -> Maybe Form -> Form
+conjTrans rel subset = 
+	case subset of
+		Nothing ->
+     			existsRel "R" rel $ \r ->
+				let 
+					domsize      = exist x $ exist y $ nt (equal x y)
+					antisym      = forEvery x $ forEvery y $ (equal x y) \/ (nt (r x y)) \/  (nt (r y x)) 
+					transitive	 = forEvery [x,y,z] ((nt (r x y)) \/ (nt (r y z)) \/ (r x z) ) 
+
+					total	  		 = forEvery x $ forEvery y $ (r x y) \/ (r y x) 
+					doubserial	 = forEvery x $ forEvery y $ (equal x y \/ (nt (r x y))) \/ (exist z $ (nt (equal x z)) /\ (nt (equal y z)) /\ (r x z))
+
+				in
+					antisym /\ transitive /\ total /\ doubserial
+
+
 	 where
 	  x = Var Sym.x
 	  y = Var Sym.y

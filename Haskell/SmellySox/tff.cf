@@ -1,0 +1,56 @@
+
+entrypoints Thfs ;
+
+comment "%";
+
+Thfs.  Thfs  ::= [Thf];
+
+terminator Thf "." ;
+
+
+ThfIncl. Thf ::= "include" "(" FPath ")" ;
+ThfTyp. Thf  ::= "thf" "(" Ident "," "type" "," ETyp ")";
+Thf.    Thf  ::= "thf" "(" Ident "," ClauseType "," Expr ")";
+
+token FPath '\'' ('/' | '_' | '^' | '.' | letter | digit)* '\'';
+
+
+CTDef.   ClauseType ::= "definition";
+CTAxiom. ClauseType ::= "axiom";
+CTConj.  ClauseType ::= "conjecture";
+
+
+ETyp. ETyp1 ::= Ident ":" [Type];
+coercions ETyp 1;
+
+EOr.      Expr   ::= Expr1 "|" Expr  ;
+EAnd.     Expr1  ::= Expr2 "&" Expr1 ;
+EImplies. Expr2  ::= Expr3 "=>" Expr2 ;
+EEquiv.   Expr2  ::= Expr3 "<=>" Expr2 ;
+EEq.      Expr2  ::= Expr3 "=" Expr2 ;
+ENeq.     Expr2  ::= Expr3 "!=" Expr2 ;
+EApp.     Expr3  ::= Expr3 "@" Expr5 ;
+EForAll.  Expr4  ::= "!" "[" [ETyp] "]" ":" Expr4 ;  
+EExists.  Expr4  ::= "?" "[" [ETyp] "]" ":" Expr4 ;
+ENeg.     Expr4  ::= "~" Expr5;
+ELam.     Expr5  ::= "^" "[" [ETyp] "]" ":" Expr4 ;
+ESym.     Expr5  ::= Ident ;
+ETrue.    Expr5  ::= TTrue;
+EFalse.   Expr5  ::= TFalse;
+
+token TTrue '$' 't' 'r' 'u' 'e';
+token TFalse '$' 'f' 'a' 'l' 's' 'e';
+
+token UIdent (upper (letter | digit | ’_’)*) ;
+
+coercions Expr 5;
+
+Typ.     Type ::= TypIdent;
+Typ2.    Type ::= Ident;
+
+TypFun. Type ::= "(" [Type] ")";
+
+token TypIdent '$' ('_' | letter | digit)*; 
+
+separator Type ">";
+separator ETyp ",";

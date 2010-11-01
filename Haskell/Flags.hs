@@ -1,7 +1,7 @@
 module Flags
   ( Flags(..)
   , Tool(..)
-	, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto,Leo)
+	, Method(InjNotSurj,SurjNotInj,Serial,Trans, Relation,Auto,Leo)
   , getFlags
   , getTimeLeft
   , getTimeSpent
@@ -93,7 +93,8 @@ data Flags
   , subset       :: Maybe String
   , method       :: [Method]
 	, outfile			 :: Maybe FilePath
---	, leo					 :: Bool
+  , prover       :: Prover
+	, leo					 :: Bool
 	
   
   -- primitive
@@ -107,11 +108,15 @@ data Method
   = InjNotSurj
   | SurjNotInj
   | Serial
+  | Trans
 	| Bijection
 	| Relation
 	| Auto
 	| Leo
  deriving ( Eq, Show, Read, Bounded, Enum )
+
+data Prover = Equi | E
+  deriving (Eq,Show,Read)
 
 initFlags :: Flags
 initFlags =
@@ -139,11 +144,11 @@ initFlags =
   , function     = "-"
   , relation     = Nothing --Just "-"
   , subset       = Nothing --Just "-"
-  , method       = [InjNotSurj,SurjNotInj,Serial,Auto,Leo]
+  , method       = [InjNotSurj,SurjNotInj,Serial,Trans,Auto,Leo]
 	, outfile			 = Nothing
 	, filelist		 = Nothing
---  , leo 				 = False
-  
+  , leo 				 = False
+  , prover       = E  
   -- primitive
   , thisFile     = ""
   , files        = []
@@ -261,7 +266,7 @@ options =
 
   , Option
     { long    = "plimit"
-    , tools   = [Infinox]
+    , tools   = [Infinox,Zoomer,Paradox]
     , meaning = (\n f -> f{ plimit = n }) <$> argNum
     , help    = [ "Time-out for Paradox (as a subprocedure) in seconds."
                 , "Default: --plimit 2"
@@ -331,6 +336,7 @@ options =
                 ]
     }
 
+
   , Option
     { long    = "verbose"
     , tools   = [Paradox, Equinox, Infinox]
@@ -343,11 +349,20 @@ options =
 
 	, Option
     { long    = "outfile"
-    , tools   = [Infinox]
+    , tools   = [Infinox,Zoomer,Paradox]
     , meaning = (\file f -> f{ outfile = Just file }) <$> argName
     , help    = [ "Specify a file for output"
                 , "Example: --outfile file"
                 , "Default: --outfile (off)"
+                ]
+    }
+
+  , Option
+    { long    = "prover"
+    , tools   = [Infinox]
+    , meaning = (\s f -> f{ prover = read s }) <$> argName
+    , help    = [ "Set the automated theorem prover to be used as sub-procedure"
+                , "Default: E"
                 ]
     }
 
@@ -361,6 +376,7 @@ options =
                 , "Default: --filelist (off)"
                 ]
     }
+
 
   , Option
     { long    = "tstp"

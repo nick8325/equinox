@@ -27,7 +27,7 @@ mapUntilSuccess f (x:xs)  = do
       [] -> mapUntilSuccess f xs
       _  -> return (y,xs)
 
-leqfour	x =   x <= 4
+leqfive	x =   x <= 5
 
 proveProperty dir axioms noClash timeout vb method (t,r,p)  = do
 	maybePrint vb "\nt: " t
@@ -54,7 +54,8 @@ prove conj provefile timeout = do
          hSetBuffering h NoBuffering
          hPutStr h conj	
          hClose h		
-         eprove provefile timeout
+         equinox provefile 
+        -- eprove provefile timeout
 
 
 leoprove conj provefile = do
@@ -89,7 +90,7 @@ equinox file =
 	do
 
 		let resultfile = file ++ "_result"
-		system $ "equinox --time 600 " ++ file ++ " > " ++ resultfile
+		system $ "equinox --time 3 " ++ file ++ " > " ++ resultfile
 		h <- openFile resultfile ReadMode
 		r <- hGetContents h
 		let 

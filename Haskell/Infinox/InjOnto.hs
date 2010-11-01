@@ -18,7 +18,7 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 		let
 			
 			
-			ps				=		filter (leqfour . arity) (S.toList $ psymbs sig) --all predicates in the signature with arity <= 4
+			ps				=		filter (leqfive . arity) (S.toList $ psymbs sig) --all predicates in the signature with arity <= 4
 			relations	=  	collectRelations rflag ps (hasEq sig) 
 										--relations with two or more "X"-variables, with equality if present.
 										--after establishing reflexivity of a relation, relations with "X" and "Y"

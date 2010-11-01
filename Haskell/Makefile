@@ -11,7 +11,7 @@ GHC     = ghc
 #-- Main
 
 
-main: paradox.exe equinox.exe infinox.exe
+main: paradox.exe equinox.exe infinox.exe zoomer.exe 
 
 
 paradox: paradox.exe
@@ -42,7 +42,7 @@ equinox.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base
 #-- Infinox
 
 infinox.exe: *.hs Infinox/*.hs
-	$(GHC) $(HFLAGS) -main-is Infinox.Main.main --make Infinox.Main -o infinox
+	$(GHC) $(HFLAGS) -main-is Infinox.Main.main --make Infinox.Main -o infinox_compare
                 
 
 #-- SatPlay

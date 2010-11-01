@@ -28,12 +28,16 @@ import Paradox.AnalysisTypes
 
 classifyProblem :: (?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer
 classifyProblem theory oblig =  let cs = theory ++ oblig in do
+
+{-
   let ss = symbols cs
     
       typs = types cs
   mapM putStrLn $ map showWithType $ toList $ symbols $ map (makeTyped typs) cs
   putStrLn $ show $ getType typs
   return Satisfiable
+
+
 getType :: Either String ([Type], Clause -> Clause) -> String
 getType (Left s) = s
 getType (Right (s,_)) = show s
@@ -43,16 +47,11 @@ makeTyped (Right (_,f)) = f
 
 showWithType :: Symbol -> String
 showWithType (name ::: typ) = (show name ++ " ::: " ++ show typ) 
+-}
 
-{-
-  h <- openFile "compare_size_unzoomed_vs_zoomed" AppendMode
-  hPutStr h $ (F.thisFile ?flags) ++ "  "
-  hPutStr h $ "number of axioms: " ++ show (length cs) ++ "  "
-  hPutStrLn h $ "number of symbols: " ++ (show $  size (symbols cs))
-  hClose h
-  return Satisfiable
-  -}
-{-
+
+
+
 	createDirectoryIfMissing False (F.temp ?flags)
 
 	let
@@ -92,7 +91,7 @@ showWithType (name ::: typ) = (show name ++ " ::: " ++ show typ)
 	result <- classifyWithMethods methods 
 		(axiomfile,tempdir, fs, noClash, verbose, sig, funflag, relflag,pflag ,termdepth, eflag)	
 	finish starttime result tempdir (F.thisFile ?flags) (F.outfile ?flags)
--}
+
 {-	 
 classifyWithLeo axiomfile  = do
 	let

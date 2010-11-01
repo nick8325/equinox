@@ -42,7 +42,7 @@ equinox.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base
 #-- Infinox
 
 infinox.exe: *.hs Infinox/*.hs
-	$(GHC) $(HFLAGS) -main-is Infinox.Main.main --make Infinox.Main -o infinox_compare
+	$(GHC) $(HFLAGS) -main-is Infinox.Main.main --make Infinox.Main -o infinox
                 
 
 #-- SatPlay

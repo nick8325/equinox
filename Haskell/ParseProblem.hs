@@ -82,12 +82,9 @@ readProblemWithRoots roots name =
                                  _     -> tptp ++ "/"
                              | Right tptp <- [mtptp]
                              ]
-                     , nm <- nub $ concat
-                             [ [ s
-                               , "Problems/" ++ s
-                               , "Problems/" ++ take 3 s ++ "/" ++ s
-                               ]
-                             | s <- [ name, name ++ ".p" ]
+                     , nm <- nub [ name, name_p ]
+                          ++ [ "Problems/" ++ name_p
+                             , "Problems/" ++ take 3 name ++ "/" ++ name_p
                              ]
                      ]
      case mes of
@@ -110,6 +107,9 @@ readProblemWithRoots roots name =
                    sets <- sequence [ readProblemWithRoots roots incl | incl <- includes ]
                    return (concat sets ++ clauses)
  where
+  name_p | '.' `elem` name = name
+         | otherwise       = name ++ ".p"
+ 
   findFile [] =
     do return Nothing
   

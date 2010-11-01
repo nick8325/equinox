@@ -1,7 +1,8 @@
 module Flags
   ( Flags(..)
   , Tool(..)
-	, Method(InjNotSurj,SurjNotInj,Serial,Trans, Relation,Auto,Leo)
+  , Prover(..)
+	, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto,Leo,Trans)
   , getFlags
   , getTimeLeft
   , getTimeSpent
@@ -115,8 +116,19 @@ data Method
 	| Leo
  deriving ( Eq, Show, Read, Bounded, Enum )
 
-data Prover = Equi | E
-  deriving (Eq,Show,Read)
+data Prover = E | Equi
+  deriving (Eq, Show)
+
+
+read' "equinox" = Equi
+read' "Equinox" = Equi
+read' "Equi"    = Equi
+read' "Eq"      = Equi
+read' "e"       = E
+read' "E"       = E
+read' "Eprover" = E
+read' "eprover" = E
+read' s = error $ "read': " ++ s ++ " no parse"
 
 initFlags :: Flags
 initFlags =
@@ -144,11 +156,12 @@ initFlags =
   , function     = "-"
   , relation     = Nothing --Just "-"
   , subset       = Nothing --Just "-"
-  , method       = [InjNotSurj,SurjNotInj,Serial,Trans,Auto,Leo]
+  , method       = [InjNotSurj,SurjNotInj,Serial, Trans, Auto,Leo]
 	, outfile			 = Nothing
 	, filelist		 = Nothing
   , leo 				 = False
-  , prover       = E  
+  , prover       = E
+  
   -- primitive
   , thisFile     = ""
   , files        = []
@@ -266,7 +279,7 @@ options =
 
   , Option
     { long    = "plimit"
-    , tools   = [Infinox,Zoomer,Paradox]
+    , tools   = [Infinox]
     , meaning = (\n f -> f{ plimit = n }) <$> argNum
     , help    = [ "Time-out for Paradox (as a subprocedure) in seconds."
                 , "Default: --plimit 2"
@@ -281,6 +294,16 @@ options =
                 , "Default: (off)"
                 ]
     }
+
+  , Option
+    { long    = "prover"
+    , tools   = [Infinox]
+    , meaning = (\p f -> f{ prover = read' p }) <$> argName
+    , help    = [ ""
+                , "Default: E"
+                ]
+    }
+
 {-
 	, Option
     { long    = "leo"
@@ -336,7 +359,6 @@ options =
                 ]
     }
 
-
   , Option
     { long    = "verbose"
     , tools   = [Paradox, Equinox, Infinox]
@@ -349,20 +371,11 @@ options =
 
 	, Option
     { long    = "outfile"
-    , tools   = [Infinox,Zoomer,Paradox]
+    , tools   = [Infinox]
     , meaning = (\file f -> f{ outfile = Just file }) <$> argName
     , help    = [ "Specify a file for output"
                 , "Example: --outfile file"
                 , "Default: --outfile (off)"
-                ]
-    }
-
-  , Option
-    { long    = "prover"
-    , tools   = [Infinox]
-    , meaning = (\s f -> f{ prover = read s }) <$> argName
-    , help    = [ "Set the automated theorem prover to be used as sub-procedure"
-                , "Default: E"
                 ]
     }
 
@@ -376,7 +389,6 @@ options =
                 , "Default: --filelist (off)"
                 ]
     }
-
 
   , Option
     { long    = "tstp"

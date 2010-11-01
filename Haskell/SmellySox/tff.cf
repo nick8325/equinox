@@ -41,7 +41,7 @@ EFalse.   Expr5  ::= TFalse;
 token TTrue '$' 't' 'r' 'u' 'e';
 token TFalse '$' 'f' 'a' 'l' 's' 'e';
 
-token UIdent (upper (letter | digit | ’_’)*) ;
+token UIdent upper (letter | '_' | digit)*;
 
 coercions Expr 5;
 

@@ -1,56 +1,62 @@
 
-entrypoints Thfs ;
+entrypoints Tffs ;
 
 comment "%";
 
-Thfs.  Thfs  ::= [Thf];
+Tffs.  Tffs  ::= [Tff];
 
-terminator Thf "." ;
+terminator Tff "." ;
 
-
-ThfIncl. Thf ::= "include" "(" FPath ")" ;
-ThfTyp. Thf  ::= "thf" "(" Ident "," "type" "," ETyp ")";
-Thf.    Thf  ::= "thf" "(" Ident "," ClauseType "," Expr ")";
+TffIncl. Tff ::= "include" "(" FPath ")" ;
+TffTyp. Tff  ::= "tff" "(" Ident "," "type" "," "(" Ident ":" Type ")" ")";
+Tff.    Tff  ::= "tff" "(" Ident "," ClauseType "," Expr ")";
 
 token FPath '\'' ('/' | '_' | '^' | '.' | letter | digit)* '\'';
-
 
 CTDef.   ClauseType ::= "definition";
 CTAxiom. ClauseType ::= "axiom";
 CTConj.  ClauseType ::= "conjecture";
 
-
-ETyp. ETyp1 ::= Ident ":" [Type];
-coercions ETyp 1;
+ETyp. ETyp ::= UIdent ":" Type;
 
 EOr.      Expr   ::= Expr1 "|" Expr  ;
 EAnd.     Expr1  ::= Expr2 "&" Expr1 ;
 EImplies. Expr2  ::= Expr3 "=>" Expr2 ;
 EEquiv.   Expr2  ::= Expr3 "<=>" Expr2 ;
-EEq.      Expr2  ::= Expr3 "=" Expr2 ;
-ENeq.     Expr2  ::= Expr3 "!=" Expr2 ;
-EApp.     Expr3  ::= Expr3 "@" Expr5 ;
-EForAll.  Expr4  ::= "!" "[" [ETyp] "]" ":" Expr4 ;  
-EExists.  Expr4  ::= "?" "[" [ETyp] "]" ":" Expr4 ;
-ENeg.     Expr4  ::= "~" Expr5;
-ELam.     Expr5  ::= "^" "[" [ETyp] "]" ":" Expr4 ;
-ESym.     Expr5  ::= Ident ;
-ETrue.    Expr5  ::= TTrue;
-EFalse.   Expr5  ::= TFalse;
+EEq.      Expr2  ::= Term "=" Term ;
+ENeq.     Expr2  ::= Term "!=" Term ;
 
-token TTrue '$' 't' 'r' 'u' 'e';
+EForAll.  Expr3  ::= "!" "[" [ETyp] "]" ":" Expr3 ;  
+EExists.  Expr3  ::= "?" "[" [ETyp] "]" ":" Expr3 ;
+ENeg.     Expr3  ::= "~" Expr4;
+ETrue.    Expr4  ::= TTrue;
+EFalse.   Expr4  ::= TFalse;
+ELit.     Expr5  ::= Atom;
+
+TConst.   Term ::= Ident;
+TVar.     Term ::= UIdent;
+TFun.     Term ::= Ident "(" [Term] ")";
+
+APred.    Atom ::= Ident "(" [Term] ")";
+AConst.   Atom ::= Ident;
+
+separator Term ",";
+
+token TTrue  '$' 't' 'r' 'u' 'e';
 token TFalse '$' 'f' 'a' 'l' 's' 'e';
 
 token UIdent upper (letter | '_' | digit)*;
 
 coercions Expr 5;
 
-Typ.     Type ::= TypIdent;
-Typ2.    Type ::= Ident;
+TypFun.    Type  ::= Type1 ">" Type2;
+TypTup.    Type1 ::= Type1 "*" Type;
 
-TypFun. Type ::= "(" [Type] ")";
+TypId.     Type2 ::= TypIdent;
+TypId2.    Type2 ::= Ident;
+
+coercions Type 3;
 
 token TypIdent '$' ('_' | letter | digit)*; 
 
-separator Type ">";
 separator ETyp ",";

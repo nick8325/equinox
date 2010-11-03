@@ -8,14 +8,16 @@ Tffs.  Tffs  ::= [Tff];
 terminator Tff "." ;
 
 TffIncl. Tff ::= "include" "(" FPath ")" ;
-TffTyp. Tff  ::= "tff" "(" Ident "," "type" "," "(" Ident ":" Type ")" ")";
-Tff.    Tff  ::= "tff" "(" Ident "," ClauseType "," Expr ")";
+TffTyp. Tff  ::= "tff" "(" LIdent "," "type" "," "(" LIdent ":" Type ")" ")";
+Tff.    Tff  ::= "tff" "(" LIdent "," ClauseType "," Expr ")";
 
 token FPath '\'' ('/' | '_' | '^' | '.' | letter | digit)* '\'';
 
-CTDef.   ClauseType ::= "definition";
-CTAxiom. ClauseType ::= "axiom";
-CTConj.  ClauseType ::= "conjecture";
+CTDef.     ClauseType ::= "definition";
+CTAxiom.   ClauseType ::= "axiom";
+CTHyp.     ClauseType ::= "hypothesis";
+CTConj.    ClauseType ::= "conjecture";
+CTNegConj. ClauseType ::= "negated_conjecture";
 
 ETyp. ETyp ::= UIdent ":" Type;
 
@@ -26,37 +28,40 @@ EEquiv.   Expr2  ::= Expr3 "<=>" Expr2 ;
 EEq.      Expr2  ::= Term "=" Term ;
 ENeq.     Expr2  ::= Term "!=" Term ;
 
-EForAll.  Expr3  ::= "!" "[" [ETyp] "]" ":" Expr3 ;  
-EExists.  Expr3  ::= "?" "[" [ETyp] "]" ":" Expr3 ;
-ENeg.     Expr3  ::= "~" Expr4;
-ETrue.    Expr4  ::= TTrue;
-EFalse.   Expr4  ::= TFalse;
+ENeg.     Expr4  ::= "~" Expr4;
+EForAll.  Expr4  ::= "!" "[" [ETyp] "]" ":" Expr4 ;  
+EExists.  Expr4  ::= "?" "[" [ETyp] "]" ":" Expr4 ;
+ETrue.    Expr5  ::= "$true";
+EFalse.   Expr5  ::= "$false";
 ELit.     Expr5  ::= Atom;
 
-TConst.   Term ::= Ident;
+TConst.   Term ::= LIdent;
 TVar.     Term ::= UIdent;
-TFun.     Term ::= Ident "(" [Term] ")";
+TFun.     Term ::= LIdent "(" [Term] ")";
 
-APred.    Atom ::= Ident "(" [Term] ")";
-AConst.   Atom ::= Ident;
+APred.    Atom ::= LIdent "(" [Term] ")";
+AConst.   Atom ::= LIdent;
 
 separator Term ",";
 
-token TTrue  '$' 't' 'r' 'u' 'e';
-token TFalse '$' 'f' 'a' 'l' 's' 'e';
-
+token LIdent (lower | '$') (letter | '_' | digit)*;
 token UIdent upper (letter | '_' | digit)*;
 
 coercions Expr 5;
 
-TypFun.    Type  ::= Type1 ">" Type2;
-TypTup.    Type1 ::= Type1 "*" Type;
+TypTyp.    Type  ::= "$tType";
+TypBool.   Type  ::= "$o";
+TypConst.  Type  ::= BaseType;
+TypPred.   Type  ::= Arguments ">" "$o";
+TypFun.    Type  ::= Arguments ">" BaseType;
 
-TypId.     Type2 ::= TypIdent;
-TypId2.    Type2 ::= Ident;
+OneArg.    Arguments ::= BaseType;
+SomeArgs.  Arguments ::= "(" [Arg] ")";
 
-coercions Type 3;
+TypTop.    BaseType  ::= "$i";
+TypIdent.  BaseType  ::= LIdent;
 
-token TypIdent '$' ('_' | letter | digit)*; 
+Arg.       Arg ::= BaseType;
+separator  Arg "*";
 
 separator ETyp ",";

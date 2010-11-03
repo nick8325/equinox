@@ -29,6 +29,7 @@ module Sat
   
   , mkTrue
   , mkFalse
+  , mkAnd, mkOr, mkEqu
   
   -- for debugging
   --, printStderr   -- :: String -> IO ()
@@ -232,6 +233,10 @@ solve2 ls = do
 	solve_ b ls
 
 newLit         = MiniSatM s_newlit
+
+addClause [l] = fmap fromCBool $ MiniSatM (\s -> s_clause1 s l)
+addClause [l,l'] = fmap fromCBool $ MiniSatM (\s -> s_clause2 s l l')
+addClause [l,l',l''] = fmap fromCBool $ MiniSatM (\s -> s_clause3 s l l' l'')
 addClause ls     =
   do 
    --  lift $ putStrLn ("Sat.addClause: " ++ show ls)
@@ -297,6 +302,9 @@ foreign import ccall unsafe "static Wrapper.h"   s_new            :: CString -> 
 foreign import ccall unsafe "static Wrapper.h"   s_delete         :: Solver -> IO () 
 foreign import ccall unsafe "static Wrapper.h"   s_newlit         :: Solver -> IO Lit
 foreign import ccall unsafe "static Wrapper.h"   s_clause         :: Solver -> Ptr Lit -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_clause1        :: Solver -> Lit -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_clause2        :: Solver -> Lit -> Lit -> IO CInt
+foreign import ccall unsafe "static Wrapper.h"   s_clause3        :: Solver -> Lit -> Lit -> Lit -> IO CInt
 foreign import ccall unsafe "static Wrapper.h"   s_solve          :: Solver -> CInt -> Ptr Lit -> IO CInt
 foreign import ccall unsafe "static Wrapper.h"   s_simplify       :: Solver -> CInt -> CInt -> IO CInt
 foreign import ccall unsafe "static Wrapper.h"   s_freezelit      :: Solver -> Lit -> IO ()

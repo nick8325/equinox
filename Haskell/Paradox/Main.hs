@@ -116,6 +116,7 @@ solveProblem theory oblig =
 
   minSize = maximum (1 : map snd predefs)
 
+  degree :: Symbolic a => a -> Int
   degree x = S.size . free $ x
   ds       = map degree fcs ++ map degree qcs
   d        = maximum (0:ds)
@@ -148,6 +149,7 @@ solveProblem theory oblig =
            . group
            . sort
    
+    mask :: Symbolic a => a -> [(Int, Int)]
     mask c = groupN
            . map isize
            . S.toList

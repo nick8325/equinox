@@ -1,3 +1,4 @@
+.NOTPARALLEL:
 
 #-- Variables
 
@@ -11,7 +12,7 @@ GHC     = ghc
 #-- Main
 
 
-main: paradox.exe equinox.exe infinox.exe zoomer.exe 
+main: paradox.exe equinox.exe infinox.exe zoomer.exe smellysox.exe
 
 
 paradox: paradox.exe
@@ -21,6 +22,7 @@ equiparadox: equiparadox.exe
 satplay: satplay.exe
 zoomer: zoomer.exe
 
+smellysox: smellysox.exe
 Sat.o: Sat.hs
 	$(GHC) -fglasgow-exts --make Sat.hs
 
@@ -49,7 +51,15 @@ infinox.exe: *.hs Infinox/*.hs
 
 satplay.exe: Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HSAT) $(HFLAGS) -main-is SatPlay.Main.main --make SatPlay.Main -o satplay
-                
+
+smellysox.exe: Sat.o SmellySox/*.hs SmellySox/Parser/Partff.hs ../instantiate/*.or ../minisat/current-base/*.or
+	$(GHC) $(HSAT) $(HFLAGS) --make SmellySox -o smellysox
+
+SmellySox/Parser/Partff.hs: SmellySox/tff.cf
+	bnfc -p SmellySox.Parser SmellySox/tff.cf
+	alex SmellySox/Parser/Lextff.x
+	happy SmellySox/Parser/Partff.y
+	
 #-- Zoomer
 
 zoomer.exe: Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or

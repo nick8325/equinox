@@ -155,7 +155,8 @@ instance Show DClause where
     , let show' (x,t) = show x ++ "=" ++ show t
     ] ++
     [ concat (intersperse " | " (map show (lits dc)))
-    | let show' (x,y) = show x ++ "=" ++ show y
+    | let show' :: (Show a, Show b) => (a, b) -> String
+          show' (x,y) = show x ++ "=" ++ show y
     ]
 
 mkDClause :: [Signed Atom] -> [DClause]

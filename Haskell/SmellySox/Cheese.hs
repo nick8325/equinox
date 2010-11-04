@@ -1,6 +1,5 @@
 module SmellySox.Cheese where
 
-
 {- Monotonicity calculus
 
    Formulas: 
@@ -58,7 +57,8 @@ module SmellySox.Cheese where
 
 import SmellySox.Sat hiding ((:=:))
 import SmellySox.CNF
-import SmellySox.Formula (Type,typeOf)
+import SmellySox.Formula (Type,getArgs,typeOf,isVar) 
+import Data.List
 import Maybe
 
 isMonotone :: CNF -> Type -> IO Bool
@@ -70,17 +70,35 @@ formula :: CNF -> Type -> Formula String
 formula (CNF ts cs cls) ty   = conj $ map (flip clause ty) cls 
 
 clause :: Clause -> Type -> Formula String 
-clause (Clause vars lits) ty = disj $ map (flip literal ty) lits
+clause (Clause vars lits) ty = 
+  let
+      (neqs,eqs) = partition (badEquality ty) lits 
+  in
+    if null eqs then FTrue else conj $ map (guard ty neqs) eqs
+
+badEquality ty (t1 :=: t2) = typeOf t1 == ty && (isVar t1 || isVar t2)
+badEquality _ _            = False
+
+guard ty neqs (t1 :=: t2) = undefined
+
+guards ty (_ :=: _)  _              = FFalse
+guards ty (_ :/=: _) _              = FFalse
+guards ty (Pos p)  x    = if elem x (getArgs p) then undefined else FFalse
+guards ty (Neg p)  x    = if elem x (getArgs p) then undefined else FFalse
+
+
+
+
+
 
 literal :: Literal -> Type -> Formula String
 literal l ty = 
   case l of (t1 :=: t2)  -> if typeOf t1 /= ty then FTrue
                              else safe t1 :&: safe t2
-            (t1 :/=: t2) -> undefined
+            (t1 :/=: t2) -> FTrue
             (Pos t1)     -> undefined
             (Neg t1)     -> undefined
 
-
-safe = undefined
+safe t = if not (isVar t) then FTrue else undefined
 
 

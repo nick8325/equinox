@@ -22,5 +22,9 @@ int     solver_lit_read    (solver* w);
 
 void solver_print_stderr       (char *s);
 
+int     s_clause1       (solver* s, int l);
+int     s_clause2       (solver* s, int l, int l2);
+int     s_clause3       (solver* s, int l, int l2, int l3);
+
 #endif
 

@@ -69,6 +69,30 @@ extern "C" {
         return s->addClause(s->tmp);
     }
     
+    int s_clause1(solver* s, int l)
+    {
+        s->tmp.clear();
+        s->tmp.push(fromDimacs(l));
+        return s->addClause(s->tmp);
+    }
+
+    int s_clause2(solver* s, int l, int l2)
+    {
+        s->tmp.clear();
+        s->tmp.push(fromDimacs(l));
+        s->tmp.push(fromDimacs(l2));
+        return s->addClause(s->tmp);
+    }
+    
+    int s_clause3(solver* s, int l, int l2, int l3)
+    {
+        s->tmp.clear();
+        s->tmp.push(fromDimacs(l));
+        s->tmp.push(fromDimacs(l2));
+        s->tmp.push(fromDimacs(l3));
+        return s->addClause(s->tmp);
+    }
+
     int s_solve (solver* s, int do_simplify, int* ls)
     {
         s->tmp.clear();

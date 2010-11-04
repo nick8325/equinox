@@ -5,22 +5,22 @@ import SmellySox.Utils
 import Control.Monad
 import qualified Data.Map as Map
 
-data Formula a = Var a
-               | Formula a :&: Formula a
-               | Formula a :|: Formula a
-               | Not (Formula a)
-               | Formula a :=: Formula a
-               | FTrue
-               | FFalse
+data SatFormula a = SatVar a
+                  | SatFormula a :&: SatFormula a
+                  | SatFormula a :|: SatFormula a
+                  | Not (SatFormula a)
+                  | SatFormula a :=: SatFormula a
+                  | FTrue
+                  | FFalse
 
-(-->) :: Formula a -> Formula a -> Formula a
+(-->) :: SatFormula a -> SatFormula a -> SatFormula a
 f --> g = Not f :|: g
 
-conj,disj :: [Formula a] -> Formula a
+conj,disj :: [SatFormula a] -> SatFormula a
 conj = foldr (:&:) FTrue
 disj = foldr (:|:) FFalse
 
-solve :: Ord a => Formula a -> IO (Maybe (a -> Bool))
+solve :: Ord a => SatFormula a -> IO (Maybe (a -> Bool))
 solve f = run $ do
   let vs = vars f
   lits <- replicateM (length vs) newLit
@@ -34,8 +34,8 @@ solve f = run $ do
      return (\x -> Map.findWithDefault (error "solve: valMap") x valMap)
     else return Nothing
 
-solve' :: (a -> Lit) -> Formula a -> S Lit
-solve' env (Var x) = return (env x)
+solve' :: (a -> Lit) -> SatFormula a -> S Lit
+solve' env (SatVar x) = return (env x)
 solve' env (f :&: g) = join (liftM2 mkAnd (solve' env f) (solve' env g))
 solve' env (f :|: g) = join (liftM2 mkOr (solve' env f) (solve' env g))
 solve' env (Not f) = fmap neg (solve' env f)
@@ -43,8 +43,8 @@ solve' env (f :=: g) = join (liftM2 mkEqu (solve' env f) (solve' env g))
 solve' _ FTrue  = return mkTrue
 solve' _ FFalse = return mkFalse
 
-vars :: Ord a => Formula a -> [a]
-vars (Var x) = [x]
+vars :: Ord a => SatFormula a -> [a]
+vars (SatVar x) = [x]
 vars (f :&: g) = vars f `merge` vars g
 vars (f :|: g) = vars f `merge` vars g
 vars (Not f) = vars f

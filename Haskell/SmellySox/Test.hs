@@ -2,7 +2,7 @@ module SmellySox.Test where
 
 import SmellySox.Formula
 
-test = Formula { types = ["Obj", "Arr"],
+test = Formula { types = [obj, arr],
                  constants = [compose, ident, source, target, badObj, badArr,
                               a, b, pair, p1, p2, paired],
                  forms = [
@@ -14,26 +14,28 @@ test = Formula { types = ["Obj", "Arr"],
                    foldr1 (Binop And) [pairType, pairNotBad, pType, p1pair,
                                        p2pair, uniqueness, pairedDef ]),
                   ("conjecture", NegatedConjecture, notUniversal)]}
-  where compose = Fun "compose" ["Arr", "Arr"] "Arr"
-        ident = Fun "ident" ["Obj"] "Arr"
-        source = Fun "source" ["Arr"] "Obj"
-        target = Fun "target" ["Arr"] "Obj"
-        badObj = Fun "badObj" [] "Obj"
-        badArr = Fun "badArr" [] "Arr"
-        a = Fun "a" [] "Obj"
-        b = Fun "b" [] "Obj"
-        axb = Fun "axb" [] "Obj"
-        pair = Fun "pair" ["Arr", "Arr"] "Arr"
-        p1 = Fun "p1" [] "Arr"
-        p2 = Fun "p2" [] "Arr"
-        paired = Pred "paired" ["Arr", "Arr"]
-        x = Var "X" "Obj"
-        y = Var "Y" "Obj"
-        z = Var "Z" "Obj"
-        f = Var "F" "Arr"
-        g = Var "G" "Arr"
-        h = Var "H" "Arr"
-        h' = Var "H'" "Arr"
+  where obj = Type "Obj"
+        arr = Type "Arr"
+        compose = Fun "compose" [arr, arr] arr
+        ident = Fun "ident" [obj] arr
+        source = Fun "source" [arr] obj
+        target = Fun "target" [arr] obj
+        badObj = Fun "badObj" [] obj
+        badArr = Fun "badArr" [] arr
+        a = Fun "a" [] obj
+        b = Fun "b" [] obj
+        axb = Fun "axb" [] obj
+        pair = Fun "pair" [arr, arr] arr
+        p1 = Fun "p1" [] arr
+        p2 = Fun "p2" [] arr
+        paired = Pred "paired" [arr, arr]
+        x = Var "X" obj
+        y = Var "Y" obj
+        z = Var "Z" obj
+        f = Var "F" arr
+        g = Var "G" arr
+        h = Var "H" arr
+        h' = Var "H'" arr
 
         associativity =
           Quant ForAll f . Quant ForAll g . Quant ForAll h $

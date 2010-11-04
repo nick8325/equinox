@@ -32,7 +32,7 @@ convert (Tffs xs) = Formula { types = types, constants = constants, forms = form
         convertType f (TypFun args ty) = Fun { name = f, args = convertArgs args, ty = convertBaseType ty }
         convertArgs (OneArg ty) = [convertBaseType ty]
         convertArgs (SomeArgs tys) = [ convertBaseType ty | Arg ty <- tys ]
-        convertBaseType TypTop = Top
+        convertBaseType TypTop = error "$i not supported, GO AWAY"
         convertBaseType (TypIdent (LIdent ty)) = Type ty
         convertKind CTDef = Definition
         convertKind CTAxiom = Axiom

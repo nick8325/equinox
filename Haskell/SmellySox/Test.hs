@@ -35,7 +35,7 @@ test = Formula { types = [obj, arr],
         f = Var "F" arr
         g = Var "G" arr
         h = Var "H" arr
-        h' = Var "H'" arr
+        h' = Var "H1" arr
 
         associativity =
           Quant ForAll f . Quant ForAll g . Quant ForAll h $
@@ -118,13 +118,13 @@ test = Formula { types = [obj, arr],
           Quant ForAll f . Quant ForAll g $
              Binop Implies
                (Literal (paired :@: [f :@: [], g :@: []]))
-               (p1 :@: [pair :@: [f :@: [], g :@: []]] :=: f :@: [])
+               (compose :@: [p1 :@: [], pair :@: [f :@: [], g :@: []]] :=: f :@: [])
 
         p2pair =
           Quant ForAll f . Quant ForAll g $
              Binop Implies
                (Literal (paired :@: [f :@: [], g :@: []]))
-               (p2 :@: [pair :@: [f :@: [], g :@: []]] :=: g :@: [])
+               (compose :@: [p2 :@: [], pair :@: [f :@: [], g :@: []]] :=: g :@: [])
 
         uniqueness =
           Quant ForAll f . Quant ForAll g .

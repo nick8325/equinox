@@ -5,7 +5,9 @@ import SmellySox.CNF
 import SmellySox.Cheese
 import SmellySox.Fluff
 import SmellySox.Test
+import SmellySox.Write
 import System
+import System.IO
 import Control.Monad
 
 main = do
@@ -17,22 +19,22 @@ main = do
 
 smellysox formula = do
     r <- check (clausify formula)
-    when (not r) $ do
+    if r then putStrLn (prettyPrint formula) else do
       formula' <- annotate formula
       check (clausify formula')
-      return ()
+      putStrLn (prettyPrint formula')
 
 check formula = do
-    print formula
-    putStrLn ""
+    hPutStrLn stderr (show formula)
+    hPutStrLn stderr ""
     res <- forM (types formula) $ \ty -> do
       r <- isMonotone formula ty
       case r of
         Nothing -> do
-               putStrLn $ "Not monotone in " ++ show ty
+               hPutStrLn stderr $ "Not monotone in " ++ show ty
                return False
         Just val -> do
-               putStrLn $ "Yay, monotone in " ++ show ty ++ "!"
-               forM_ val $ \(p, method) -> putStrLn $ "  " ++ show p ++ ": " ++ show method
+               hPutStrLn stderr $ "Yay, monotone in " ++ show ty ++ "!"
+               forM_ val $ \(p, method) -> hPutStrLn stderr $ "  " ++ show p ++ ": " ++ show method
                return True
     return (and res)

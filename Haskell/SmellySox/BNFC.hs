@@ -72,5 +72,5 @@ convert (Tffs xs) = Formula { types = types, constants = constants, forms = form
         retypeFrom ctx (Not e) = Not (retypeFrom ctx e)
         retypeFrom ctx (Quant q x e) = Quant q x (retypeFrom (Map.insert (name x) x ctx) e)
         retypeTerm ctx (f :@: xs) =
-          Map.findWithDefault (error "retypeTerm") (name f) ctx :@:
+          Map.findWithDefault (error $ "unknown term " ++ name f) (name f) ctx :@:
              map (retypeTerm ctx) xs

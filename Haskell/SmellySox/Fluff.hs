@@ -32,9 +32,11 @@ annotate formula = do
       transform (Quant ForAll x e) = forAll x (transform e)
       transform (Quant Exists x e) = exists x (transform e)
       typingAxiom ty = ("smellySox_" ++ show ty, Axiom,
-                           foldr (Binop And) (Const True)
+                           foldr (Binop And) (nonEmptyDomain ty)
                              (map functionAxiom [ f | f@Fun{ty = x} <- constants formula,
                                                       x == ty ]))
+      nonEmptyDomain ty = Quant Exists var (Literal (typingPred ty :@: [var :@: []]))
+        where var = Var "SmellySox" ty
       functionAxiom f = foldr forAll (Literal (typingPred (ty f) :@: [f :@: map (:@: []) vars])) vars
         where vars = [ Var ("SmellySox" ++ show i) ty | (i, ty) <- zip [1..] (args f) ]
   return formula{constants = map typingPred (Set.toList nonMonotone) ++ constants formula,

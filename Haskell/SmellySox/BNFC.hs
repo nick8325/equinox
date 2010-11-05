@@ -23,7 +23,7 @@ convert :: Tffs -> Formula
 convert (Tffs xs) = Formula { types = types, constants = constants, forms = forms }
   where types = [ Type ty | TffTyp _ (LIdent ty) TypTyp <- xs ]
         constants = [ convertType f ty | TffTyp _ (LIdent f) ty <- xs, ty /= TypTyp ]
-        forms = [ (name, convertKind kind, retype (convertExpr expr))
+        forms = [ (name, convertKind kind, typecheck (retype (convertExpr expr)))
                 | Tff (LIdent name) kind expr <- xs ]
         convertType _ TypTyp = error "convert: unexpected $tType"
         convertType b TypBool = Pred { name = b, args = [] }
@@ -74,3 +74,19 @@ convert (Tffs xs) = Formula { types = types, constants = constants, forms = form
         retypeTerm ctx (f :@: xs) =
           Map.findWithDefault (error $ "unknown term " ++ name f) (name f) ctx :@:
              map (retypeTerm ctx) xs
+
+        typecheck e@(Const _) = e
+        typecheck e@(Literal l) | typeOf l == Type "$o" = e
+                                | otherwise = error $ show l ++ " has type " ++ show (typeOf l) ++ " but was used as a predicate"
+        typecheck e@(t :=: u) | typeOf t == typeOf u = e
+                              | otherwise = error $ "Type mismatch in " ++ show t ++ " = " ++ show u ++ ": " ++ show (typeOf t) ++  " vs " ++ show (typeOf u)
+        typecheck (Binop op e1 e2) = Binop op (typecheck e1) (typecheck e2)
+        typecheck (Not e) = Not (typecheck e)
+        typecheck (Quant q x e) = Quant q x (typecheck e)
+        typeOf (x@Var{} :@: []) = ty x
+        typeOf l@(Var{} :@: _) = error $ "Variable used as head of literal: " ++ show l
+        typeOf l@(p@Pred{} :@: xs) | map typeOf xs == args p = Type "$o"
+                                   | otherwise = error $ "Type mismatch in " ++ show l ++ ": " ++ show p ++ " has argument type " ++ show (args p) ++ " but was given " ++ show (map typeOf xs)
+
+        typeOf l@(f@Fun{} :@: xs) | map typeOf xs == args f = ty f
+                                  | otherwise = error $ "Type mismatch in " ++ show l ++ ": " ++ show f ++ " has argument type " ++ show (args f) ++ " but was given " ++ show (map typeOf xs)

@@ -22,8 +22,6 @@ import Control.Monad.Reader
 continueInjOnto method funs rflag = do
 	
 		settings <- ask
-
-	
 		let
 			sig'				=		sig settings
 			pflag'			=		pflag settings	
@@ -93,7 +91,7 @@ mkAxiom (t,(r,p)) = (nt (conjNotInjOnto (Just t) Nothing p))
 			_		-> return $ toResult result
 
 	where
-		combine xs ys = concat [[(x,y) | x <- xs] | y <- ys] 
+		combine xs ys = [(x,y) | x <- xs,y <- ys] 
 		tryFullDomain _ [] allrefls = return ([],allrefls)	
 		tryFullDomain funs relations refls = do
 
@@ -103,7 +101,6 @@ mkAxiom (t,(r,p)) = (nt (conjNotInjOnto (Just t) Nothing p))
 			let
 				newrefls = map snd psrs
 				allrefls = newrefls ++ refls
---			putStrLn $ "Found reflexive predicates: " ++ show newrefls
 			result <- (mappy (proveProperty method) $ 
 							[(Just fun,Just r,Nothing) | r <- newrefls, fun <- funs])
 			case result of

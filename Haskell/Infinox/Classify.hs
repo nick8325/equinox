@@ -53,14 +53,11 @@ classifyProblem theory oblig = let cs = theory ++ oblig in do
 								if verbose then putStrLn "Zooming..." else return ()
 								zoom tempdir forms noClash (F.plimit ?flags)
 							else return forms --the formulas in which to search for candidates																	
---	putStrLn $ show (symbols fs)
---	putStrLn $ show (S.filter isFunSymbol (symbols fs))
 	let
 		sig 			= getSignature fs (F.function ?flags)
 		axioms 		= form2axioms forms noClash
 		settings 	= MSet axiomfile tempdir fs sig noClash verbose 
 									funflag relflag pflag termdepth eflag proverflag
---	putStrLn $ show (fsymbs sig)
 	h <- openFile axiomfile WriteMode			
 	hSetBuffering h NoBuffering
 	hPutStr h axioms	

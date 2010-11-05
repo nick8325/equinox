@@ -170,59 +170,6 @@ mkConjecture domain noClash =
 											((nt domain) \/ (nt (app @@ [f,x] `eq` z)))) ++
 			")))))))))."
 
-
-
-
-
-
-{-
- | " ++
-
-			"(![Y] : (" ++ 	show (nt domain @@ [y]) ++ " | " ++
-			"?[X] : (" ++   show (domain @@ [x] /\ (app @@ [f,x] `eq` y)) ++ ")) & " ++
-
-
-
-			"(?[X] : ( ?[Y] : (" ++ show (domain @@ [x] /\ domain @@ [y] /\
-				(app @@ [f,x] `eq` app @@ [f,y]) /\ (nt (x `eq` y))) ++ "))" 
-
-
-			++ "))))))."
--}
-{-
-mkConjecture domain noClash = 
-	let 
-		x = toVar "X"
-		y = toVar "Y"
-		f = toVar "F"
-		z = toVar "Z"
-		app = Fun ((name ("app_" ++ noClash)) ::: ([top,top] :-> top)) [x,y] 
-	in
-	form2conjecture noClash 0 $
-		exists Sym.f $
-
-  		( forEvery (Var Sym.x) 
-      ((nt domain) \/ (domain @@ [(app @@ [f,x])])))
-
-			/\
-
-			(forEvery (Var Sym.x) ( forEvery (Var Sym.y) (
-				(nt domain) \/ (nt (domain @@ [y])) 
-				\/
-				(x `eq` y) \/  (nt ((app @@ [f,x]) `eq` (app @@ [f,y]))) 
-			)
-			/\
-			(exists Sym.z $ (domain @@ [z]) /\
-				((nt domain) \/ (nt (app @@ [f,x] `eq` z))))))
-
-			\/
-			(forEvery (Var Sym.y) ( (nt domain @@ [y]) \/
-				(exists Sym.x (domain @@ [x] /\ (app @@ [f,x] `eq` y))))
-			/\
-			exists Sym.x (exists Sym.y (domain @@ [x] /\ domain @@ [y] /\
-				(app @@ [f,x] `eq` app @@ [f,y]) /\ (nt (x `eq` y))   ))
-			)
--}				 
 eq t1 t2 = Atom (t1 :=: t2)
 
 

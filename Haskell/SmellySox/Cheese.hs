@@ -75,7 +75,7 @@ isMonotone cnf ty = do
                 (False, False) -> Copy
                 (False, True) -> TrueExtend
                 (True, False) -> FalseExtend
-                (True, True) -> error "OH NO!! D:"
+                (True, True)  -> error "OH NO!! D:"
 
 formula :: CNF -> Type -> SatFormula ExtensionVar
 formula (CNF ts cs cls) ty = conj $ map (flip clause ty) cls ++ map constraint cs
@@ -100,7 +100,7 @@ literal c l ty =
             (Pos (p :@: [x])) | typeOf x /= ty -> FTrue
             (Neg (p :@: [x])) | typeOf x /= ty -> FTrue
             (Pos (p :@: [x])) -> Not (SatVar (FalseExtended p)) :|: safe c x
-            (Neg (p :@: [x])) -> Not (SatVar (TrueExtended p)) :|: safe c x
+            (Neg (p :@: [x])) -> Not (SatVar (TrueExtended p))  :|: safe c x
             _ -> FTrue
 
 safe c (x@Var{} :@: []) = disj [ guards l x | l <- literals c ]

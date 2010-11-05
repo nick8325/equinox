@@ -1,7 +1,7 @@
 module Infinox.Relations where
 
 import Form
-import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation, Trans))
+import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation,Trans))
 import Infinox.Conjecture
 import Infinox.Generate
 import Infinox.Util
@@ -9,6 +9,9 @@ import System.Directory
 import qualified Data.Set as S
 import qualified Infinox.Symbols as Sym
 import Infinox.Types
+import Infinox.Settings
+
+import Control.Monad.Reader
 
 
 import Data.List (nub)
@@ -17,51 +20,87 @@ import Output
 import System (system)
 import qualified Data.Set as S
 
-continueRelations method tempdir sig rels problem  noClash rflag pflag v elim = do
+continueRelations :: Method -> [Relation] -> Settings Result
+continueRelations method rels = do 
+	settings <- ask
 	let
-			rflag'		=		case rflag of
+			rflag'		=		case relflag settings of
 											Nothing 	-> Just "-"
 											Just "-"	-> Just "-"
-											_					-> rflag
-			psymbols	=		S.toList (psymbs sig)
-			ps				=		Nothing : (map Just $ collectSubsets pflag psymbols)
-			rs        =  	collectRelations rflag' psymbols (hasEq sig)
+											_					-> relflag settings
+			sig'			=   sig settings
+			psymbols	=		S.toList (psymbs sig')
+			ps				=		Nothing : (map Just $ collectSubsets (pflag settings) psymbols)
+			rs        =  	collectRelations rflag' psymbols (hasEq sig')
 										--collect all predicates with at least two "X"
 			rs' 			= 	concatMap genRelsXY rs
 										--convert to predicates containing (all combinations of) 
 										--variables "X" and "Y"
 			
 			testrels = (nub (rels ++ rs')) ++ map nt rs'
-	continueRelations' method tempdir problem noClash testrels testrels ps v elim
-	
-continueRelations' _ _ _ _ _ _ [] _ _ = return None
-	
-continueRelations' method tempdir problem noClash [] rs (p:ps) v elim = 
-	continueRelations' method tempdir problem noClash rs rs ps v elim
+	continueRelations' method testrels testrels ps 
 
-continueRelations' method tempdir problem noClash (r:rs) rs' (p:ps) v elim = do
-	b <-  checkProperty method tempdir problem noClash r p v elim
+continueRelations' :: Method -> [Relation] -> [Relation] -> [Maybe Form] -> Settings Result	
+continueRelations' _ _ _ [] = return None
+	
+continueRelations' method [] rs (p:ps) = 
+	continueRelations' method rs rs ps
+
+continueRelations' method (r:rs) rs' (p:ps) = do
+	b <-  checkProperty method r p 
 	if b then case p of
 		Nothing ->	return $ F r
 		Just p'	->	return $ FF r p' 
 		else
-			continueRelations' method tempdir problem noClash rs rs' (p:ps) v elim
+			continueRelations' method rs rs' (p:ps) 
 
 -------------------------------------------------------------------------------
 
-checkProperty Serial tempdir problem noClash r p v elim = do
-	let
-		r' = And (S.fromList [r,Not equality])
-		conj = form2conjecture noClash 0 (conjSerial r' p)
-		provefile = tempdir ++ "checksr"
-	system $ "cp " ++ problem ++ " " ++ provefile
-	maybePrint v "Checking irreflexivity, transitivity, seriality: " (Just r')
-	maybePrint v "under " p	
-	b <- prove conj provefile elim
-	removeFile provefile
-	return b
+checkProperty :: Method -> Relation -> Maybe Form -> Settings Bool
+checkProperty method r p = 
+	do
+		settings <- ask
+		let 
+			v        = verbose settings
+			noClash' = noClash settings
+			tempdir' = tempdir settings
+			problem  = axiomfile settings
+			pr		   = prover settings
+			conj = case method of 
+				Serial -> let
+										r' = And (S.fromList [r,Not equality]) in
+									 form2conjecture noClash' 0 (conjSerial r' p)
+				Relation -> form2conjecture noClash' 0 (conjRelation r p)
+				Trans    -> form2conjecture noClash' 0 (conjTrans r p)
 
-checkProperty Relation tempdir problem noClash r p v elim = do
+			provefile = tempdir' ++ "checksr"
+		Settings $ lift $ maybePrint v "Checking relation: " (Just r)
+		Settings $ lift $ maybePrint v "under " p	
+		Settings $ lift $ system $ "cp " ++ problem ++ " " ++ provefile
+		b <- Settings $ lift $ prove pr conj provefile (elimit settings)
+		Settings $ lift $ removeFile provefile
+		return b							
+		
+			 
+{-
+checkProperty Serial r p  = 
+	do
+		settings <- ask
+		let
+			v       = verbose settings
+			noClash = noClash settings
+			tempdir = tempdir settings
+			r' = And (S.fromList [r,Not equality])
+			conj = form2conjecture noClash 0 (conjSerial r' p)
+			provefile = tempdir ++ "checksr"
+		system $ "cp " ++ axiomfile settings ++ " " ++ provefile
+		maybePrint v "Checking irreflexivity, transitivity, seriality: " (Just r')
+		maybePrint v "under " p	
+		b <- prove conj provefile (elimit settings)
+		removeFile provefile
+		return b
+
+checkProperty Relation r p = do
 	let
 		conj = form2conjecture noClash 0 (conjRelation r p)
 		provefile = tempdir ++ "checkrel"
@@ -71,18 +110,7 @@ checkProperty Relation tempdir problem noClash r p v elim = do
 	b <- prove conj provefile elim
 	removeFile provefile
 	return b
-
-checkProperty Trans tempdir problem noClash r p v elim = do
-	let 
-		conj = form2conjecture noClash 0 (conjTrans r p)
-		provefile = tempdir ++ "checktrans"
-	system $ "cp " ++ problem ++ " " ++ provefile
-	maybePrint v "Checking antisymmetry, transitivity, totality and double seriality: " (Just r)
-	maybePrint v "under " p	
-	b <- prove conj provefile elim
-	removeFile provefile
-	return b
-
+-}
 -------------------------------------------------------------------------------	
 
 equal = \x -> \y -> Atom (x :=: y)
@@ -117,28 +145,6 @@ conjRelation rel subset =
 	  y = Var Sym.y
 	  z = Var Sym.z
 
-conjTrans :: Relation -> Maybe Form -> Form
-conjTrans rel subset = 
-	case subset of
-		Nothing ->
-     			existsRel "R" rel $ \r ->
-				let 
-					domsize      = exist x $ exist y $ nt (equal x y)
-					antisym      = forEvery x $ forEvery y $ (equal x y) \/ (nt (r x y)) \/  (nt (r y x)) 
-					transitive	 = forEvery [x,y,z] ((nt (r x y)) \/ (nt (r y z)) \/ (r x z) ) 
-
-					total	  		 = forEvery x $ forEvery y $ (r x y) \/ (r y x) 
-					doubserial	 = forEvery x $ forEvery y $ (equal x y \/ (nt (r x y))) \/ (exist z $ (nt (equal x z)) /\ (nt (equal y z)) /\ (r x z))
-
-				in
-					antisym /\ transitive /\ total /\ doubserial
-
-
-	 where
-	  x = Var Sym.x
-	  y = Var Sym.y
-	  z = Var Sym.z
-				
 
 --seriality
 conjSerial :: Relation -> Maybe Form -> Form		
@@ -178,6 +184,41 @@ conjSerial rel subset =
   x = Var Sym.x
   y = Var Sym.y
   z = Var Sym.z
+
+
+conjTrans :: Relation -> Maybe Form -> Form
+conjTrans rel subset = 
+	case subset of
+		Nothing ->
+     			existsRel "R" rel $ \r ->
+				let 
+					domsize      = exist x $ exist y $ nt (equal x y)
+					antisym      = forEvery x $ forEvery y $ (equal x y) \/ (nt (r x y)) \/  (nt (r y x)) 
+					transitive	 = forEvery [x,y,z] ((nt (r x y)) \/ (nt (r y z)) \/ (r x z) ) 
+
+					total	  		 = forEvery x $ forEvery y $ (r x y) \/ (r y x) 
+					doubserial	 = forEvery x $ forEvery y $ (equal x y \/ (nt (r x y))) \/ (exist z $ (nt (equal x z)) /\ (nt (equal y z)) /\ (r x z))
+
+				in
+					antisym /\ transitive /\ total /\ doubserial
+		Just pr -> 
+				
+			existsPred "P" pr $ \p -> 
+				existsRel "R" rel $ \r ->
+					exist [x,y] $ p(x) /\ p(y) /\ (nt (equal x y)) /\
+
+			let 
+				antisym    = forEvery [x,y] $ (nt (p x)) \/ (nt (p y)) \/ (equal x y) \/ (nt (r x y)) \/  (nt (r y x)) 
+				transitive = (forEvery [x,y,z] ( (nt (p x) \/ nt (p y) \/ nt (p z)) \/ 
+																((nt (r x y)) \/ (nt (r y z)) \/ (r x z) ))) 
+				total      = forEvery [x,y] $ (nt (p x) \/ nt (p y)) \/ (r x y)  \/ (r y x)
+				doubserial = forEvery [x,y] $ (nt (p x) \/ nt (p y) \/ nt (p z)) \/   (equal x y \/ (nt (r x y))) \/ (exist z $ (nt (equal x z)) /\ (nt (equal y z)) /\ (r x z))
+			in antisym /\ transitive /\ total /\ doubserial
+		where
+		  x = Var Sym.x
+		  y = Var Sym.y
+		  z = Var Sym.z
+				
 
 
 

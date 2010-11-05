@@ -3,6 +3,9 @@ module Infinox.InjOnto where
 import qualified Data.Set as S
 import System.Directory
 
+import IO
+
+
 import Form
 import Output
 import Infinox.Generate
@@ -11,20 +14,67 @@ import Infinox.Conjecture
 import Data.List
 import System (system)
 import qualified Infinox.Symbols as Sym
+import Infinox.Settings
+import Flags(Method(InjNotSurj,SurjNotInj))
 
+import Control.Monad.Reader
 
-continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose eflag = do
+continueInjOnto method funs rflag = do
+	
+		settings <- ask
 
+	
 		let
-			
-			
-			ps				=		filter (leqfive . arity) (S.toList $ psymbs sig) --all predicates in the signature with arity <= 4
-			relations	=  	collectRelations rflag ps (hasEq sig) 
-										--relations with two or more "X"-variables, with equality if present.
+			sig'				=		sig settings
+			pflag'			=		pflag settings	
+			noClash'		=		noClash settings
+			ps					=		filter (leqfive . arity) (S.toList $ psymbs sig') 
+                    --all predicates in the signature with arity <= 5
+
+			relations		=  	collectRelations rflag ps (hasEq sig') 
+										--relations with two or more "X"-variables, with equality if it is present.
 										--after establishing reflexivity of a relation, relations with "X" and "Y"
 										--variables will be generated.
-			subsets		=		collectSubsets pflag ps	--collect subset-predicates depending on flag given	
+			subsets			=		collectSubsets pflag' ps	--collect subset-predicates depending on flag given	
+	
+--			candidates  =		combine funs $ combine (map Just (concatMap genRelsXY relations)) (Nothing:(map Just subsets))
 
+{-		
+		liftIO $ do
+						putStrLn $ show relations
+						putStrLn $ show subsets
+						putStrLn $ show funs
+						let 
+						--	conj = form2conjecture (noClash settings) 0 (conjPimpliesRef r p)	
+							provefile = tempdir settings ++ "check_all" 
+           
+						system ("cp " ++ axiomfile settings ++ " " ++ provefile)
+						addAxioms noClash' (candidates) provefile
+						b <- prove "" provefile (elimit settings)
+				--		removeFile provefile
+						if b then return Some else return None
+
+combine xs ys = [(x,y) | x <- xs, y <- ys ]
+
+addAxioms noClash' candidates file = do
+		h' <- try $ openFile file AppendMode			
+		case h' of 
+			Right h -> do
+				hSetBuffering h NoBuffering
+				hPutStrLn h  $ form2axioms (map mkAxiom candidates) noClash'	
+	--			hPutStrLn h $ form2conjecture noClash' 1 (mkAxiom (head candidates)) 
+				hClose h	
+				equinox file 	
+--				eprove file 60
+			_	-> error "wsfsdzf"
+
+mkAxiom (t,(r,p)) = (nt (conjNotInjOnto (Just t) Nothing p))
+
+-}
+
+	
+	--	liftIO $ putStrLn $ show candidates
+	
 		(result,refl_rels) <- tryFullDomain funs relations [] 
 								--while testing the full domain - collect all reflexive relations to avoid
 								--testing them again!
@@ -43,16 +93,18 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 			_		-> return $ toResult result
 
 	where
+		combine xs ys = concat [[(x,y) | x <- xs] | y <- ys] 
 		tryFullDomain _ [] allrefls = return ([],allrefls)	
 		tryFullDomain funs relations refls = do
-			(psrs,rs) <- getPairs tempdir axiomfile noClash eflag verbose Nothing checkPR relations 
+
+			(psrs,rs) <- getPairs Nothing checkPR relations 
 			--getPairs stops as soon as we find a relation that is reflexive on the full domain. 
 			--psrs are the matching pairs subset-relation pairs, rs are the relations to be checked the next round.
 			let
 				newrefls = map snd psrs
 				allrefls = newrefls ++ refls
 --			putStrLn $ "Found reflexive predicates: " ++ show newrefls
-			result <- (mappy (proveProperty tempdir axiomfile noClash eflag verbose method) $ 
+			result <- (mappy (proveProperty method) $ 
 							[(Just fun,Just r,Nothing) | r <- newrefls, fun <- funs])
 			case result of
 				[]	->	tryFullDomain funs rs allrefls
@@ -73,7 +125,7 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 				_		-> do
 								let 
 									candidates = zippy fsps' (zip (repeat (Just p)) refl_rels)
-								result <- (mappy (proveProperty tempdir axiomfile noClash eflag verbose method) candidates)
+								result <- (mappy (proveProperty method) candidates)
 								case result of
 									[]	->  trySubdomains_Refl' unprocessed_funs refl_rels p (fsps++fsps')
 									_		->  return (result,fsps ++ fsps') 	
@@ -81,21 +133,21 @@ continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose ef
 		trySubdomains _ [] _ _ = return None
 		trySubdomains fsps (p:ps) relations [] = trySubdomains fsps ps relations relations 
 		trySubdomains fsps (p:ps) relations rs = do
-			(psrs,rs') <- getPairs tempdir axiomfile noClash eflag verbose p checkPR rs 
+			(psrs,rs') <- getPairs p checkPR rs 
 			case psrs of 
 				[]	-> trySubdomains fsps ps relations rs'
 				_		-> do
 							let candidates = zippy fsps psrs
-							result <- (mappy (proveProperty tempdir axiomfile noClash eflag verbose method) candidates)
+							result <- (mappy (proveProperty method) candidates)
 							case result of
 								[]	-> trySubdomains fsps (p:ps) relations rs'
 								_		-> return $ toResult result
 													
 		collectMatchingFunsAndSubset p funs =
-			getPairs tempdir axiomfile noClash eflag verbose (Just p) checkFP funs
+			getPairs (Just p) checkFP funs
 			
 		collectMatchingRelationsAndSubset p rs = 
-			getPairs tempdir axiomfile noClash eflag verbose (Just p) checkPR rs
+			getPairs (Just p) checkPR rs
 
 toResult []													= None
 toResult [(Just f,Just r,Nothing)]  = TF f r
@@ -113,35 +165,46 @@ zippy [] _ = []
 zippy ((f,p):fsps) psrs = 
    [(Just f,Just r,p') | (p',r) <- psrs, p' == p]  ++ zippy fsps psrs
 
-getPairs dir axiomfile noClash elim v p checkfun ts_or_rs = 
-   mapUntilSuccess (checkfun dir axiomfile noClash elim v p) ts_or_rs
+getPairs p checkfun ts_or_rs = 
+	mapUntilSuccess (checkfun p) ts_or_rs
 -------------------------------------------------------------------------------
 
-checkPR :: FilePath -> FilePath -> String ->
-   Int -> Bool -> Maybe Form -> Form -> IO [(Maybe Form, Form)]
-checkPR dir axiomfile noClash to vb p r  = do
+checkPR :: Maybe Form -> Form -> Settings [(Maybe Form, Form)]
+checkPR p r  = do
+	settings <- ask
+	let 
+			vb						= verbose settings
+			pr						= prover settings      
 	if r == equalityX then return $ zip (repeat p) (genRelsXY r)
-		else do
-            let 
-               conj = form2conjecture noClash 0 (conjPimpliesRef r p)	
-               provefile = dir ++ "checkpr" 
-            system $ "cp " ++ axiomfile ++ " " ++ provefile
-            maybePrint vb "Checking reflexivity of " (Just r)
-            maybePrint vb "under " p				  	
-            b <- prove conj provefile to
-            removeFile provefile
-            if b then return (zip (repeat p) (genRelsXY r)) else return []
+		else
+			liftIO $ do
+						let 
+							conj = form2conjecture (noClash settings) 0 (conjPimpliesRef r p)	
+							provefile = tempdir settings ++ "checkpr" 
+           
+						system ("cp " ++ axiomfile settings ++ " " ++ provefile)
+						maybePrint vb "Checking reflexivity of " (Just r)
+						maybePrint vb "under " p				  	
+						b <- prove pr conj provefile (elimit settings)
+						removeFile provefile
+						if b then return (zip (repeat p) (genRelsXY r)) else return []
 
-checkFP dir axiomfile noClash to vb p f  = do
-   let 
-      conj = form2conjecture noClash 0 (conjPClosedUnderF f p)
-      provefile = dir ++ "checkfp"
-   system $ "cp " ++ axiomfile ++ " " ++ provefile	
-   maybePrint vb "Checking " p
-   maybePrint vb "closed under " (Just f)
-   b <- prove conj provefile to
-   removeFile provefile
-   if b then return [(f,p)] else return []
+
+checkFP :: Maybe Form -> Term -> Settings [(Term,Maybe Form)]
+checkFP p f  = do
+	settings <- ask
+	let 
+			conj 			= form2conjecture (noClash settings) 0 (conjPClosedUnderF f p)
+			provefile = tempdir settings ++ "checkfp"
+			vb 				= verbose settings
+			pr				= prover settings
+	liftIO $ do
+							system $ "cp " ++ axiomfile settings ++ " " ++ provefile	
+							maybePrint vb "Checking " p
+							maybePrint vb "closed under " (Just f)
+							b <- prove pr conj provefile (elimit settings)
+							removeFile provefile
+							if b then return [(f,p)] else return []
 
 ------properties---------------------------------------------------------------
 
@@ -249,5 +312,4 @@ conjPClosedUnderF fun (Just pr) =
   x = Var Sym.x
 
 -------------------------------------------------------------------------------
-
 

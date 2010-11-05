@@ -10,6 +10,9 @@ import IO
 import Infinox.Util
 import Output
 
+import Control.Monad.Reader
+import Infinox.Settings
+
 
 --metoden funkar inte för testfil:
 
@@ -43,11 +46,15 @@ fof(c, conjecture, ?[F] :
 
 -}
 
-
-continueAuto tempdir noClash fs sig rflag pflag verbose = do
+continueAuto :: Settings Result
+continueAuto = do
+	settings <- ask
 	let 
+		fs 						= forms settings
 		ss 						= symbols fs
 		giveup        = or [arity s > 5 | s <- S.toList ss] --if any symbol has arity > 5  - just give up!
+		noClash'			= noClash settings
+		tempdir'			= tempdir settings
 
 	if giveup then return None 
 		else 
@@ -60,20 +67,21 @@ continueAuto tempdir noClash fs sig rflag pflag verbose = do
 								--for each clause C, construct dom(x1) & ... & dom(xn) => C, where x1,..xn are all 
 								--variables occuring in C.
 					funsymbs		= S.toList (S.filter isFunSymbol ss)
-					app 				= Fun ((name ("app_" ++ noClash)) ::: ((take 2 (repeat top)) :-> bool)) (take 2 [x | x <- variables]) 
-					appclauses 	= addAppClauses funsymbs app domain noClash
+					app 				= Fun ((name ("app_" ++ noClash')) ::: ((take 2 (repeat top)) :-> bool)) (take 2 [x | x <- variables]) 
+					appclauses 	= addAppClauses funsymbs app domain noClash'
 									--for each function f, add the clause f(X) = app(f,X), etc..			
 					closeFuns		= addCloseClauses funsymbs domain 	
-					domain 			= prd ((name ("dom_" ++ noClash)) ::: ([top] :-> bool)) [Var ((name "X") ::: V top)]
-					axioms 			= form2axioms (domclauses ++ appclauses ++ closeFuns) noClash
-					axiomfile 	= tempdir ++ "axiomfile2"
+					domain 			= prd ((name ("dom_" ++ noClash')) ::: ([top] :-> bool)) [Var ((name "X") ::: V top)]
+					axioms 			= form2axioms (domclauses ++ appclauses ++ closeFuns) noClash'
+					axiomfile 	= tempdir' ++ "axiomfile2"
 				
-				h <- openFile axiomfile WriteMode			
-				hSetBuffering h NoBuffering
-				hPutStr h axioms
-				hClose h
-				b <- equinoxprove (mkConjecture (Atom domain) noClash ) axiomfile
-				if b then return Some else return None
+				liftIO $ do 
+						h <- openFile axiomfile WriteMode			
+						hSetBuffering h NoBuffering
+						hPutStr h axioms
+						hClose h
+						b <- equinoxprove (mkConjecture (Atom domain) noClash' ) axiomfile
+						if b then return Some else return None
 
 addDomains :: Atom ->  [Symbol] -> [Form] -> [Form] 
 addDomains domain constants fs = 

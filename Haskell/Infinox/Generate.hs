@@ -2,38 +2,18 @@ module Infinox.Generate where
 
 --functions for collecting and generating predicates and terms
 
-import Form
-import Flags
 import Data.List (nub,sortBy,init)
 import Data.Set as S( Set )
 import qualified Data.Set as S
+
+import Name
+import Form
+import Flags
+
 import Infinox.Types
 import qualified Infinox.Symbols as Sym
 import Infinox.Symbols( star )
-import Name
-
--------------------------------------------------------------------------------
-
-data Signature = Sig {psymbs :: Set Symbol, fsymbs :: Set Symbol,  hasEq :: Bool}
-	deriving (Eq,Show)
-
-getSignature :: [Form] -> String -> Signature
-getSignature fs t = Sig 
-	(S.filter isPredSymbol syms)
-	(case t of 
-			"-"				->	(S.filter isFunSymbol syms)
-			s					->	S.fromList $ getSymb s (S.toList syms)
-	)
-	(or (map hasEquality fs))
-	where
-		syms = symbols fs
-		hasEquality (Atom (t1 :=: t2)) = t2 /= truth
-		hasEquality (And fs) = S.member True $ S.map hasEquality fs
-		hasEquality (Or fs) = S.member True $ S.map hasEquality fs
-		hasEquality (Not f) = hasEquality f
-		hasEquality (Equiv f1 f2) = hasEquality f1 || hasEquality f2
-		hasEquality (ForAll (Bind s f)) = hasEquality f
-		hasEquality (Exists (Bind s f)) = hasEquality f
+import Infinox.Settings (getSymb, symbolname, Signature(..))
 
 ------------------to simplify notation-----------------------------------------
 
@@ -44,6 +24,7 @@ equalityX :: Relation
 equalityX = Atom (Var Sym.x :=: Var Sym.x)
 
 eq t1 t2 = Atom (t1 :=: t2)
+
 
 -----------collecting terms and predicates from the problem--------------------
 
@@ -96,9 +77,6 @@ getNamedFun :: String -> Set Term -> Set Term
 getNamedFun fun ts = S.filter (((==) fun).funname) ts
 	where
 		funname (Fun symb _) = show $ symbolname symb
-
-getSymb s xs = filter (((==) s).show.symbolname) xs
-symbolname (r ::: _) = r	
 
 -------------------------------------------------------------------------------
 
@@ -153,8 +131,6 @@ isArg a ((Fun _ ts):tts) = isArg a ts || isArg a tts
 isArg a (x:xs) = a == x || isArg a xs
 
 hasX = isArg (Var Sym.x)
-
---hasVar = (isArg (Var Sym.x) t) || isArg (Var Sym.y) t
 
 insertions :: a -> [a] -> [[a]] 
 insertions a [] = [ [a] ] 

@@ -1,61 +1,38 @@
 module Infinox.Classify where
 
-import qualified Flags as F
-import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto, Leo, Trans))
 import IO
 import System (system)
 import System.Time 
 import System.Directory (removeFile,createDirectoryIfMissing) 
 import Control.Concurrent (threadDelay)
 import Data.List
-import Data.Set (size,toList)
+import Control.Monad.Reader (ask, liftIO)
+import qualified Data.Set as S
 
+import qualified Flags as F
+import Flags( Flags, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto, Leo,Trans))
 import Form
-import Infinox.Conjecture
 import Output
+
+import Infinox.Conjecture
 import Infinox.Generate
 import Infinox.Relations
-import Infinox.Zoom
+import Infinox.Zoom (zoom)
 import Infinox.InjOnto
 import Infinox.Util	
 import Infinox.Auto (continueAuto)
-import Infinox.Leo (classifyWithLeo)
-
-
-import Paradox.AnalysisTypes
+import Infinox.Leo  (classifyWithLeo)
+import Infinox.Settings
 
 -----------------------------------------------------------------------------------------
 
 classifyProblem :: (?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer
-classifyProblem theory oblig =  let cs = theory ++ oblig in do
-
-{-
-  let ss = symbols cs
-    
-      typs = types cs
-  mapM putStrLn $ map showWithType $ toList $ symbols $ map (makeTyped typs) cs
-  putStrLn $ show $ getType typs
-  return Satisfiable
-
-
-getType :: Either String ([Type], Clause -> Clause) -> String
-getType (Left s) = s
-getType (Right (s,_)) = show s
-
-makeTyped (Left _) = error ""
-makeTyped (Right (_,f)) = f
-
-showWithType :: Symbol -> String
-showWithType (name ::: typ) = (show name ++ " ::: " ++ show typ) 
--}
-
-
-
+classifyProblem theory oblig = let cs = theory ++ oblig in do
 
 	createDirectoryIfMissing False (F.temp ?flags)
 
 	let
-		tempdir 					= (F.temp ?flags) ++ "/" ++ (subdir ((F.thisFile ?flags))) 
+		tempdir 					= (F.temp ?flags) ++ "/" ++ (subdir (F.thisFile ?flags))
 		verbose						=  F.verbose ?flags > 0	
 		methods						=  F.method ?flags	
 		eflag						  =  F.elimit ?flags
@@ -66,96 +43,73 @@ showWithType (name ::: typ) = (show name ++ " ::: " ++ show typ)
 		termdepth					= F.termdepth ?flags
 		funflag						= F.function ?flags
 		relflag						= F.relation ?flags
+		leoflag						= F.leo ?flags
+		proverflag				= F.prover ?flags
     
-	--	leoflag						= F.leo ?flags
-
 	createDirectoryIfMissing False tempdir
-
-
-	
 	starttime   	<- getClockTime
-	fs  		<- if (F.zoom ?flags) then do
-											
-						putStrLn $ if verbose then "Zooming..." else ""
-						zoom tempdir forms noClash (F.plimit ?flags)
-			else return forms --the formulas in which to search for candidates																	
-			
-	let
-		sig 		= getSignature fs (F.function ?flags)
-		axioms 	= form2axioms forms noClash
 
+	fs  		<- if (F.zoom ?flags) then do											
+								if verbose then putStrLn "Zooming..." else return ()
+								zoom tempdir forms noClash (F.plimit ?flags)
+							else return forms --the formulas in which to search for candidates																	
+--	putStrLn $ show (symbols fs)
+--	putStrLn $ show (S.filter isFunSymbol (symbols fs))
+	let
+		sig 			= getSignature fs (F.function ?flags)
+		axioms 		= form2axioms forms noClash
+		settings 	= MSet axiomfile tempdir fs sig noClash verbose 
+									funflag relflag pflag termdepth eflag proverflag
+--	putStrLn $ show (fsymbs sig)
 	h <- openFile axiomfile WriteMode			
 	hSetBuffering h NoBuffering
 	hPutStr h axioms	
 	hClose h
-	result <- classifyWithMethods methods 
-		(axiomfile,tempdir, fs, noClash, verbose, sig, funflag, relflag,pflag ,termdepth, eflag)	
+	result <- runWithSettings settings $ classifyWithMethods methods 
 	finish starttime result tempdir (F.thisFile ?flags) (F.outfile ?flags)
 
-{-	 
-classifyWithLeo axiomfile  = do
-	let
-		conj = "thf(c4,conjecture, ?[G:$i>$i] : ( (![X:$i] : (![Y:$i] : (~((G @ X) = (G @ Y)) | (X = Y)))) & (?[Y:$i] : ![X:$i] : ~((G@X) = Y))))."
-	h' <- try $ openFile axiomfile AppendMode			
-	case h' of 
-		Left e -> do 
-			return None
-		Right h -> do
-			hSetBuffering h NoBuffering
-			hPutStr h conj	
-			hClose h		
-			b <- leoprove conj axiomfile
-			if b then return Some
-				else return None 
--}	
-		
 
-classifyWithMethods [] _ = return None
-classifyWithMethods (m:ms) args  = do
-	result <- classifyWithMethod m args
+classifyWithMethods :: [Method] -> Settings Result
+classifyWithMethods [] = return None
+classifyWithMethods (m:ms)  = do
+	liftIO $ putStrLn $ show m
+	result <- classifyWithMethod m
 	case result of 
-		None -> classifyWithMethods ms args
+		None -> classifyWithMethods ms 
 		_		 -> return result
 
 
---classifyWithMethod Leo (axiomfile,_,_,_,_,_,_,_,_,_,_) = classifyWithLeo axiomfile
-{-
-newtype Signature a = Sig { unSig :: ReaderT MethodSignature IO a }
-   deriving (Monad, MonadReader MethodSignature)
+classifyWithMethod :: Method -> Settings Result
 
-data MethodSignature = MSig 
-   { axiomfile :: FilePath
-   , tempdir   :: FilePath
-   , forms     :: [Form]
-   , noClash   :: String
-   , verbose   :: Bool
-   , 
-   , funSig    :: [(String, (Bool,[Type],Type))] }
--}
-
-
-classifyWithMethod m (axiomfile,tempdir, fs, noClash, verbose, sig, funflag, relflag, pflag, depthflag, eflag)  = 
+classifyWithMethod m  = do
+	settings <- ask
+	let 
+			funflag' 	= funflag settings
+			d					= depthflag settings
+			fs				= forms settings
+			sig'			= sig settings
 	if m == Serial || m == Relation || m == Trans then do
-				let		
-					funs	=	filter (leqfive . funArity) $ sortTerms $ nub $ getFunsFromSymbols (fsymbs sig) funflag 1
+			let		
+					funsymbs	= fsymbs $ sig settings
+					funs			=	filter (leqfive . funArity) $ 
+													sortTerms $ nub $ getFunsFromSymbols funsymbs funflag' 1
 					rels	= concatMap makeRelations funs
-				continueRelations m tempdir sig rels axiomfile noClash (F.relation ?flags) pflag verbose eflag
-		else if m == InjNotSurj || m == SurjNotInj then 		
-					let
-						funs	=	collectTestTerms sig funflag fs depthflag
-						(method,rflag)		=		if m == InjNotSurj then (conjInjNotOnto,F.relation ?flags) 
-																		else (conjNotInjOnto,Nothing) in do
-					
-						continueInjOnto tempdir axiomfile sig noClash funs method rflag pflag verbose eflag
-		 
-			else if m == Auto then
-				continueAuto tempdir noClash fs sig (F.relation ?flags) pflag verbose
-			 else if m == Leo then do		
-				classifyWithLeo axiomfile
+			
+			continueRelations m rels
+		else if m == InjNotSurj || m == SurjNotInj then do	
+				let
+					funs	=	collectTestTerms sig' funflag' fs d
 				
-                	
-						else undefined -- add new methods here!!
-	
+				let
+					(method,rflag')	=	if m == InjNotSurj then 
+
+																(conjInjNotOnto, relflag settings) 
+															else (conjNotInjOnto,Nothing) in 
+																continueInjOnto method funs rflag'
+			else case m of
+				Auto 			-> continueAuto
+			 	Leo				-> liftIO $ classifyWithLeo $ axiomfile settings
+				_    			-> undefined -- add new methods here!!
 
 -----------------------------------------------------------------------------------------
 
@@ -168,7 +122,7 @@ finish time1 result dir file out = do
    maybeAppendFile out ( file ++ " : " ++ show result ++ " : " ++ show time ++ "\n" )
    case result of
     None				->	return $ NoAnswerClause GaveUp
-    _					->	return FinitelyUnsatisfiable	
+    _						->	return FinitelyUnsatisfiable	
    where
       maybeAppendFile Nothing _     =  return ()
       maybeAppendFile (Just f) x    =  appendFile f x

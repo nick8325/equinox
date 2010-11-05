@@ -5,7 +5,13 @@ import IO
 import System.Directory
 import Infinox.Timeout
 import Infinox.Conjecture
+import Infinox.Settings
 import Data.List (isInfixOf)
+import Form
+import Flags(Method,Prover(..))
+
+import Control.Monad.Reader
+
 -------------------------------------------------------------------------------
 
 maybePrint :: (Show a) => Bool -> String -> Maybe a -> IO ()
@@ -29,22 +35,28 @@ mapUntilSuccess f (x:xs)  = do
 
 leqfive	x =   x <= 5
 
-proveProperty dir axioms noClash timeout vb method (t,r,p)  = do
-	maybePrint vb "\nt: " t
-	maybePrint vb "r: " r
-	maybePrint vb "p: " p
+proveProperty method (t,r,p) = do
+--	liftIO $ putStrLn $ "proveProperty "  ++ show (t,r,p)
+	settings <- ask --dir axioms noClash timeout vb method (t,r,p)  = do
 	let 
-		conj =  form2conjecture noClash 0 (method t r p) 
-		provefile = dir ++ "proveProperty"
-	system ("cp " ++ axioms ++ " " ++ provefile)
-	
-	b <- prove conj provefile timeout
+		noClash'	=		noClash settings
+		conj 			=  	form2conjecture noClash' 0 (method t r p) 
+		provefile = 	tempdir settings ++ "proveProperty"
+		vb				=		verbose settings
+		axioms		=		axiomfile settings
+		to				=		elimit settings
+		pr		    =   prover settings    
+	liftIO $  do
+								maybePrint vb "\nt: " t
+								maybePrint vb "r: " r
+								maybePrint vb "p: " p
+								system ("cp " ++ axioms ++ " " ++ provefile)
+								b <- prove pr conj provefile to
+								--	removeFile provefile
+								if b then return [(t,r,p)] 
+									else return [] 
 
---	removeFile provefile
-	if b then return [(t,r,p)] 
-		else return [] 
-
-prove conj provefile timeout = do   
+prove prover conj provefile timeout = do   
    h' <- try $ openFile provefile AppendMode			
    case h' of 
       Left e -> do 
@@ -54,8 +66,8 @@ prove conj provefile timeout = do
          hSetBuffering h NoBuffering
          hPutStr h conj	
          hClose h		
-         equinox provefile 
-        -- eprove provefile timeout
+         if prover == E then eprove provefile timeout else equinox provefile timeout  
+        
 
 
 leoprove conj provefile = do
@@ -83,26 +95,40 @@ equinoxprove conjecture file = do
 			hSetBuffering h NoBuffering
 			hPutStr h conjecture	
 			hClose h		
-			equinox file
+			equinox file (10*10^6)
 
-equinox :: FilePath -> IO Bool
-equinox file = 
+equinox :: FilePath -> Int ->  IO Bool
+equinox file to = 
 	do
 
 		let resultfile = file ++ "_result"
-		system $ "equinox --time 3 " ++ file ++ " > " ++ resultfile
+--		putStrLn $ "trying equinox... " ++ resultfile
+		result <- (timeOut2 (to*10^6) "equinox" 
+							resultfile [file, "--time",show to])
+		case result of
+			Just _	->	do	
+					c <- readFile resultfile
+					let r = last (lines c)
+					
+		--			system $ "rm " ++ resultfile
+			        	
+					return $  "+++ RESULT: Theorem" `isInfixOf` r
+			Nothing	-> return False
+
+{-
+		system $ "equinox --time 300 " ++ file ++ " > " ++ resultfile
 		h <- openFile resultfile ReadMode
 		r <- hGetContents h
 		let 
 			ls = lines r
-			ans = any ((isInfixOf) "+++ RESULT: Theorem") ls
+			ans = any ((isInfixOf) "+++ RESULT: Unsatisfiable") ls
 		mapM putStrLn ls
 		if (ans == ans) then do
 			hClose h		
 			removeFile resultfile
 			return ans
 		 else error "this never happens"
-
+-}
 
 leo :: FilePath -> IO Bool
 leo file = 
@@ -146,26 +172,18 @@ eprove f n  = do
 
 --checks if the problem in the input file has a model 
 --that can be found by Paradox in plim seconds.
---(interrupts when paradox hasnt responded in plim+3 secs)
+--(interrupts when paradox hasnt responded in plim+2 secs)
 finiteModel :: FilePath -> Int -> IO Bool
 finiteModel f plim = do
-
    result <- (timeOut2 ((plim+2)*10^6) "paradox" 
 							(f ++ "presult") [f, "--time",show plim])
---timeout ((plim+3)*10^6) (timeOut2 ((plim+2)*10^6) "paradox" 
---							(f ++ "presult") [f, "--time",show plim])
    case result of
       Just _	->	do	
-        
          c <- readFile $ f  ++ "presult"  
          let r = last (lines c)
          system $ "rm " ++ f ++ "presult" 	 
          return $ r /= "+++ RESULT: Timeout"
-        	 
-      Nothing	-> do
-       
-         return False
-
+      Nothing	-> return False
 
 -------------------------------------------------------------------------------
 

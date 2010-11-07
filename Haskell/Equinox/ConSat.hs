@@ -311,6 +311,7 @@ addClause xs =
   simp (a :/=: b) = neg `fmap` simp (a :=: b)
   simp l          = return l
   
+  showClause :: [Lit] -> String
   showClause c =
       concat
     . intersperse " | "

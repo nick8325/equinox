@@ -1,3 +1,5 @@
+%% Can we infer that term is infinite or size 1?
+
 tff(foo, type, (var: $tType)).
 tff(foo, type, (term: $tType)).
 

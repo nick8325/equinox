@@ -22,8 +22,9 @@ form (name, kind, e) =
 expr (Const True) = text "$true"
 expr (Const False) = text "$false"
 expr (Literal t) = term t
-expr (t :=: u) = hsep [term t, text "=", nest 2 (term u)]
+expr (t :=: u) = hsep [term t, text "=", term u]
 expr (Binop op e1 e2) = sep [parenExpr e1, binop op <+> parenExpr e2]
+expr (Not (t :=: u)) = hsep [term t, text "!=", term u]
 expr (Not e) = text "~" <> parenExpr e
 expr (Quant q x e) = hang (hcat [quant q, brackets (text (name x)), text ":"]) 2 (parenExpr e)
 

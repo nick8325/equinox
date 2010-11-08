@@ -1,3 +1,11 @@
+%% Notice: the type 'set' has no function symbols; we ought to be able
+%% to do something with it!
+%%
+%% If we added some functions on sets, we
+%% maybe should be able to infer some constraints on the types: e.g.,
+%% nat is infinite (since we don't have any inequalities on nat, maybe
+%% we can get that nat needs only size one instead).
+
 tff(foo, type, (nat: $tType)).
 tff(foo, type, (elem: $tType)).
 tff(foo, type, (set: $tType)).

@@ -1,3 +1,3 @@
 all: paper.pdf
-paper.pdf: paper.tex
+paper.pdf: *.tex
 	pdflatex paper

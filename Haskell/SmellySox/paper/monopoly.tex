@@ -1,1 +1,38 @@
+\section{Monotonicity inference in practice with Monopoly}
+
+We have implemented the monotonicity calculus as part of our tool
+Monopoly.
+
+\subsection{NP completeness of Monotonicity}
+
+  A SAT-problem can be encoded as a monotonicity problem as follows:
+
+  Each literal l corresponds to a predicate $p_l$ with one argument.
+  The literal being true in the SAT-problem corresponds to the predicate
+  being extended by true, and likewise if the literal is false in the SAT-
+  problem, the corresponding predicate should be extended by false. 
+  
+  In each clause of the SAT-problem, at least one literal must be true.
+  For each clause $(l_1 \vee ...\vee l_n)$, we create a formula
+  $$ \neg p_{l_1}(X) \wedge ... \wedge \neg p_{l_n}(X) \Rightarrow X = c $$
+  This formula is monotone in our calculus exactly when the variable $X$ 
+  is guarded by at least one of the predicates $p_{l_1},...p_{l_n}$.
+  Thus, if we can show that there is a consistent extension of the predicates
+  which makes the formula monotone, then the original set of propositional 
+  clauses is satisfiable.
+
+\subsection{...}
+
+  In the implementation of Monopoly, we use a SAT-solver to find the context 
+  in which to extend the predicates. It works as follows:
+
+  For each predicate $p$ occuring in the sorted problem, we create two literals;
+  $p_T$ and $p_F$. If $p_T$ is true, then $p$  is extended by true. 
+  If $p_F$ is true, then $p$ is extended by false. Since a predicate can only
+  be extended in one way, we add to our SAT formula the clause $\neg p_F \vee \neg p_T$.
+  If both $p_T$ and $p_F$ are false, this means that $p$ is extended by copying.
+
+
+  
+
 

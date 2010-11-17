@@ -1,0 +1,38 @@
+\documentclass{llncs}
+
+\usepackage{amsmath}
+
+\title{Sort it out with monotonicity}
+\author{Ann Lilliestr\"om and Nick Smallbone}
+\institute{Chalmers University of Technology}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+None of the famous theorem provers for first-order logic deal with
+many-sorted problems. Ideally, we would like our provers to understand
+many-sorted logic, but in the meantime, we want to be able to
+\emph{translate} a sorted problem into an unsorted one so that the
+usual crowd of theorem provers and model finders can solve it.
+
+There are two obvious ways to do this. One is a) easy, b) efficient
+and c) often absolutely wrong, while the other is a) always correct
+and b) extremely wasteful. We present a technique called
+\emph{monotonicity inference} that allows us to use a mixture of the
+two techniques: the efficient one when sound and the wasteful one when
+necessary. To demonstrate this technique we wrote a new tool,
+Monopoly, the first of its kind as far as we know.
+\end{abstract}
+
+\input{introduction}
+\input{erasure}
+\input{monotonicity}
+\input{monopoly}
+\input{results}
+\input{future}
+\input{conclusions} 
+
+
+\end{document}

@@ -1,3 +1,3 @@
-all: monopoly.pdf
-monopoly.pdf: monopoly.tex
-	pdflatex monopoly
+all: paper.pdf
+paper.pdf: paper.tex
+	pdflatex paper

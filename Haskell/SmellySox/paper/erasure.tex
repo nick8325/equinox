@@ -1,0 +1,39 @@
+
+\subsection{Erasing all the sorts}
+
+One obvious approach is to simply erase all the sorts: that is,
+whenever we have a typed quantification $(\forall x:S)\ldots$ or
+$(\exists x:S)\ldots$, we just turn it into an untyped quantification
+$(\forall x)\ldots$ or $(\exists x)\ldots$.
+
+Unfortunately, this doesn't work. Consider the formula
+\begin{align*}
+& (\forall x y:A)(x = y) \\
+\land & (\exists x y:B)(x \neq y)
+\end{align*}
+This formula is satisfiable: for a model, let the domain of $A$ have
+size 1 and the domain of $B$ have size greater than 1. If we erase the
+types, though, we get $(\forall x y)(x = y) \land (\exists x y)(x \neq
+y)$, which is of the form $P \land \neg P$ and therefore
+unsatisfiable.
+
+\subsection{Introducing sorting predicates}
+
+... For each sort $S$, we introduce a predicate $p_S$, of arity one,
+so that $p_S(x)$ means ``$x$ has sort $S$''. A
+$\forall$-quantification $(\forall x:S)\ldots$ becomes $(\forall
+x)(p_S(x) \Rightarrow \ldots)$ and an $\exists$-quantification
+$(\exists x:S)\ldots$ becomes $(\exists x)(p_S(x) \land \ldots)$. For
+each function symbol we generate an axiom giving its type; for
+example, $f : (S \times T \Rightarrow U)$ induces an axiom
+\begin{displaymath}
+(\forall x y)(p_S(x) \land p_T(y) \Rightarrow p_U(f(x, y)))
+\end{displaymath}
+
+...
+
+This translation is sound, but inefficient: we give the theorem prover
+a lot of extra work to do in proving that things are of the right
+type. Whenever we instantiate an axiom of the form $(\forall
+x:S)P(x)$ to get $P(t)$ we get an extra proof obligation $p_S(t)$.
+

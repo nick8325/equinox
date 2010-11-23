@@ -8,10 +8,28 @@ Tffs.  Tffs  ::= [Tff];
 terminator Tff "." ;
 
 TffIncl. Tff ::= "include" "(" FPath ")" ;
-TffTyp. Tff  ::= "tff" "(" LIdent "," "type" "," "(" LIdent ":" Type ")" ")";
-Tff.    Tff  ::= "tff" "(" LIdent "," ClauseType "," Expr ")";
+TffTyp. Tff  ::= "tff" "(" AxIdent "," "type" "," "(" LIdent ":" Type ")" ")";
+TffTyp2. Tff  ::= "tff" "(" AxIdent "," "type" "," LIdent ":" Type ")";
+Tff.    Tff  ::= "tff" "(" AxIdent "," ClauseType "," Expr ")";
 
-token FPath '\'' ('/' | '_' | '^' | '.' | letter | digit)* '\'';
+AxLIdent. AxIdent ::= LIdent;
+AxUIdent. AxIdent ::= UIdent;
+AxInt. AxIdent ::= Integer;
+AxInclude. AxIdent ::= "include";
+AxTff. AxIdent ::= "tff";
+AxType. AxIdent ::= "type";
+AxDefinition. AxIdent ::= "definition";
+AxAxiom. AxIdent ::= "axiom";
+AxHypothesis. AxIdent ::= "hypothesis";
+AxConjecture. AxIdent ::= "conjecture";
+AxNegatedConjecture. AxIdent ::= "negated_conjecture";
+AxTrue. AxIdent ::= "$true";
+AxFalse. AxIdent ::= "$false";
+AxI. AxIdent ::= "$i";
+AxO. AxIdent ::= "$o";
+AxTtype. AxIdent ::= "$tType";
+
+token FPath '\'' ('/' | '_' | '^' | '.' | '=' | '+' | '-' | '^' | letter | digit)* '\'';
 
 CTDef.     ClauseType ::= "definition";
 CTAxiom.   ClauseType ::= "axiom";
@@ -25,12 +43,12 @@ EOr.      Expr   ::= Expr1 "|" Expr  ;
 EAnd.     Expr1  ::= Expr2 "&" Expr1 ;
 EImplies. Expr2  ::= Expr3 "=>" Expr2 ;
 EEquiv.   Expr2  ::= Expr3 "<=>" Expr2 ;
-EEq.      Expr2  ::= Term "=" Term ;
-ENeq.     Expr2  ::= Term "!=" Term ;
 
 ENeg.     Expr4  ::= "~" Expr4;
 EForAll.  Expr4  ::= "!" "[" [ETyp] "]" ":" Expr4 ;  
 EExists.  Expr4  ::= "?" "[" [ETyp] "]" ":" Expr4 ;
+EEq.      Expr5  ::= Term "=" Term ;
+ENeq.     Expr5  ::= Term "!=" Term ;
 ETrue.    Expr5  ::= "$true";
 EFalse.   Expr5  ::= "$false";
 ELit.     Expr5  ::= Atom;
@@ -38,6 +56,8 @@ ELit.     Expr5  ::= Atom;
 TConst.   Term ::= LIdent;
 TVar.     Term ::= UIdent;
 TFun.     Term ::= LIdent "(" [Term] ")";
+TInt.     Term ::= Integer;
+TNegInt.  Term ::= "-" Integer;
 
 APred.    Atom ::= LIdent "(" [Term] ")";
 AConst.   Atom ::= LIdent;

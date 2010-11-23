@@ -53,7 +53,7 @@ satplay.exe: Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HSAT) $(HFLAGS) -main-is SatPlay.Main.main --make SatPlay.Main -o satplay
 
 smellysox.exe: Sat.o SmellySox/*.hs SmellySox/Parser/Partff.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) --make SmellySox -o smellysox
+	$(GHC) $(HSAT) $(HFLAGS) --make SmellySox/Main -o smellysox
 
 SmellySox/Parser/Partff.hs: SmellySox/tff.cf
 	bnfc -p SmellySox.Parser SmellySox/tff.cf

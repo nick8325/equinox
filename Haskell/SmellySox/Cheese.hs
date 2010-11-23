@@ -65,6 +65,7 @@ data ExtensionVar = FalseExtended Atom | TrueExtended Atom deriving (Eq, Ord)
 data Method = FalseExtend | TrueExtend | Copy deriving Show
 
 isMonotone :: CNF -> Type -> IO (Maybe [(Atom, Method)])
+isMonotone cnf (Type "$int") = return (Just []) -- hack hack
 isMonotone cnf ty = do
   r <- solve (formula cnf ty)
   case r of

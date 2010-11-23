@@ -1,4 +1,4 @@
-module SmellySox.Fluff where
+module SmellySox.FluffPred where
 
 import SmellySox.Formula
 import SmellySox.CNF hiding (types, (:=:), constants)
@@ -37,7 +37,7 @@ annotate formula = do
                                                       x == ty ]))
       nonEmptyDomain ty = Quant Exists var (Literal (typingPred ty :@: [var :@: []]))
         where var = Var "SmellySox" ty
-      functionAxiom f = foldr forAll (Literal (typingPred (ty f) :@: [f :@: map (:@: []) vars])) vars
+      functionAxiom f = foldr (Quant ForAll) (Literal (typingPred (ty f) :@: [f :@: map (:@: []) vars])) vars
         where vars = [ Var ("SmellySox" ++ show i) ty | (i, ty) <- zip [1..] (args f) ]
   return formula{constants = map typingPred (Set.toList nonMonotone) ++ constants formula,
                  forms = [ (name, kind, transform e) | (name, kind, e) <- forms formula ] ++

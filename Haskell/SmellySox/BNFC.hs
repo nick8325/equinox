@@ -15,16 +15,35 @@ parseString name s =
 
 preprocess :: Tffs -> IO Tffs
 preprocess (Tffs xs) = fmap (Tffs . concat) (mapM preprocess1 xs)
-  where preprocess1 (TffIncl (FPath file)) = fmap unTffs (readFile file >>= preprocess . parseString file)
+  where preprocess1 (TffIncl (FPath file)) = fmap unTffs (readFile (strip file) >>= preprocess . parseString file)
         preprocess1 x = return [x]
         unTffs (Tffs xs) = xs
+        strip name = filter (/= '\'') name
 
 convert :: Tffs -> Formula
 convert (Tffs xs) = Formula { types = types, constants = constants, forms = forms }
-  where types = [ Type ty | TffTyp _ (LIdent ty) TypTyp <- xs ]
-        constants = [ convertType f ty | TffTyp _ (LIdent f) ty <- xs, ty /= TypTyp ]
-        forms = [ (name, convertKind kind, typecheck (retype (convertExpr expr)))
-                | Tff (LIdent name) kind expr <- xs ]
+  where types = [ Type ty | TffTyp _ (LIdent ty) TypTyp <- xs ] ++
+                [ Type ty | TffTyp2 _ (LIdent ty) TypTyp <- xs ]
+        constants = [ convertType f ty | TffTyp _ (LIdent f) ty <- xs, ty /= TypTyp ] ++
+                    [ convertType f ty | TffTyp2 _ (LIdent f) ty <- xs, ty /= TypTyp ]
+        forms = [ (axIdent name, convertKind kind, typecheck (retype (convertExpr expr)))
+                | Tff name kind expr <- xs ]
+        axIdent (AxLIdent (LIdent s)) = s
+        axIdent (AxUIdent (UIdent s)) = s
+        axIdent (AxInt n) = show n
+        axIdent AxInclude = "include"
+        axIdent AxTff = "tff"
+        axIdent AxType = "type"
+        axIdent AxDefinition = "definition"
+        axIdent AxAxiom = "axiom"
+        axIdent AxHypothesis = "hypothesis"
+        axIdent AxConjecture = "conjecture"
+        axIdent AxNegatedConjecture = "negated_conjecture"
+        axIdent AxTrue = "$true"
+        axIdent AxFalse = "$false"
+        axIdent AxI = "$i"
+        axIdent AxO = "$o"
+        axIdent AxTtype = "$tType"
         convertType _ TypTyp = error "convert: unexpected $tType"
         convertType b TypBool = Pred { name = b, args = [] }
         convertType x (TypConst ty) = Fun { name = x, args = [], ty = convertBaseType ty }
@@ -54,6 +73,11 @@ convert (Tffs xs) = Formula { types = types, constants = constants, forms = form
         convertTerm (TConst (LIdent x)) = mkFun x :@: []
         convertTerm (TVar (UIdent x)) = mkVar x :@: []
         convertTerm (TFun (LIdent f) xs) = mkFun f :@: map convertTerm xs
+        convertTerm (TInt x) = iterate suc zero !! fromInteger x
+          where suc t = mkFun "$succ" :@: [t]
+                zero = mkFun "$zero" :@: []
+        convertTerm (TNegInt x) =
+          mkFun "$uminus" :@: [convertTerm (TInt x)]
         convertAtom (APred (LIdent p) xs) = mkPred p :@: map convertTerm xs
         convertAtom (AConst (LIdent p)) = mkPred p :@: []
 

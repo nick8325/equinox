@@ -22,6 +22,7 @@ tff(foo, axiom, ![X:var, T: term, U: term]: (lambda(X, app(T, U)) = app(app(s, l
 tff(foo, axiom, ![T:term, U:term]: (app(app(k,T),U) = T)).
 tff(foo, axiom, ![T:term]: (app(i,T) = T)).
 tff(foo, axiom, ![T:term, U:term, V:term]: (app(app(app(s,T),U),V) = app(app(T,V),app(U,V)))).
+tff(foo, axiom, ![X:var,Y:var]: ((v(X) = v(Y)) => (X = Y))).
 
 tff(foo, definition, (halfy = app(app(s, app(k, v(x))), app(app(s, i), i)))).
 tff(foo, definition, (y = lambda(x, app(halfy, halfy)))).

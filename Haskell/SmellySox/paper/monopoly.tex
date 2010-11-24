@@ -3,9 +3,10 @@
 We have implemented the monotonicity calculus as part of our tool
 Monopoly.
 
-\subsection{NP completeness of Monotonicity}
+\subsection{NP completeness of finding a model extension}
 
-  A SAT-problem can be encoded as a monotonicity problem as follows:
+  A SAT-problem can be encoded as a problem of finding a model extension
+  as follows:
 
   Each literal l corresponds to a predicate $p_l$ with one argument.
   The literal being true in the SAT-problem corresponds to the predicate
@@ -31,6 +32,35 @@ Monopoly.
   If $p_F$ is true, then $p$ is extended by false. Since a predicate can only
   be extended in one way, we add to our SAT formula the clause $\neg p_F \vee \neg p_T$.
   If both $p_T$ and $p_F$ are false, this means that $p$ is extended by copying.
+
+  The SAT formula is the conjunction of SAT clauses and the constraint that no 
+  predicates of the given sort may be true extended and false extended at the same time.
+
+  The SAT clauses correspond to the clauses of the original formula.
+
+  \begin{algorithm}[t]
+\caption{Finding the Context}\label{alg:zoom} 
+\begin{algorithmic}[1]
+\Procedure{SATFormula}{$clauses$, $sort$} 
+    \State \textbf{return}  
+
+%   \State $n \gets size(theory) \;\mbox{div}\; 2$  
+%   \While {$n \geq 1$}
+%   \State partition $theory$ into partitions $p_i$ of size $n$ \Comment{one partition may have to be smaller than $n$}
+%   \For {each partition $p_i$}
+%      \If {\Call{TryFindFiniteModel}{$theory - p_i$} fails}               \Comment{try Paradox with given time-limit}
+%         \State \textbf{return} \Call{Zoom}{$theory - p_i$}  \Comment{recursively find a better subset}
+%      \EndIf 
+%   \EndFor
+%   \State $n \gets n \;\mbox{div}\; 2$                              \Comment{remove smaller parts in next iteration}
+%   \EndWhile
+%   \State \textbf{return} $theory$                   \Comment{every subtheory is finitely satisfiable}
+\EndProcedure
+
+\Procedure{SatClause}{$clause$, $sort$}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
 
 
   

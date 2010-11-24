@@ -1,16 +1,62 @@
 \section{Monotonicity calculus for first-order logic}
 
-* Simple calculus (extend only by copy)
+
+Definition:
+A formula f is monotonous in a type A, if
+
+  If f is satisfiable in a model where the domain of A has size n,
+  then it is also satisfiable for any domain size $>$ n.
+  (Unsatisfiable formulae are always monotonous).
+
+A formula is anti-monotonous in a type A if:
+
+  If f is unsatisfiable in a model where the domain of A has size n,
+  then it is also unsatisfiable for any domain size > n.
+
+Monotonicity inference is semi-decidable:
+
+To show that a problem is not monotone, we look for a domain size
+k for which the problem is satisfiable, and not satisfiable for size k+1.
+This can be done in finite time using a finite model finder.
+
+For any closed HOL formula t, let
+
+$$t' = t\ \vee \  \forall (X :: \alpha,Y :: \alpha)\ .\ x = y$$
+
+where $\alpha$ does not occur in $t'$. 
+If $t'$ is monotone in $\alpha$, then, since $t'$ is satisfiable for domain size 1, it must, by the definition of
+monotonicity, be satisfiable for any domain size.
+If $t'$ is not monotone in $\alpha$, then there is a domain size for which $t$ is not satisfiable.
+Thus, we can reduce the problem of whether a formula is satisfiable in all domain sizes to a problem of monotonicity.
+Since satisfiability in FOL is undecidable, monotonicity must be undecidable too.
+
+\subsection{Simple calculus (extend only by copy)}
 
 - example where doesn't work
 
-* Better calculus (extend by true/false/copy)
+\subsection{Better calculus (extend by true/false/copy)}
 
 
-* "Biggest" sort, finding injective functions, infinite sorts...
+\subsection{ "Biggest" sort, finding injective functions, infinite sorts...}
 
 
-Monotonicity inference is semi-decidable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

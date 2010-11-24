@@ -39,6 +39,11 @@ x:S)P(x)$ to get $P(t)$ we get an extra proof obligation $p_S(t)$.
 
 \subsection{Introducing sorting functions}
 
+Another approach is to for each sort S introduce a function $f_S$ of
+arity one, so that for all $X$, $f_S(X)$ is equal to a constant of sort $S$. 
+
+Any variable of type $S$ is then translated to $f_S(X)$.
+
 ...
 
 \subsection{Introducing stuff only when necessary}

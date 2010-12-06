@@ -1,21 +1,41 @@
 
 \section{Sort Erasure}
 
-One obvious approach is to simply erase all the sorts: that is,
-whenever we have a sorted quantification $(\forall x:S)\ldots$ or
-$(\exists x:S)\ldots$, we just turn it into an unsorted quantification
-$(\forall x)\ldots$ or $(\exists x)\ldots$.
+Note: The idea of this section is to show different ways of removing the
+sorts, discuss their advantages and disadvantages, and lastly
+how some of the disadvantages can be remedied by monotonicity inference.
 
-Unfortunately, this doesn't work. Consider the formula
-\begin{align*}
-& (\forall x y:A)(x = y) \\
-\land & (\exists x y:B)(x \neq y)
-\end{align*}
-This formula is satisfiable: for a model, let the domain of $A$ have
-size 1 and the domain of $B$ have size greater than 1. If we erase the
-sorts, though, we get $(\forall x y)(x = y) \land (\exists x y)(x \neq
-y)$, which is of the form $P \land \neg P$ and therefore
-unsatisfiable.
+
+Remove sorts in example from introduction. Show that doesn't work.
+
+%Show roughly how this works.
+
+%Say that it is not always necessary.
+
+%Explain the need for a calculus to show when it is necessary and when 
+%it isn't.
+
+%Introduce Monotonicity for FOL. Refer to Jasmin's paper.
+
+%Say that we have implemented this in a tool called Monopoly and 
+%that we will explain more about this in sections blah, blah and blah.
+
+
+%One obvious approach is to simply erase all the sorts: that is,
+%whenever we have a sorted quantification $(\forall x:S)\ldots$ or
+%$(\exists x:S)\ldots$, we just turn it into an unsorted quantification
+%$(\forall x)\ldots$ or $(\exists x)\ldots$.
+
+%Unfortunately, this doesn't work. Consider the formula
+%\begin{align*}
+%& (\forall x y:A)(x = y) \\
+%\land & (\exists x y:B)(x \neq y)
+%\end{align*}
+%This formula is satisfiable: for a model, let the domain of $A$ have
+%size 1 and the domain of $B$ have size greater than 1. If we erase the
+%sorts, though, we get $(\forall x y)(x = y) \land (\exists x y)(x \neq
+%y)$, which is of the form $P \land \neg P$ and therefore
+%unsatisfiable.
 
 \subsection{Introducing sorting predicates}
 
@@ -48,4 +68,14 @@ Any variable of type $S$ is then translated to $f_S(X)$.
 
 \subsection{Introducing stuff only when necessary}
 
+It is not always necessary to use a sorting predicate or function.
+Example..
+
 ...
+
+only necessary when the formula is not monotone. Example.
+Next section blah.
+
+
+
+

@@ -19,17 +19,17 @@ None of the famous theorem provers for first-order logic deal with
 many-sorted problems. Ideally, we would like our provers to understand
 many-sorted logic, but in the meantime, we want to be able to
 \emph{translate} a sorted problem into an unsorted one so that the
-existing theorem provers and model finders can solve it.
+existing theorem provers and model finders can solve it for us.
 %There are two natural ways to do this. One is a) easy, b) efficient
 
 %and c) unsound, while the other is a) always correct and b) often wasteful. 
-There are two natural ways to do this. One is easy and efficient
+There are two natural ways to do this translation. One is easy and efficient
 but unsound, while the other is always correct but often wasteful. 
 We present a technique called
 \emph{monotonicity inference} that allows us to use a mixture of the
 two techniques: the efficient one when sound and the wasteful one when
-necessary. To demonstrate this technique we wrote a new tool,
-Monopoly, the first of its kind as far as we know.
+necessary. We apply this technique in a new tool, Monopoly, which
+automatically translates from sorted to unsorted first-order logic.
 \end{abstract}
 
 \input{introduction}

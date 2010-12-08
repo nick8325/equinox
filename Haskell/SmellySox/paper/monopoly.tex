@@ -1,26 +1,63 @@
 \section{Monotonicity inference in practice with Monopoly}
 
+
 We have implemented the monotonicity calculus as part of our tool
 Monopoly.
 
+Monopoly goes through the input formula once for each sort, checking if
+the formula is monotone in that sort. If the answer is yes for some sort $\alpha$,
+it is safe to let a quantification over $\alpha$ scope over the entire domain,
+and the sort can thus be removed while preserving equisatisfiability. 
+
+If the answer is no, a sorting predicate or sorting function (depending on the
+flag provided by the user) must be introduced in order to make the sorted and the 
+unsorted formula equisatisfiable.
+
 \subsection{NP completeness of finding a model extension}
 
-  A SAT-problem can be encoded as a problem of finding a model extension
-  as follows:
+  To show that a formula is monotone in a sort $\alpha$, we must show that there is
+  a consistent way of extending the domain of $\alpha$. 
 
-  Each literal l corresponds to a predicate $p_l$ with one argument.
-  The literal being true in the SAT-problem corresponds to the predicate
-  being extended by true, and likewise if the literal is false in the SAT-
-  problem, the corresponding predicate should be extended by false. 
-  
-  In each clause of the SAT-problem, at least one literal must be true.
-  For each clause $(l_1 \vee ...\vee l_n)$, we create a formula
+  As explained in \ref{...}, if equality between two terms of type $\alpha$ occurs 
+  positively in a clause, this may restrict the size of the domain of $\alpha$. But if 
+  the equality is "guarded" by a predicate $p$ in the clause, then the clause is still monotone.
+
+  For a predicate $p$ to be a guard, it must be extended by $false$ if it occurs negatively,
+  and with $true$ if it occurs positively.To find if there is a consistent extension of $p$, 
+  we must consider the entire formula, since different clauses may require conflicting 
+  extensions for $p$, as in the following example:
+
+  \begin{example}
+\label{ex:extension_conflict}
+
+%Consider the following theory $T1$.
+\begin{eqnarray}
+ & \p(X) \\
+ & \neg \p(X) \lor X = \aconst 
+\end{eqnarray}
+%This theory is finitely unsatisfiable.
+\end{example}
+ 
+  The problem of finding such a model extension is NP complete, as a SAT-problem can be 
+  encoded as a problem of finding a model extension as follows:
+
+  Let each literal $l$ in the SAT-formula correspond to a predicate $p_l$ with one argument.
+  The literal being $true$ in the SAT-problem corresponds to the predicate
+  being extended by $true$, and likewise, if the literal is $false$ in the SAT-
+  problem, the corresponding predicate should be extended by $false$. If the value of $l$ does
+  not affect the satisfiability of the SAT-formula, the extension of the predicate does not
+  matter either, so it can simply by extended by copying.
+
+  In the SAT-problem, at least one literal in each clause must be $true$.
+  We model this in the model extension problem, by for creating for each clause $(l_1 \vee ...\vee l_n)$ a formula
   $$ \neg p_{l_1}(X) \wedge ... \wedge \neg p_{l_n}(X) \Rightarrow X = c $$
   This formula is monotone in our calculus exactly when the variable $X$ 
   is guarded by at least one of the predicates $p_{l_1},...p_{l_n}$.
   Thus, if we can show that there is a consistent extension of the predicates
   which makes the formula monotone, then the original set of propositional 
   clauses is satisfiable.
+
+  %TODO: Define "guardedness" - 
 
 \subsection{...}
 

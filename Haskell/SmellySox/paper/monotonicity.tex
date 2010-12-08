@@ -1,17 +1,46 @@
 \section{Monotonicity calculus for first-order logic}
 
+\label{sec_monotonicity}
 
-Definition:
-A formula f is monotone in a type A, if
+In this section we treat monotonicity more formally and give a
+calculus for inferring monotonicity of a formula. FIXME this is
+rubbish
 
-  If f is satisfiable in a model where the domain of A has size n,
-  then it is also satisfiable for any domain size $>$ n.
-  (Unsatisfiable formulae are always monotone).
+We start by defining monotonicity for unsorted formulae. There is no
+real complication in the many-sorted case but the notation is more
+intimidating.
 
-A formula is anti-monotone in a type A if:
+\begin{definition}
+An unsorted formula $\formula$ is \emph{monotone} if,
+whenever we have a model of $\formula$ over a domain of $n$ elements,
+there is a model of $\formula$ over a domain of $n+1$ elements.
+\end{definition}
 
-  If f is unsatisfiable in a model where the domain of A has size n,
-  then it is also unsatisfiable for any domain size $>$ n.
+In the many-sorted case we have one domain for each sort, which
+complicates matters a little. We write $\M(\alpha)$ for the domain of
+sort $\alpha$ in model $\M$.
+
+\begin{definition}
+A formula $\varphi$ is \emph{monotone} in a sort $\alpha$ if,
+whenever we have a model $\M$ of $\varphi$ where $\M(\alpha)$ has $n$
+elements, then there is a model $\M' \models \varphi$ where
+$\M'(\alpha)$ has $n+1$ elements and for every sort $\beta \neq
+\alpha$ we have $\M'(\beta) = \M(\beta)$.
+\end{definition}
+
+We note some special cases: if a formula is valid, unsatisfiable or
+has only infinite models
+
+% A formula f is monotone in a type A, if
+
+%   If f is satisfiable in a model where the domain of A has size n,
+%   then it is also satisfiable for any domain size $>$ n.
+%   (Unsatisfiable formulae are always monotone).
+
+% A formula is anti-monotone in a type A if:
+
+  % If f is unsatisfiable in a model where the domain of A has size n,
+  % then it is also unsatisfiable for any domain size $>$ n.
 
 Monotonicity inference is semi-decidable:
 
@@ -29,28 +58,6 @@ This can be done in finite time using a finite model finder.
 
 \subsection{Better calculus (extend by true/false/copy)}
 
-
 \subsection{ "Biggest" sort, finding injective functions, infinite sorts...}
 
 -Perhaps move to Future work.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

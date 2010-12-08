@@ -6,30 +6,48 @@ In this section we treat monotonicity more formally and give a
 calculus for inferring monotonicity of a formula. FIXME this is
 rubbish
 
-We start by defining monotonicity for unsorted formulae. There is no
-real complication in the many-sorted case but the notation is more
-intimidating.
-
+To begin with, we only consider monotonicity for unsorted formulae.
+There is no real complication in the many-sorted case but the notation
+is more cumbersome. Monotonicity is a semantic property rather than a
+syntactic property of the formula.
 \begin{definition}
-An unsorted formula $\formula$ is \emph{monotone} if,
-whenever we have a model of $\formula$ over a domain of $n$ elements,
-there is a model of $\formula$ over a domain of $n+1$ elements.
+An unsorted formula $\formula$ is \emph{monotone} if, for all $d$,
+whenever $\formula$ is satisfiable over a domain of $d$ elements,
+then $\formula$ is also satisfiable over a domain of $d+1$ elements.
 \end{definition}
 
-In the many-sorted case we have one domain for each sort, which
-complicates matters a little. We write $\M(\alpha)$ for the domain of
-sort $\alpha$ in model $\M$.
+This definition only considers the formula's behaviour on
+\emph{finite} domains---if $d$ is infinite, then $d+1 = d$ and the
+condition is trivially satisfied. A trivial consequence is that if a
+monotone formula is satisfiable for a domain of size $d$ then it is
+satisfiable for all bigger domains.
 
-\begin{definition}
-A formula $\varphi$ is \emph{monotone} in a sort $\alpha$ if,
-whenever we have a model $\M$ of $\varphi$ where $\M(\alpha)$ has $n$
-elements, then there is a model $\M' \models \varphi$ where
-$\M'(\alpha)$ has $n+1$ elements and for every sort $\beta \neq
-\alpha$ we have $\M'(\beta) = \M(\beta)$.
-\end{definition}
+FIXME write about satisfiability at a domain instead.
 
-We note some special cases: if a formula is valid, unsatisfiable or
-has only infinite models
+Several common classes of formulae are monotone:
+\begin{itemize}
+\item Any unsatisfiable formula is monotone because it has no models.
+\item Any valid formula is monotone because it has a model no matter
+  what the domain size.
+\item A formula that only has infinite models is monotone because for
+  all finite values of $d$ it has no models.
+\item A formula that does not use $=$ is monotone, as we will see
+  later.
+\end{itemize}
+
+The first two points suggest that monotonicity is related to
+satisfiability and so should not be decidable. It is at least
+semi-decidable: if a formula $\formula$ is not monotone then there
+must be a domain size $d$ for which $\formula$ is satisfiable for
+domains of size $d$ but not for domains of size $d+1$, and we can find
+this $d$ using any model-finder. However, there is no algorithm that
+can always tell us when a formula \emph{is} monotone; we leave the
+proof to the appendix, but it is intuitively because monotonicity is
+not easier than finite unsatisfiability.
+
+What about a non-monotone formula? The simplest example is $(\forall
+x, y)(x = y)$, which is satisfied if the domain contains a single
+element but not if it contains two.
 
 % A formula f is monotone in a type A, if
 
@@ -51,6 +69,18 @@ k for which the problem is satisfiable, and not satisfiable for size k+1.
 This can be done in finite time using a finite model finder.
 
 
+
+In the many-sorted case we have one domain for each sort, which
+complicates matters a little. We write $\M(\alpha)$ for the domain of
+sort $\alpha$ in model $\M$.
+
+\begin{definition}
+A formula $\varphi$ is \emph{monotone} in a sort $\alpha$ if,
+whenever we have a model $\M$ of $\varphi$ where $\M(\alpha)$ has $n$
+elements, then there is a model $\M' \models \varphi$ where
+$\M'(\alpha)$ has $n+1$ elements and for every sort $\beta \neq
+\alpha$ we have $\M'(\beta) = \M(\beta)$.
+\end{definition}
 
 \subsection{Simple calculus (extend only by copy)}
 

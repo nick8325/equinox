@@ -37,6 +37,16 @@ Remove sorts in example from introduction. Show that doesn't work.
 %y)$, which is of the form $P \land \neg P$ and therefore
 %unsatisfiable.
 
+What went wrong? The problem is that the formula is satisfiable but only
+when the domains of $A$ and $B$ have different sizes. When we erase
+the types we flatten the two domains into one blah blah blah.
+
+Blah blah the property we have: $erase(\formula)$ is satisfiable iff there is
+a model of $\formula$ where all the domains have the same size.
+Therefore, for erasure to be correct, we need to have this property:
+$\formula$ is satisfiable iff it has a model where all the domains
+have the same size.
+
 \subsection{Introducing sorting predicates}
 
 ... For each sort $S$, we introduce a predicate $p_S$, of arity one,
@@ -76,6 +86,7 @@ Example..
 only necessary when the formula is not monotone. Example.
 Next section blah.
 
+When is it necessary to introduce sorting predicates?
 
-
-
+Introducing predicates: satisfiability-preserving but makes the
+formula monotone.

@@ -1,5 +1,7 @@
 \section{Monotonicity calculus for first-order logic}
 
+
+
 \label{sec_monotonicity}
 
 In this section we treat monotonicity more formally and give a
@@ -84,7 +86,16 @@ $\M'(\alpha)$ has $n+1$ elements and for every sort $\beta \neq
 
 \subsection{Simple calculus (extend only by copy)}
 
-- example where doesn't work
+One key observation is that any formula that doesn't use equality is
+monotone. To see why, suppose we have a model $\M$ of $\varphi$ and we
+want to add an element to $\M(\alpha)$ while preserving satisfaction.
+We can do this by taking an existing domain element $x \in \M(\alpha)$
+and making the new element $x'$ a ``copy'' of it, so that for all
+unary predicates $P$, $P(x) \iff P(x')$ and for all unary functions
+$f$, $f(x) = f(x')$, and similarly for predicates and functions of
+higher arities.
+
+Also, any positive use of equality must be antitone.
 
 \subsection{Better calculus (extend by true/false/copy)}
 

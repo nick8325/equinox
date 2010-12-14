@@ -12,29 +12,51 @@ Translate sorted to unsorted! Now we can use any FOL prover.
 
 Sorted logic example:
 
-\paragraph{Werewolves and villagers} As a running example, we model a
-small part of the game of Werewolf. A village is infested with
-werewolves, who are intent on killing the entire village. 
-During the day, the werewolves pretend to be normal villagers but each
-night, they rise up and murder one villager. Each day, the villagers
-nominate one person that believe to be a werewolf and lynch them. If
-all the werewolves are killed, the village wins; if all the normal
-villagers are killed, the werewolves win.
+\begin{example}[werewolves and villagers] As a running example, we
+model a village that has been infested with werewolves.\footnote{Our
+example is an oversimplification of the party game Werewolf.} The
+werewolves only attack at night, and during the day they are ordinary
+villagers, so no-one knows who they are. In desperation, the villagers
+pick some unfortunate people to be burnt at the stake. The village is
+saved if this action kills all the werewolves.
 
-\begin{example}
+We can model this situation with the aid of two sorts $\villager$ and
+$\werewolf$. We have a predicate $\slain$ that characterises which
+villagers were burnt alive and a function $\alterEgo$ that says who
+each werewolf is during the day:
 \label{ex:werewolf1}
-\begin{eqnarray*}
-\slain & \in & \villager \to o \\ 
-\alterEgo & \in & \werewolf \to \villager \\
-\victim & \in & \villager 
-\end{eqnarray*}
+\begin{align*}
+\slain & \in \villager \to o \\ 
+\alterEgo & \in \werewolf \to \villager
+\intertext{To make the problem more interesting for Monopoly, we
+only allow the villagers to kill at most one person, a \emph{victim}
+of their choosing:}
+\victim & \in \villager 
+\end{align*}
+We state that the $\alterEgo$ function must be injective and no-one other
+than the victim may be killed:
 \begin{align*}
 \forall X,Y \in \werewolf \ & ( \alterEgo (X) = \alterEgo (Y) \Longrightarrow  X = Y) \\
- \forall X \in \villager\ & (\slain(X) \Longrightarrow X = \victim) \\
- & \slain(\victim) \\
- \forall X \in \werewolf \  & (\alterEgo(X) = \victim)
+\forall X \in \villager\ & (\slain(X) \Longrightarrow X = \victim) \\
+\intertext{Finally, we assert that the villagers have won---all
+  werewolves were slain:}
+ % & \slain(\victim) \\
+ \forall X \in \werewolf \ & (\alterEgo(X) = \victim)
 \end{align*} 
 \end{example}
+
+blah blah blah
+
+Monopoly produces from our example the untyped formula:
+\begin{align*}
+\forall X, Y \ & ( \werewolfp(X) \land \werewolfp(Y) \land \alterEgo(X) = \alterEgo(Y) \Longrightarrow X = Y) \\
+\forall X & (\slain(X) \Longrightarrow X = \victim) \\
+\forall X \ & (\werewolfp(X) \Longrightarrow \alterEgo(X) = \victim) \\
+& \werewolfp(c)
+\end{align*}
+It has automatically introduced a predicate $\werewolfp$, which is
+necessary for correctness, but it sees that no such predicate is
+necessary for villagers. We shall see later why.
 
 We want to use a model finder on this example to see if it is possible
 for the villagers to win the game. But there are no model-finders for

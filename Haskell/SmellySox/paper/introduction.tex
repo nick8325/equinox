@@ -14,11 +14,12 @@ Sorted logic example:
 
 \begin{example}[werewolves and villagers] As a running example, we
 model a village that has been infested with werewolves.\footnote{Our
-example is an oversimplification of the party game Werewolf.} The
-werewolves only attack at night, and during the day they are ordinary
-villagers, so no-one knows who they are. In desperation, the villagers
-pick some unfortunate people to be burnt at the stake. The village is
-saved if this action kills all the werewolves.
+example is an oversimplification of the party game Werewolf, also
+known as Mafia.} The werewolves only attack at night, and during the
+day they are ordinary villagers, so no-one knows who they are. In
+desperation, the villagers pick some unfortunate people to be burnt at
+the stake. The village is saved if this action kills all the
+werewolves.
 
 We can model this situation with the aid of two sorts $\villager$ and
 $\werewolf$. We have a predicate $\slain$ that characterises which
@@ -45,22 +46,19 @@ than the victim may be killed:
 \end{align*} 
 \end{example}
 
-blah blah blah
-
-Monopoly produces from our example the untyped formula:
+We want to use a model finder on this example to see if it is possible
+for the villagers to win the game. But model finders such as Paradox
+only operate on unsorted first-order logic! Luckily, we can use
+Monopoly to safely remove all the sorts from our formula and we get:
 \begin{align*}
 \forall X, Y \ & ( \werewolfp(X) \land \werewolfp(Y) \land \alterEgo(X) = \alterEgo(Y) \Longrightarrow X = Y) \\
 \forall X & (\slain(X) \Longrightarrow X = \victim) \\
 \forall X \ & (\werewolfp(X) \Longrightarrow \alterEgo(X) = \victim) \\
-& \werewolfp(c)
+& \werewolfp(\skolemconstant)
 \end{align*}
-It has automatically introduced a predicate $\werewolfp$, which is
-necessary for correctness, but it sees that no such predicate is
-necessary for villagers. We shall see later why.
-
-We want to use a model finder on this example to see if it is possible
-for the villagers to win the game. But there are no model-finders for
-sorted first-order logic!
+For soundness Monopoly has introduced a predicate $\werewolfp$ that
+characterises the werewolves but has detected that no such predicate
+is necessary for villagers. We will see later why this is the case.
 
 What we can do though is to translate sorted logic to unsorted logic. 
 (this is possible since sorted logic and unsorted logic are equally expressive) 

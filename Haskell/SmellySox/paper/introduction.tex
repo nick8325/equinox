@@ -1,16 +1,15 @@
 \section{Introduction}
 
-Many problems are naturally expressed in sorted logic.
-
-For example, in geometry, the universe can be divided into 
-objects that are points, planes, lines etc...
-
-sorted FOL has the same properties as  FOL.
-
-Theorem provers - none exist for sorted logic...
-Translate sorted to unsorted! Now we can use any FOL prover.
-
-Sorted logic example:
+Many problems are naturally expressed in sorted first-order logic.
+For example, to model problems in geometry, we may wish to divide 
+the universe into objects that are points, planes or lines.
+Sorted first-order logic is convenient and intuitive to the human user,
+and its expressive power is equivalent to that of unsorted first-order logic.
+Unfortunately, none of the major existing theorem-provers and model finders
+of today deal with sorts. We present in this paper a new tool, Monopoly,
+which translates problems in sorted first-order logic to logically 
+equivalent unsorted problems. The translated problem can then be passed on to
+a theorem prover or model finder of our choice, which can then solve it for us.
 
 \begin{example}[werewolves and villagers] As a running example, we
 model a village that has been infested with werewolves.\footnote{Our

@@ -55,9 +55,23 @@ Monopoly to safely remove all the sorts from our formula and we get:
 \forall X \ & (\werewolfp(X) \Longrightarrow \alterEgo(X) = \victim) \\
 & \werewolfp(\skolemconstant)
 \end{align*}
-For soundness Monopoly has introduced a predicate $\werewolfp$ that
-characterises the werewolves but has detected that no such predicate
-is necessary for villagers. We will see later why this is the case.
+
+Monopoly has introduced a predicate $\werewolfp$ to ensure soundness,
+but has detected that no such predicate is needed for the villagers.
+
+It is in general unsound to simply remove the sorts from a problem;
+often, we need to introduce a predicate that characterises each of the
+sorts. However, this introduces extra overhead 
+
+blah blah blah
+
+The reason why we need a predicate for werewolves but not for
+villagers has to do with \emph{monotonicity}. If we choose an
+domain of size $n$ to interpret our formula in, we are free to have
+fewer than $n$ werewolves, since only those domain elements $x$
+for which $\werewolfp(x)$ is true are werewolves. However, we have no
+choice but to have $n$ villagers, because each domain element is
+unconditionally a villager. 
 
 What we can do though is to translate sorted logic to unsorted logic. 
 (this is possible since sorted logic and unsorted logic are equally expressive) 

@@ -1,20 +1,57 @@
 \section{Introduction}
 
-Sorted logic. example.
+Many problems are naturally expressed in sorted logic.
+
+For example, in geometry, the universe can be divided into 
+objects that are points, planes, lines etc...
+
+sorted FOL has the same properties as  FOL.
 
 Theorem provers - none exist for sorted logic...
-
 Translate sorted to unsorted! Now we can use any FOL prover.
 
-Some cool example (puzzle? monopoly?)
+Sorted logic example:
+
+Explain basics of werewolf game (also known as "mafia").
+
+
+
+\begin{example}
+\label{ex:werewolf1}
+\begin{eqnarray*}
+\slain & \in & \villager \to o \\ 
+\alterEgo & \in & \werewolf \to \villager \\
+\victim & \in & \villager 
+\end{eqnarray*}
+\begin{align*}
+\forall X,Y \in \werewolf \ & ( \alterEgo (X) = \alterEgo (Y) \Longrightarrow  X = Y) \\
+ \forall X \in \villager\ & (\slain(X) \Longrightarrow X = \victim) \\
+ & \slain(\victim) \\
+ \forall X \in \werewolf \  & (\alterEgo(X) = \victim)
+\end{align*} 
+\end{example}
+
+We want to use a model finder on this example to see if it is possible
+for the villagers to win the game. But there are no model-finders for
+sorted first-order logic!
+
+What we can do though is to translate sorted logic to unsorted logic. 
+(this is possible since sorted logic and unsorted logic are equally expressive) 
+We can then use an existing model finder (or theorem prover) for unsorted logic.
 
 How to translate?
 
-- were going to show you lots of cool stuff in the next sections.
+To simply remove the sorts is unsound, as we shall see in section ...
+Introduce sorting predicates - inefficient.
 
-(Mention monotonicity very briefly).
+Use monotonicity to infer when it is necessary to introduce sorting predicates
+and when it is safe to remove the sorts. (Mention Jasmins paper)
+
+- were going to show you lots of cool stuff in the next sections. blahblah.
 
 
+
+%TODO cite Enderton 1972 - translation sorted - unsorted by predicates.
 
 
 

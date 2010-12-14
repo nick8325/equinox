@@ -6,7 +6,11 @@ sorts, discuss their advantages and disadvantages, and lastly
 how some of the disadvantages can be remedied by monotonicity inference.
 
 
-Remove sorts in example from introduction. Show that doesn't work.
+Remove sorts in example from introduction. 
+(Typed problem is satisfiable but the untyped isn't.
+Show that doesn't work.
+
+
 
 %Show roughly how this works.
 
@@ -78,8 +82,24 @@ Any variable of type $S$ is then translated to $f_S(X)$.
 
 \subsection{Introducing stuff only when necessary}
 
-It is not always necessary to use a sorting predicate or function.
-Example..
+It is not always necessary to introduce a sorting predicate or function.
+
+size of domain can be increased while preserving satisfiability blahblah
+
+...not if the domain of the sort is bounded blahblah, equality occurs positively
+
+positive occurences of equality may still be fine, if it is guarded by some predicate.
+
+
+\begin{example}
+\label{ex:extension_conflict}
+\begin{eqnarray}
+ & \p(X) \\
+ & \neg \p(X) \lor X = \aconst 
+\end{eqnarray}
+\end{example}
+
+
 
 ...
 

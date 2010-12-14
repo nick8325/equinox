@@ -7,13 +7,13 @@ Monopoly.
 Monopoly goes through the input formula once for each sort, checking if
 the formula is monotone in that sort. If the answer is yes for some sort $\alpha$,
 it is safe to let a quantification over $\alpha$ scope over the entire domain,
-and the sort can thus be removed while preserving equisatisfiability. 
+and the sort can thus be removed while preserving satisfiability. 
 
 If the answer is no, a sorting predicate or sorting function (depending on the
 flag provided by the user) must be introduced in order to make the sorted and the 
 unsorted formula equisatisfiable.
-
-\subsection{NP completeness of finding a model extension}
+ 
+\subsection{NP completeness of finding a context}
 
   To show that a formula is monotone in a sort $\alpha$, we must show that there is
   a consistent way of extending the domain of $\alpha$. 
@@ -25,20 +25,9 @@ unsorted formula equisatisfiable.
   For a predicate $p$ to be a guard, it must be extended by $false$ if it occurs negatively,
   and with $true$ if it occurs positively.To find if there is a consistent extension of $p$, 
   we must consider the entire formula, since different clauses may require conflicting 
-  extensions for $p$, as in the following example:
+  extensions for $p$, as in example \ref{ex:extension_conflict}.
 
-  \begin{example}
-\label{ex:extension_conflict}
-
-%Consider the following theory $T1$.
-\begin{eqnarray}
- & \p(X) \\
- & \neg \p(X) \lor X = \aconst 
-\end{eqnarray}
-%This theory is finitely unsatisfiable.
-\end{example}
- 
-  The problem of finding such a model extension is NP complete, as a SAT-problem can be 
+  The problem of finding such a context in which to extend the model is NP complete, as a SAT-problem can be 
   encoded as a problem of finding a model extension as follows:
 
   Let each literal $l$ in the SAT-formula correspond to a predicate $p_l$ with one argument.
@@ -46,10 +35,11 @@ unsorted formula equisatisfiable.
   being extended by $true$, and likewise, if the literal is $false$ in the SAT-
   problem, the corresponding predicate should be extended by $false$. If the value of $l$ does
   not affect the satisfiability of the SAT-formula, the extension of the predicate does not
-  matter either, so it can simply by extended by copying.
+  matter either (it is never needed as a guard), so it can simply by extended by copying. 
+  %TODO define "extension by copying".
 
   In the SAT-problem, at least one literal in each clause must be $true$.
-  We model this in the model extension problem, by for creating for each clause $(l_1 \vee ...\vee l_n)$ a formula
+  We model this in the model extension problem, by creating for each clause $(l_1 \vee ...\vee l_n)$ a formula
   $$ \neg p_{l_1}(X) \wedge ... \wedge \neg p_{l_n}(X) \Rightarrow X = c $$
   This formula is monotone in our calculus exactly when the variable $X$ 
   is guarded by at least one of the predicates $p_{l_1},...p_{l_n}$.
@@ -59,21 +49,53 @@ unsorted formula equisatisfiable.
 
   %TODO: Define "guardedness" - 
 
-\subsection{...}
+\subsection{Implementing the calculus}
 
-  In the implementation of Monopoly, we use a SAT-solver to find the context 
+  Monopoly uses a SAT-solver in the implementation of the monotonicity calculus of section \ref{sec_monotonicity}.
+  
+  The problem of finding if a formula $\formula$ is monotone in a type $\alpha$ is encoded as a SAT-problem,
+  $\satformula$ which tries to assign a context in which to extend the predicates while keeping $\formula$ equisatisfiable
+  in an extended domain.
+
+  A solution to $\satformula$ directly corresponds to a context.
+
+
+If there is such a context, then $\formula$ is monotone in the considered sort, so the sort can be removed.
+
+  By \ref{..}, a formula is monotone in a type if all of its clauses are monotone in the type. 
+  $\satformula$ is the conjunction of the $\satlit$
+
+  A clause is monotone in a type $\alpha$ if all variables of type $\alpha$ occuring
+
+  In the implementation of Monopoly, we use a SAT-solver (MiniSAT \ref(...)) to find the context 
   in which to extend the predicates. It works as follows:
 
-  For each predicate $p$ occuring in the sorted problem, we create two literals;
-  $p_T$ and $p_F$. If $p_T$ is true, then $p$  is extended by true. 
-  If $p_F$ is true, then $p$ is extended by false. Since a predicate can only
-  be extended in one way, we add to our SAT formula the clause $\neg p_F \vee \neg p_T$.
-  If both $p_T$ and $p_F$ are false, this means that $p$ is extended by copying.
+  Given the input formula $\formula$, we create a SAT formula $\satformula$ where each predicate $p$ occuring
+  in the sorted problem corresponds to two literals; $p_T$ and $p_F$. 
 
+  $\satformula$ is constructed in the following way:
+  
+  for each literal $l_i$ in $\formula$, a SAT formula ${\satlit}_{i}$ is created in the following way:
+
+  
+
+%  $p_T$ being $true$ in $\satformula$ corresponds to the extension of $p$  being $true$.
+%  Similarly, if $p_F$ is $true$ in $\satformula$, then the extension for $p$ is $false$.
+
+
+  for each literal $l_i$ in $\formula$, a SAT formula ${\satlit}_{i}$ is created in the following way:
+
+  $\satformula$ is then the conjunction of the SAT formulas corresponding to its literals.
+  
+%  Since a predicate can only be extended in one way, we add to our SAT formula a clause stating
+%  that $p_T$ and $p_F$ cannot be $true$ at the same time:  $\neg p_F \vee \neg p_T$.
+%  If both $p_T$ and $p_F$ are $false$, this means that $p$ is extended by copying.
+
+  
   The SAT formula is the conjunction of SAT clauses and the constraint that no 
   predicates of the given sort may be true extended and false extended at the same time.
 
-  The SAT clauses correspond to the clauses of the original formula.
+ % The SAT clauses correspond to the clauses of the original formula.
 
   \begin{algorithm}[t]
 \caption{Finding the Context}\label{alg:zoom} 
@@ -98,6 +120,8 @@ unsorted formula equisatisfiable.
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
+
+
 
 
   

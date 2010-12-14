@@ -4,11 +4,24 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode} 
 \usepackage{amsfonts}
+\usepackage{amssymb}
+
+
 
 \newcommand{\p}{\mbox{\sf p}}
 \newcommand{\aconst}{\mbox{\sf a}}
 \newcommand{\false}{\mbox{\sf false}}
 \newcommand{\true}{\mbox{\sf true}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\formula}{\varphi}
+\newcommand{\satformula}{\varphi_{\textsc{sat}}}
+\newcommand{\satlit}{\phi_{i_{\textsc{sat}}}}
+
+\newcommand{\werewolf}{\textit{werewolf}}
+\newcommand{\villager}{\textit{villager}}
+\newcommand{\slain}{\mbox {\sf slain}}
+\newcommand{\alterEgo}{\mbox {\sf alterEgo}}
+\newcommand{\victim}{\mbox{\sf victim}}
 
 \title{Sort it out with Monotonicity}
 \author{Ann Lilliestr\"om and Nick Smallbone}
@@ -16,8 +29,7 @@
          \\ \email{\{annl,nicsma\}@chalmers.se}
           }
 
-\newcommand{\M}{\mathcal{M}}
-\newcommand{\formula}{\varphi}
+
 
 \begin{document}
 
@@ -48,6 +60,5 @@ automatically translates from sorted to unsorted first-order logic.
 \input{results}
 \input{future}
 \input{conclusions} 
-
 
 \end{document}

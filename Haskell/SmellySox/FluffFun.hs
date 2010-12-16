@@ -18,6 +18,7 @@ annotate formula = do
                            args = [ty],
                            ty = ty }
       transform e@Const{} = e
+      transform e@(Literal (p :@: [x])) = Literal (p :@: [transformTerm x])
       transform e@(Literal{}) = e
       transform (t :=: u) = transformTerm t :=: transformTerm u
       transform (Binop op e1 e2) = Binop op (transform e1) (transform e2)
@@ -27,7 +28,7 @@ annotate formula = do
                                        typingFun (ty v) :@: [v :@: []]
       transformTerm (f :@: xs) = f :@: xs
       constants' = map typingFun (Set.toList nonMonotone) ++ constants formula
-      typingAxiom f = foldr (Quant ForAll) axiom vars
+      typingAxiom f = error "fixme: need to add typing axioms for non-binary predicates (since p(x,y) doesn't guard x and y). or in general, for non-false/true-extended predicates, then only guard p(x) if p is funnily extended." foldr (Quant ForAll) axiom vars
         where vars = [ Var{name = "SmellySox" ++ show i, ty = ty} | (ty, i) <- zip (args f) [1..] ]
               axiom = 
                 foldr (Binop And) resultAxiom

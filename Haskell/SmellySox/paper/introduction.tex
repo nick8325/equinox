@@ -55,23 +55,31 @@ Monopoly to safely remove all the sorts from our formula and we get:
 \forall X \ & (\werewolfp(X) \Longrightarrow \alterEgo(X) = \victim) \\
 & \werewolfp(\skolemconstant)
 \end{align*}
+We can see that Monopoly has introduced a predicate $\werewolfp$ to
+model the $\werewolf$ sort, but hasn't introduced a corresponding
+predicate for villagers. Often we \emph{do} need to introduce extra
+predicates but blah blah blah
 
 Monopoly has introduced a predicate $\werewolfp$ to ensure soundness,
 but has detected that no such predicate is needed for the villagers.
 
 It is in general unsound to simply remove the sorts from a problem;
+in the worst case, Monopoly needs to introduce a predicate for each
+sort like it did with $\werewolfp$ above. 
+
 often, we need to introduce a predicate that characterises each of the
 sorts. However, this introduces extra overhead 
 
 blah blah blah
 
 The reason why we need a predicate for werewolves but not for
-villagers has to do with \emph{monotonicity}. If we choose an
-domain of size $n$ to interpret our formula in, we are free to have
-fewer than $n$ werewolves, since only those domain elements $x$
-for which $\werewolfp(x)$ is true are werewolves. However, we have no
-choice but to have $n$ villagers, because each domain element is
-unconditionally a villager. 
+villagers has to do with \emph{monotonicity}. If we think of an
+interpretation of our in a domain of size $n$, we are free to have
+fewer than $n$ werewolves in our interpretation, since only those
+domain elements $x$ for which $\werewolfp(x)$ is true are
+werewolves. However, we have no choice but to have $n$ villagers,
+because each domain element is unconditionally a villager. So by not
+including a $\villagerp$ predicate, we lose some control over
 
 What we can do though is to translate sorted logic to unsorted logic. 
 (this is possible since sorted logic and unsorted logic are equally expressive) 

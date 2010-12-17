@@ -18,8 +18,8 @@ annotate formula = do
                            args = [ty],
                            ty = ty }
       transform e@Const{} = e
-      transform e@(Literal (p :@: [x])) = Literal (p :@: [transformTerm x])
-      transform e@(Literal{}) = e
+      transform e@(Literal (p :@: ts)) | copyExtended p = e
+                                       | otherwise = Literal (p :@: map transformTerm ts)
       transform (t :=: u) = transformTerm t :=: transformTerm u
       transform (Binop op e1 e2) = Binop op (transform e1) (transform e2)
       transform (Not e) = Not (transform e)
@@ -28,20 +28,30 @@ annotate formula = do
                                        typingFun (ty v) :@: [v :@: []]
       transformTerm (f :@: xs) = f :@: xs
       constants' = map typingFun (Set.toList nonMonotone) ++ constants formula
-      typingAxiom f = error "fixme: need to add typing axioms for non-binary predicates (since p(x,y) doesn't guard x and y). or in general, for non-false/true-extended predicates, then only guard p(x) if p is funnily extended." foldr (Quant ForAll) axiom vars
+      copyExtended Pred{args = [_]} = False
+      copyExtended _ = True
+      typingAxiom f = foldr (Quant ForAll) axiom vars
         where vars = [ Var{name = "SmellySox" ++ show i, ty = ty} | (ty, i) <- zip (args f) [1..] ]
               axiom = 
                 foldr (Binop And) resultAxiom
-                      [f :@: map (:@: []) vars :=:
-                        f :@: (map (:@: []) prefix ++ 
-                               [typingFun (ty v) :@: [v :@: []]] ++
-                               map (:@: []) suffix)
+                      [(f :@: map (:@: []) vars) `eq`
+                        (f :@: (map (:@: []) prefix ++ 
+                                [typingFun (ty v) :@: [v :@: []]] ++
+                                map (:@: []) suffix))
                       | n <- [0..length vars-1],
                         let (prefix, (v:suffix)) = splitAt n vars
                       ]
-              resultAxiom = 
-                f :@: map (:@: []) vars :=:
-                  typingFun (ty f) :@: [f :@: map (:@: []) vars]
+              resultAxiom =
+                case f of
+                  Pred{} -> Const True
+                  Fun{} ->
+                    f :@: map (:@: []) vars :=:
+                      typingFun (ty f) :@: [f :@: map (:@: []) vars]
+              eq =
+                case f of
+                  Pred{} -> \t u -> Binop Equiv (Literal t) (Literal u)
+                  Fun{} -> (:=:)
   return formula{constants = constants',
                  forms = [ (name, kind, transform e) | (name, kind, e) <- forms formula ] ++
-                         [ ("smellySox_" ++ name f, Axiom, typingAxiom f) | f@Fun{} <- constants', ty f `Set.member` nonMonotone ] }
+                         [ ("smellySox_" ++ name f, Axiom, typingAxiom f) | f <- constants', ty f `Set.member` nonMonotone, copyExtended f ] }
+

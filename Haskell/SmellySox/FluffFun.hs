@@ -39,19 +39,20 @@ annotate formula = do
                                 [typingFun (ty v) :@: [v :@: []]] ++
                                 map (:@: []) suffix))
                       | n <- [0..length vars-1],
-                        let (prefix, (v:suffix)) = splitAt n vars
+                        let (prefix, (v:suffix)) = splitAt n vars,
+                        ty v `Set.member` nonMonotone
                       ]
               resultAxiom =
                 case f of
-                  Pred{} -> Const True
-                  Fun{} ->
+                  Fun{} | ty f `Set.member` nonMonotone ->
                     f :@: map (:@: []) vars :=:
                       typingFun (ty f) :@: [f :@: map (:@: []) vars]
+                  _ -> Const True
               eq =
                 case f of
                   Pred{} -> \t u -> Binop Equiv (Literal t) (Literal u)
                   Fun{} -> (:=:)
   return formula{constants = constants',
                  forms = [ (name, kind, transform e) | (name, kind, e) <- forms formula ] ++
-                         [ ("smellySox_" ++ name f, Axiom, typingAxiom f) | f <- constants', ty f `Set.member` nonMonotone, copyExtended f ] }
+                         [ ("smellySox_" ++ name f, Axiom, typingAxiom f) | f <- constants', copyExtended f ] }
 

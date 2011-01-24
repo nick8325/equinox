@@ -77,7 +77,6 @@ classifyWithMethods (m:ms)  = do
 
 
 classifyWithMethod :: Method -> Settings Result
-
 classifyWithMethod m  = do
 	settings <- ask
 	let 
@@ -99,7 +98,6 @@ classifyWithMethod m  = do
 				
 				let
 					(method,rflag')	=	if m == InjNotSurj then 
-
 																(conjInjNotOnto, relflag settings) 
 															else (conjNotInjOnto,Nothing) in 
 																continueInjOnto method funs rflag'

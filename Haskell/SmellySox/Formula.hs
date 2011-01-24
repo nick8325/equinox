@@ -8,8 +8,13 @@ data Atom = Fun { name :: String, args :: [Type], ty :: Type }
           | Var { name :: String, ty :: Type } deriving (Eq, Ord)
 data Term = Atom :@: [Term]
   deriving Eq
+
 data Binop = And | Or | Implies | Equiv
+  deriving Eq
+
 data Quant = ForAll | Exists
+  deriving Eq
+
 
 instance Show Type where
   show Top = "$i"
@@ -51,6 +56,7 @@ data Form = Const Bool
           | Binop Binop Form Form
           | Not Form
           | Quant Quant Atom Form
+     
 
 data Kind = Axiom | Hypothesis | Definition | Conjecture | NegatedConjecture
 

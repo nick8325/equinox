@@ -37,18 +37,34 @@ CTHyp.     ClauseType ::= "hypothesis";
 CTConj.    ClauseType ::= "conjecture";
 CTNegConj. ClauseType ::= "negated_conjecture";
 
+-- these need to be added to the Haskell datatype.
+
+CTAss.     ClauseType ::= "assumption";
+CTLem.     ClauseType ::= "lemma";
+CTThm.     ClauseType ::= "theorem";
+CTUnk.     ClauseType ::= "unknown";
+
+-- to add:
+-- "selective include": include('Axioms/SYN000_0.ax',[ia1,ia3]).
+
 ETyp. ETyp ::= UIdent ":" Type;
 
 EOr.      Expr   ::= Expr1 "|" Expr  ;
+ENor.     Expr   ::= Expr1 "~|" Expr ;
 EAnd.     Expr1  ::= Expr2 "&" Expr1 ;
+ENand.    Expr1  ::= Expr2 "~&" Expr1 ;
 EImplies. Expr2  ::= Expr3 "=>" Expr2 ;
 EEquiv.   Expr2  ::= Expr3 "<=>" Expr2 ;
+ENequiv.  Expr2  ::= Expr3 "<~>" Expr2 ;
 
-ENeg.     Expr4  ::= "~" Expr4;
-EForAll.  Expr4  ::= "!" "[" [ETyp] "]" ":" Expr4 ;  
-EExists.  Expr4  ::= "?" "[" [ETyp] "]" ":" Expr4 ;
-EEq.      Expr5  ::= Term "=" Term ;
-ENeq.     Expr5  ::= Term "!=" Term ;
+
+ENeg.     Expr3  ::= "~" Expr3;
+EForAll.  Expr3  ::= "!" "[" [ETyp] "]" ":" Expr3 ;  
+EExists.  Expr3  ::= "?" "[" [ETyp] "]" ":" Expr3 ;
+
+EEq.      Expr4  ::= Term "=" Term ;
+ENeq.     Expr4  ::= Term "!=" Term ;
+
 ETrue.    Expr5  ::= "$true";
 EFalse.   Expr5  ::= "$false";
 ELit.     Expr5  ::= Atom;
@@ -64,7 +80,7 @@ AConst.   Atom ::= LIdent;
 
 separator Term ",";
 
-token LIdent (lower | '$') (letter | '_' | digit)*;
+token LIdent ((lower | '$') (letter | '_' | digit)*) | ('"' (letter | ' ' | '_' | digit | ('\\' '"') | '\\' )* '"' );
 token UIdent upper (letter | '_' | digit)*;
 
 coercions Expr 5;

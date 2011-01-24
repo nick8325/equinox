@@ -13,6 +13,7 @@ import Data.List
 data CNF = CNF { types :: [Type], constants :: [Atom], clauses :: [Clause] }
 data Clause = Clause { vars :: [Atom], literals :: [Literal] }
 data Literal = Term :=: Term | Term :/=: Term | Pos Term | Neg Term
+  deriving Eq
 
 instance Show Literal where
   show (t1 :=: t2) = show t1 ++ "=" ++ show t2

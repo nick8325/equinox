@@ -18,18 +18,20 @@ annotate formula = do
                            args = [ty],
                            ty = ty }
       transform e@Const{} = e
-      transform e@(Literal (p :@: ts)) | copyExtended p = e
-                                       | otherwise = Literal (p :@: map transformTerm ts)
+      transform e@Literal{} = e
       transform (t :=: u) = transformTerm t :=: transformTerm u
       transform (Binop op e1 e2) = Binop op (transform e1) (transform e2)
       transform (Not e) = Not (transform e)
+      -- We might think that we should translate exists x p into
+      -- exists x (t(x)=x & p). But this way is OK too because when
+      -- deciding whether to guard a variable we don't pay any
+      -- attention to how it was bound: it always gets turned into
+      -- t(x) if it appears in an unsafe position.
       transform (Quant q x e) = Quant q x (transform e)
       transformTerm (v@Var{} :@: []) | ty v `Set.member` nonMonotone =
                                        typingFun (ty v) :@: [v :@: []]
       transformTerm (f :@: xs) = f :@: xs
       constants' = map typingFun (Set.toList nonMonotone) ++ constants formula
-      copyExtended Pred{args = [_]} = False
-      copyExtended _ = True
       typingAxiom f = foldr (Quant ForAll) axiom vars
         where vars = [ Var{name = "SmellySox" ++ show i, ty = ty} | (ty, i) <- zip (args f) [1..] ]
               axiom = 
@@ -54,5 +56,5 @@ annotate formula = do
                   Fun{} -> (:=:)
   return formula{constants = constants',
                  forms = [ (name, kind, transform e) | (name, kind, e) <- forms formula ] ++
-                         [ ("smellySox_" ++ name f, Axiom, typingAxiom f) | f <- constants', copyExtended f ] }
+                         [ ("smellySox_" ++ name f, Axiom, typingAxiom f) | f <- constants' ] }
 

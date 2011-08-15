@@ -70,7 +70,7 @@ isMonotone cnf ty = do
   r <- solve (formula cnf ty)
   case r of
     Nothing -> return Nothing
-    Just val -> return (Just [(p, method p) | p@Pred{} <- constants cnf, args p == [ty]])
+    Just val -> return (Just [(p, method p) | p@Pred{} <- constants cnf, ty `elem` args p])
       where method p =
               case (val (FalseExtended p), val (TrueExtended p)) of
                 (False, False) -> Copy
@@ -79,29 +79,38 @@ isMonotone cnf ty = do
                 (True, True)  -> error "OH NO!! D:"
 
 formula :: CNF -> Type -> SatFormula ExtensionVar
-formula (CNF ts cs cls) ty = conj $ map (flip clause ty) cls ++ map constraint cs
-  where constraint p@Pred{} | args p == [ty] = Not (SatVar (TrueExtended p) :&: SatVar (FalseExtended p))
+formula (CNF ts cs cls) ty = conj $ map (flip clause ty . simplifyEquality) cls ++ map constraint cs
+  where constraint p@Pred{} | ty `elem` args p = Not (SatVar (TrueExtended p)) :&: Not (SatVar (FalseExtended p))
+        -- constraint p@Pred{} | ty `elem` args p = Not (SatVar (TrueExtended p) :&: SatVar (FalseExtended p))
         constraint _ = FTrue
 
 clause :: Clause -> Type -> SatFormula ExtensionVar
 clause c@(Clause vars lits) ty = conj $ map (flip (literal c) ty) lits
 
+simplifyEquality (Clause vars lits) = Clause vars (go [] lits)
+  where go acc [] = acc
+        go acc (((x@Var{} :@: []) :/=:
+                 (y@Var{} :@: [])):ls) =
+           go (map (subst x (y :@: [])) acc)
+              (map (subst x (y :@: [])) ls)
+        go acc (l:ls) = go (l:acc) ls
+        subst x y (t :=: u) = substTerm x y t :=: substTerm x y u
+        subst x y (t :/=: u) = substTerm x y t :/=: substTerm x y u
+        subst x y (Pos t) = Pos (substTerm x y t)
+        subst x y (Neg t) = Neg (substTerm x y t)
+
 guards (_ :=: _)  _               = FFalse
+guards ((x@Var{} :@: []) :/=: _) y | x == y  = FTrue
+guards (_ :/=: (x@Var{} :@: [])) y | x == y  = FTrue
 guards (_ :/=: _) _               = FFalse
-guards (Pos (p :@: [y :@: []])) x = if x == y then SatVar (TrueExtended p) else FFalse
-guards (Neg (p :@: [y :@: []])) x = if x == y then SatVar (FalseExtended p) else FFalse
-guards (Pos _) _                  = FFalse
-guards (Neg _) _                  = FFalse
+guards (Pos (p :@: ts)) x                    = if x :@: [] `elem` ts then SatVar (TrueExtended p) else FFalse
+guards (Neg (p :@: ts)) x                    = if x :@: [] `elem` ts then SatVar (FalseExtended p) else FFalse
 
 literal :: Clause -> Literal -> Type -> SatFormula ExtensionVar
 literal c l ty = 
-  case l of (t1 :=: t2)  -> if typeOf t1 /= ty then FTrue
-                             else safe c t1 :&: safe c t2
-            (t1 :/=: t2) -> FTrue
-            (Pos (p :@: [x])) | typeOf x /= ty -> FTrue
-            (Neg (p :@: [x])) | typeOf x /= ty -> FTrue
-            (Pos (p :@: [x])) -> Not (SatVar (FalseExtended p)) :|: safe c x
-            (Neg (p :@: [x])) -> Not (SatVar (TrueExtended p))  :|: safe c x
+  case l of (t1 :=: t2) | typeOf t1 == ty -> safe c t1 :&: safe c t2
+            (Pos (p :@: ts)) | ty `elem` map typeOf ts -> Not (SatVar (FalseExtended p)) :|: conj (map (safe c) ts)
+            (Neg (p :@: ts)) | ty `elem` map typeOf ts -> Not (SatVar (TrueExtended p)) :|: conj (map (safe c) ts)
             _ -> FTrue
 
 safe c (x@Var{} :@: []) = disj [ guards l x | l <- literals c ]

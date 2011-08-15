@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module Main where
 
 import SmellySox.Parser.Abstff
@@ -12,6 +13,8 @@ import System
 import System.IO
 import Control.Monad
 import Data.List
+import SmellySox.Formula hiding (getArgs, types, (:=:))
+import qualified SmellySox.Formula as F
 
 main = do
   args <- getArgs
@@ -37,6 +40,7 @@ main = do
     let addArithmetic (Tffs xs) | arith = Tffs (TffIncl (FPath "Haskell/SmellySox/arith.ax"):xs)
                                 | otherwise = Tffs xs
     tree <- readFile file >>= preprocess . addArithmetic . parseString file
+    putStrLn file
     smellysox fluff (convert tree)
 
 smellysox fluff formula = do
@@ -47,8 +51,8 @@ smellysox fluff formula = do
       putStrLn (prettyPrint formula')
 
 check formula = do
-    hPutStrLn stderr (show formula)
-    hPutStrLn stderr ""
+--    hPutStrLn stderr (show formula)
+--    hPutStrLn stderr ""
     res <- forM (types formula) $ \ty -> do
       r <- isMonotone formula ty
       case r of

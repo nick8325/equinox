@@ -1,0 +1,121 @@
+#!/bin/sh
+
+LIST="casc2011.x"
+ARGS="--time 310"
+
+cat /dev/null > results
+cat /dev/null > full-results
+
+DIR="RunDir"
+rm -R $DIR
+mkdir -p $DIR
+
+get_problem()
+{
+  ME="$1"
+  cat /dev/null > $DIR/head-$ME
+  while [ 1 ]
+  do
+    echo "$ME" >> $DIR/lock
+    cat $DIR/lock | if read HEAD
+    then
+      if [ "$HEAD" = "$ME" ]
+      then
+        cat $DIR/queue | if read FIRST
+        then
+          cat > $DIR/queue-tail
+          echo "$FIRST" > $DIR/head-$ME
+          cp $DIR/queue-tail $DIR/queue
+        else
+          echo "(nil)" > $DIR/head-$ME
+        fi
+        cat /dev/null > $DIR/lock
+      fi
+    fi
+    
+    HEAD="`cat $DIR/head-$ME`"
+    if [ "$HEAD" != "" ]
+    then
+      echo "$HEAD"
+      break
+    fi
+    
+    sleep 1
+  done 
+}
+
+solver()
+{
+  ME="$1"
+  
+  echo "+++ $ME started"
+  while [ 1 ]
+  do
+    P=`get_problem $ME`
+    if [ "$P" = "(nil)" ]
+    then
+      break
+    fi
+
+    if [ 1 ] # ! grep "$P" results-solved > /dev/null
+    then
+      CAT=`echo $P | sed 's/[0-9].*//'`
+      FILE="$TPTP/Problems/$CAT/$P.p"
+      RATING=`grep "% Rating" $FILE | if read A B C R D; then echo "$R"; fi`
+      STATUS=`grep "% Status" $FILE | if read A B C S D; then echo "$S"; fi`
+
+      STAT="?"
+      if [ "$STATUS" = "Unsatisfiable" ]
+      then
+        STAT="U"
+      elif [ "$STATUS" = "Theorem" ]
+      then
+        STAT="T"
+      elif [ "$STATUS" = "Satisfiable" ]
+      then
+        STAT="S"
+      elif [ "$STATUS" = "CounterSatisfiable" ]
+      then
+        STAT="C"
+      fi
+
+      echo "+++ $ME solving $P ($STAT $RATING)"
+      # /bin/echo -n "$P ($STAT $RATING) ... "
+      ./equinox $ARGS $P.p > result-$ME
+      RESULT=`grep "+++ RESULT:" result-$ME | sed 's/.*: //'`
+      TAG="??    "
+      if [ "$RESULT" = Unsatisfiable -o "$RESULT" = Theorem ]
+      then
+        TAG="SOLVED"
+      elif [ "$RESULT" = Satisfiable -o "$RESULT" = CounterSatisfiable ]
+      then
+        TAG="SOLVED"
+      elif [ "$RESULT" = GaveUp ]
+      then
+        TAG="-     "
+      elif [ "$RESULT" = Timeout ]
+      then
+        TAG="-     "
+      elif [ "$RESULT" = "" ]
+      then
+        TAG="CRASH "
+      fi
+      
+      echo "+++ $ME found $P ($STAT $RATING) : $TAG ($RESULT)"
+      echo "" >> full-results
+      echo "=========================================================================" >> full-results
+      echo "== $P ($STATUS, $RATING)" >> full-results
+      cat result-$ME >> full-results
+      echo "$P ($STAT $RATING) : $TAG ($RESULT)" >> results
+    fi
+  done
+  
+  echo "+++ $ME finished"
+}
+
+cat $LIST | grep -v '#' | grep '+' > $DIR/queue
+
+solver P1 &
+solver P2 &
+solver P3 &
+solver P4

@@ -1,0 +1,38 @@
+cnf(1,axiom, (mult(one,X) = X)).
+
+cnf(2,axiom, (mult(X,one) = X)).
+
+cnf(3,axiom, (div1(X,mult(X,Y)) = Y )).
+
+cnf(4,axiom, (mult(X,div1(X,Y)) = Y )).
+
+cnf(5,axiom, (div2(mult(X,Y),Y) = X )).
+
+cnf(6,axiom, (mult(div2(X,Y),Y) = X )).
+
+cnf(7,axiom, (mult(mult(X,X),Y) = mult(X,mult(X,Y)))).
+
+cnf(8,axiom, (mult(mult(X,Y),Y) = mult(X,mult(Y,Y)))).
+
+cnf(9,axiom, mult(a,b) = one).
+
+cnf(10,axiom, mult(b,a) != one).
+
+%%% what we know %%%
+
+% mult(X,*) is injective 
+% mult(X,*) is surjective 
+% mult(*,X) is injective
+% mult(*,X) is surjective
+
+% div1(*,X) is surjective
+% div1(*,X) is injective
+
+% div2(X,*) is surjective
+% div2(X,*) is injective
+
+%%% negated conjectures %%%
+
+%%inj div1(X,A)
+%%surj div1(X,A)
+

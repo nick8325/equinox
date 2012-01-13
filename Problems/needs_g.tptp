@@ -1,0 +1,12 @@
+cnf(axiom, axiom,
+q(f(a,b))
+).
+
+cnf(axiom, axiom,
+p(X,X)
+).
+
+cnf(axiom, axiom,
+~p(f(a,X),f(Y,b))
+).
+

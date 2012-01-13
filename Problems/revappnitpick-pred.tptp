@@ -1,0 +1,62 @@
+
+fof(axiom,axiom, (
+  ![Xs] : ~$tail($nil,Xs)
+  )
+).
+
+fof(axiom,axiom, (
+    $head(a_b_c_as) = a
+  & $tail(a_b_c_as,b_c_as)
+  & $head(b_c_as) = b
+  & $tail(b_c_as,c_as)
+  & $head(c_as) = c
+  & $tail(c_as,as)
+  & rev(a_b_c_as,ps)
+  & $head(c_b_a_nil) = c
+  & $tail(c_b_a_nil,b_a_nil)
+  & $head(b_a_nil) = b
+  & $tail(b_a_nil,a_nil)
+  & $head(a_nil) = a
+  & $tail(a_nil,$nil)
+  & app(as,c_b_a_nil,qs)
+  & ps != qs
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs,Ys] : (
+    rev(Xs,Ys) =>
+    ( ( Xs = $nil
+      & Ys = $nil
+      )
+    | ( Xs != $nil
+      & ( ( $tail(take1(Xs),$nil)
+          & $head(take1(Xs)) = $head(Xs)
+          & $tail(Xs,tail(Xs))
+          & rev(tail(Xs),rev_tail(Xs))
+          & app(rev_tail(Xs),take1(Xs),Ys)
+          )
+        )
+      )
+    )
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs,Ys,Zs] : (
+    app(Xs,Ys,Zs) =>
+    ( ( Xs = $nil
+      & Ys = Zs
+      )
+    | ( Xs != $nil
+      & ( ( $tail(Xs,tail(Xs))
+          & $tail(Zs,tail(Zs))
+          & $head(Xs) = $head(Zs)
+          & app(tail(Xs),Ys,tail(Zs))
+          )
+        )
+      )
+    )
+  )
+).
+

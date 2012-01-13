@@ -1,0 +1,66 @@
+
+fof(axiom,axiom, (
+  $tail($undef) = $undef
+  )
+).
+
+fof(axiom,axiom, (
+  $tail($nil) = $undef
+  )
+).
+
+fof(axiom,axiom, (
+    $head(a_b_c_as) = a
+  & $tail(a_b_c_as) = b_c_as
+  & $head(b_c_as) = b
+  & $tail(b_c_as) = c_as
+  & $head(c_as) = c
+  & $tail(c_as) = as
+  & ps = rev(a_b_c_as)
+  & $head(c_b_a_nil) = c
+  & $tail(c_b_a_nil) = b_a_nil
+  & $head(b_a_nil) = b
+  & $tail(b_a_nil) = a_nil
+  & $head(a_nil) = a
+  & $tail(a_nil) = $nil
+  & qs = app(as,c_b_a_nil)
+  & ps != $undef
+  & qs != $undef
+  & ps != qs
+  )
+).
+
+fof(axiom, axiom,
+  ![Ys] : (
+    rev($undef) = $undef
+  & app($undef,Ys) = $undef
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    rev($nil) = $nil &
+    (Xs = $undef | Xs = $nil | rev(Xs) = $undef |
+      (?[X_nil] : ( X_nil != $nil
+                  & $tail(X_nil) = $nil
+                  & $head(X_nil) = $head(Xs)
+                  & rev(Xs) = app(rev($tail(Xs)),X_nil)
+                  )
+      )
+    )
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs,Ys] : (
+    app($nil,Ys) = Ys &
+    (Xs = $undef | Xs = $nil | app(Xs,Ys) = $undef |
+      ( app(Xs,Ys) != $nil
+      & $tail(app(Xs,Ys)) = app($tail(Xs),Ys)
+      & $head(app(Xs,Ys)) = $head(Xs)
+      )
+    )
+  )
+).
+
+

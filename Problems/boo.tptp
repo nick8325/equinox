@@ -1,0 +1,31 @@
+
+%cnf(ternary_multiply_1,axiom,
+%    ( m(Y,X,X) = X )).
+
+cnf(ternary_multiply_1,axiom,
+    ( Y != Z | m(X,Y,Z) = Y )).
+
+cnf(associativity,axiom,
+    ( m1(W,Y,W) = m1(V,W,Y) | W != Z | Y != Z | Y = W )).
+
+cnf(associativity,axiom,
+    ( m(W,Y,W) = m(V,W,m1(X,Y,Z)) | W != X | W != Z | Y = Z )).
+
+cnf(associativity,axiom,
+    ( m(W,Y,m1(V,W,Z)) = m(V,W,m(X,Y,Z)) | W != X | W = Z )).
+
+cnf(associativity,axiom,
+    ( m(m1(V,W,X),Y,m(V,W,Z)) = m(V,W,m(X,Y,Z)) | W = X )).
+
+cnf(ternary_multiply_2,axiom,
+    ( m(X,X,Y) = X )).
+
+cnf(left_inverse,axiom,
+    ( m(i(Y),Y,X) = X )).
+
+cnf(right_inverse,axiom,
+    ( m(X,Y,i(Y)) = X )).
+
+cnf(prove_inverse_is_self_cancelling,negated_conjecture,
+    (  i(i(a)) != a )).
+

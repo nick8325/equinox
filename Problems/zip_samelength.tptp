@@ -1,0 +1,120 @@
+
+cnf(axiom, axiom, (
+  if(false,X,Y) = Y
+)).
+
+cnf(axiom, axiom, (
+  if(true,X,Y) = X
+)).
+
+cnf(axiom, axiom, (
+  if(C,X,Y) = undef | C = false | C = true
+)).
+
+cnf(axiom, axiom, (
+  sameLength(nil,Ys) = sameLength_nil(Ys)
+)).
+
+cnf(axiom, axiom, (
+  sameLength_nil(nil) = true
+)).
+
+cnf(axiom, axiom, (
+  sameLength_nil(cons(X,Xs)) = false
+)).
+
+cnf(axiom, axiom, (
+  sameLength_nil(Ys) = undef | Ys = nil | Ys = cons(head(Ys),tail(Ys))
+)).
+
+cnf(axiom, axiom, (
+  sameLength(cons(X,Xs),Ys) = sameLength_cons(X,Xs,Ys)
+)).
+
+cnf(axiom, axiom, (
+  sameLength_cons(X,Xs,nil) = false
+)).
+
+cnf(axiom, axiom, (
+  sameLength_cons(X,Xs,cons(Y,Ys)) = sameLength(Xs,Ys)
+)).
+
+cnf(axiom, axiom, (
+  sameLength_cons(X,Xs,Ys) = undef | Ys = nil | Ys = cons(head(Ys),tail(Ys))
+)).
+
+cnf(axiom, axiom, (
+  sameLength(Xs,Ys) = undef | Xs = nil | Xs = cons(head(Xs),tail(Xs))
+)).
+
+cnf(axiom, axiom, (
+  head(cons(X,Xs)) = X
+)).
+
+cnf(axiom, axiom, (
+  tail(cons(X,Xs)) = Xs
+)).
+
+cnf(axiom, axiom, (
+  nil != undef
+)).
+
+cnf(axiom, axiom, (
+  false != undef
+)).
+
+cnf(axiom, axiom, (
+  true != undef
+)).
+
+cnf(axiom, axiom, (
+  cons(X,Xs) != undef
+)).
+
+cnf(axiom, axiom, (
+  cons(X,Xs) != nil
+)).
+
+cnf(axiom, axiom, (
+  false != true
+)).
+
+% questions
+
+cnf(axiom, axiom, (
+  xs1 = xs
+)).
+
+cnf(axiom, axiom, (
+  ys1 = if(sameLength(xs,ys),ys,undef)
+)).
+
+%cnf(axiom, axiom, (
+%  xs1 = nil
+%)).
+
+%cnf(axiom, axiom, (
+%  ys1 = cons(q,qs)
+%)).
+
+%cnf(axiom, axiom, (
+%  xs1 = cons(p,ps)
+%)).
+
+%cnf(axiom, axiom, (
+%  ys1 = nil
+%)).
+
+cnf(axiom, axiom, (
+  xs1 = cons(p,ps)
+)).
+
+cnf(axiom, axiom, (
+  ys1 = cons(q,qs)
+)).
+
+cnf(axiom, axiom, (
+  sameLength(ps,qs) = false
+)).
+
+

@@ -1,0 +1,24 @@
+cnf(axiom, axiom,
+  X=Y | ~member(diff(X,Y),X) | ~member(diff(X,Y),Y)
+).
+
+cnf(axiom, axiom,
+  X=Y |  member(diff(X,Y),X) |  member(diff(X,Y),Y)
+).
+
+fof(axiom, axiom,
+  ![X,A] : (member(A,singleton(X)) <=> A=X)
+).
+
+fof(axiom, axiom,
+  ![X,Y,A] : (member(A,union(X,Y)) <=> (member(A,X) | member(A,Y)))
+).
+
+cnf(axiom, axiom,
+  pair(X,Y) = union(singleton(X),singleton(union(singleton(X),singleton(Y))))
+).
+
+fof(conj, negated_conjecture,
+  pair(a,b) = pair(c,d) & (a != c | b != d)
+).
+

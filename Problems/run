@@ -1,0 +1,9 @@
+#!/bin/sh
+
+casc2009()
+{
+  sed 's/ /\n/g' casc2009
+}
+
+casc2009
+

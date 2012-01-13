@@ -1,0 +1,16 @@
+fof(total, axiom, (
+  ![X,Y] : (lt(X,Y) | X=Y | lt(Y,X))
+)).
+
+fof(in_between, axiom, (
+  ![X,Y] : (lt(X,Y) => ?[Z] : (lt(X,Z) & lt(Z,Y)))
+)).
+
+fof(def_between, axiom, (
+  ![X,A,Y] : (between(X,A,Y) => ((lt(X,A) & lt(A,Y)) | (lt(Y,A) & lt(A,X))))
+)).
+
+fof(question, question, (
+  ?[X] : (a=b | between(a,X,b))
+)).
+

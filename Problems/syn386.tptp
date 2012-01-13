@@ -1,0 +1,24 @@
+cnf(axiom, axiom,
+  big_f(X,sk_3(X))
+).
+
+cnf(axiom, axiom,
+  big_d(X,sk_1,V) | ~big_s(sk_2(V),X)
+).
+
+cnf(axiom, axiom,
+  big_d(Y,X,E) | ~big_d(W,V,sk_0(E)) | ~big_f(V,X) | ~big_f(W,Y)
+).
+
+cnf(axiom, axiom,
+  big_s(V,sk_5(V,Y))
+).
+
+cnf(axiom, axiom,
+  big_f(sk_5(V,Y),sk_6(V,Y))
+).
+
+cnf(axiom, axiom,
+  ~big_d(sk_6(V,Y),Y,sk_4(Y))
+).
+

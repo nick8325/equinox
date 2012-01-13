@@ -1,0 +1,21 @@
+
+%cnf(axiom,axiom,
+%    ( d(X,d(Y,X)) = X )).
+
+%cnf(axiom,axiom,
+%    ( d(Z,X) != Y | d(X,Y) = X )).
+
+cnf(axiom,axiom,
+    ( d(X,d(X,Y)) = d(Y,d(Y,X)) )).
+
+cnf(axiom,axiom,
+    ( X = d(Y,Y) | d(Z1,X) != Y | d(Z2,X) != X | d(Z3,Y) != X )).
+
+cnf(axiom,axiom,
+    ( d(d(X,Y),Z) = d(d(X,Z),d(Y,Z)) )).
+
+cnf(axiom,negated_conjecture,
+    (  d(d(a,c),b) != d(d(a,b),c) )).
+
+
+

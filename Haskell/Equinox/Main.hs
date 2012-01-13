@@ -28,13 +28,15 @@ import qualified Main
 import Form
 import Flags
 import Equinox.FolSat
+import Observe
 
 ---------------------------------------------------------------------------
 -- main
 
 main :: IO ()
 main =
-  do putStrLn "Equinox, version 5.0alpha, 2010-06-29."
+--  observing $
+  do putStrLn "Equinox, version 6.0.1alpha, 2011-12-07, pre-release."
      Main.main Equinox solveProblem
   
 ---------------------------------------------------------------------------

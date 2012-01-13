@@ -1,0 +1,82 @@
+cnf(axiom, axiom, (
+ ~in(X,empty)
+)).
+
+cnf(axiom, axiom, (
+ ~in(X,delete(X,H))
+)).
+
+cnf(axiom, axiom, (
+ ~in(X,delete(Y,H)) | in(X,H)
+)).
+
+cnf(axiom, axiom, (
+ find(X,delete(Y,H)) = find(X,H) | X = Y
+)).
+
+cnf(axiom, axiom, (
+ ~in(X,H) | eat(pto(X,find(X,H)),H,delete(X,H))
+)).
+
+%cnf(axiom, axiom, (
+% ~eat(A,H1,H2) | ~in(X,H2) | in(X,H1)
+%)).
+
+cnf(axiom, axiom, (
+ ~eat(pto(X,Y),H1,H2) | in(X,H1)
+)).
+
+cnf(axiom, axiom, (
+ ~eat(pto(X,Y),H1,H2) | find(X,H1)=Y
+)).
+
+cnf(axiom, axiom, (
+ ~eat(ls(X,Y),H1,H2) | X=Y | eat(pto(X,find(X,H1)),H1,delete(X,H1))
+)).
+
+cnf(axiom, axiom, (
+ ~eat(ls(X,Y),H1,H2) | X=Y | eat(ls(find(X,H1),Y),delete(X,H1),H2)
+)).
+
+cnf(axiom, axiom, (
+ ~eat(ls(X,Y),H1,H2) | H1=H2 | eat(pto(X,find(X,H1)),H1,delete(X,H1))
+)).
+
+cnf(axiom, axiom, (
+ ~eat(ls(X,Y),H1,H2) | H1=H2 | eat(ls(find(X,H1),Y),delete(X,H1),H2)
+)).
+
+cnf(axiom, axiom, (
+ eat(ls(X,X),H,H)
+)).
+
+cnf(axiom, axiom, (
+ ~eat(pto(X,Y),H1,H2) | ~eat(ls(Y,Z),H2,H3) | eat(ls(X,Z),H1,H3)
+)).
+
+cnf(axiom, axiom, (
+ ~eat(ls(X,Y),H1,H2) | ~eat(ls(Y,Z),H2,H3) | eat(ls(X,Z),H1,H3)
+)).
+
+cnf(axiom, axiom, (
+ ~eat(A,H1,H2) | ~eat(B,H2,H3) | eat(B,H1,do(B,H1))
+)).
+
+cnf(axiom, axiom, (
+ ~eat(A,H1,H2) | ~eat(B,H2,H3) | eat(A,do(B,H1),H3)
+)).
+
+% tests
+
+%  ls(x,y) * ls(x,z)     ==> x=y \/ x=z
+
+fof(c, conjecture,
+![X,Y,Z,H1,H2,H3] : (
+  ( eat(ls(X,Y),H1,H2)
+  & eat(ls(X,Z),H2,H3)
+  ) =>
+  ( H1 = H3
+  & (X = Y | X = Z)
+  )
+)).
+

@@ -1,0 +1,80 @@
+
+fof(axiom, axiom, (
+  ![X,Y] : (p(X,Y) => q(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y,Z] : ((q(X,Y) & q(Y,Z)) => q(X,Z))
+)).
+
+fof(axiom, axiom, (
+  ![X] : q(X,X)
+)).
+
+fof(axiom, axiom, (
+  p_tc(a,b)
+)).
+
+fof(axiom, axiom, (
+  ~q(a,b)
+)).
+
+%% transitive closure p_tc %%
+
+fof(axiom, axiom, (
+  ![X,Y] : (p(X,Y) => p_tc(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X] : p_tc(X,X)
+)).
+
+fof(axiom, axiom, (
+  ![X,Y,Z] : ((p_tc(X,Y) & p_tc(Y,Z)) => p_tc(X,Z))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : (p_tc(X,Y) => (X=Y | (?[Z] : (Z!=X & p(X,Z) & p_tc(Z,Y)) ) ))
+)).
+
+%% invariants %%
+
+fof(axiom, axiom, (
+  ![X,Y] : (inv(i_p1(Y),X) <=> p(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : (inv(i_p2(X),Y) <=> p(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : (inv(i_q1(Y),X) <=> q(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : (inv(i_q2(X),Y) <=> q(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : (inv(i_p_tc1(Y),X) <=> p_tc(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : (inv(i_p_tc2(X),Y) <=> p_tc(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : (inv(i_eq(X),Y) <=> (X=Y))
+)).
+
+fof(axiom, axiom, (
+  ![I,X] : (inv(not(I),X) <=> ~inv(I,X))
+)).
+
+fof(axiom, axiom, (
+  ![P] : ($answer(P) |
+  ((![X,Y] : ((inv(P,X) & p(X,Y)) => inv(P,Y))) =>
+    (![X,Y] : ((inv(P,X) & p_tc(X,Y)) => inv(P,Y)))))
+)).
+
+fof(axiom, axiom, ![X] : ~$answer(X)).

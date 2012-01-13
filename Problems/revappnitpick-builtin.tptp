@@ -1,0 +1,47 @@
+
+fof(axiom,axiom, (
+  $tail(undef) = undef
+  )
+).
+
+fof(axiom,axiom, (
+  ![X,Xs] : (($head(cons(X,Xs)) = X & $tail(cons(X,Xs)) = Xs) | cons(X,Xs) = undef)
+  )
+).
+
+fof(axiom,axiom, (
+  ![Xs] : (Xs = $nil | Xs = cons($head(Xs),$tail(Xs)) | Xs = undef)
+  )
+).
+
+fof(axiom,axiom, (
+    ps = rev(cons(a,cons(b,as)))
+  & qs = app(as,cons(b,cons(a,$nil)))
+  & ps != undef
+  & qs != undef
+  & ps != qs
+  )
+).
+
+fof(axiom, axiom,
+  ![Ys] : (
+    rev(undef) = undef
+  & app(undef,Ys) = undef
+  )
+).
+
+fof(axiom, axiom,
+  ![X,Xs] : (
+    rev($nil) = $nil &
+    (cons(X,Xs) = undef | rev(cons(X,Xs)) = app(rev(Xs),cons(X,$nil)))
+  )
+).
+
+fof(axiom, axiom,
+  ![X,Xs,Ys] : (
+    app($nil,Ys) = Ys &
+    (cons(X,Xs) = undef | app(cons(X,Xs),Ys) = cons(X,app(Xs,Ys)))
+  )
+).
+
+

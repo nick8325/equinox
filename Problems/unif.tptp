@@ -1,0 +1,8 @@
+cnf(axiom, axiom,
+  p(X,X) = t
+).
+
+cnf(axiom, axiom,
+  p(f(a,X),f(Y,b)) != t
+).
+

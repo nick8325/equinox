@@ -1,0 +1,104 @@
+cnf(axiom, axiom, (
+ ~in(X,empty)
+)).
+
+cnf(axiom, axiom, (
+ ~in(X,delete(X,H))
+)).
+
+cnf(axiom, axiom, (
+ ~in(X,delete(Y,H)) | in(X,H)
+)).
+
+cnf(axiom, axiom, (
+ ~in(X,H) | eat(pto(X,find(X,H)),H,delete(X,H))
+)).
+
+cnf(axiom, axiom, (
+ ~eat(pto(X,Y),H1,H2) | in(X,H1)
+)).
+
+cnf(axiom, axiom, (
+ ~eat(pto(X,Y),H1,H2) | ~in(X,H2)
+)).
+
+cnf(axiom, axiom, (
+ ~eat(pto(X,Y),H1,H2) | find(X,H1)=Y
+)).
+
+cnf(axiom, axiom, (
+ ~eat(pto(X,Y),H1,H2) | find(X1,H2)=find(X1,H1) | X=X1
+)).
+
+cnf(axiom, axiom, (
+ ~eat(A,H1,H2) | ~eat(B,H2,H3) | eat(B,H1,swap(H1,H2,H3))
+)).
+
+cnf(axiom, axiom, (
+ ~eat(A,H1,H2) | ~eat(B,H2,H3) | eat(A,swap(H1,H2,H3),H3)
+)).
+
+% tests
+
+%  x |-> y		==> emp
+
+fof(c, axiom,
+c1 <=>
+![X,Y,H1,H2] : (
+  ( eat(pto(X,Y),H1,H2)
+  ) =>
+  ( H1=H2
+  )
+)).
+
+%  emp 			==> x |-> y
+
+fof(c, axiom,
+c2 <=>
+![X,Y,H1] : (
+  ( $true ) =>
+  ( eat(pto(X,Y),H1,H1)
+  )
+)).
+
+%  x |-> z		==> x |-> y
+
+fof(c, axiom,
+c3 <=>
+![X,Y,Z,H1,H2] : (
+  ( eat(pto(X,Z),H1,H2)
+  ) =>
+  ( eat(pto(X,Y),H1,H2)
+  )
+)).
+
+%  x |-> y * y |-> z 	==>  false 
+
+fof(c, axiom,
+c4 <=>
+![X,Y,Z,H1,H2,H3] : (
+  ( eat(pto(X,Y),H1,H2)
+  & eat(pto(Y,Z),H2,H3)
+  ) =>
+  $false
+)).
+
+%  x |-> y * y |-> y 	==>  false 
+%  x |-> y * z |-> y   	==> z |-> y * x |-> z 
+%  x |-> y * (w |-> y \/ x |-> y) ==> x |-> y * z |-> y
+
+fof(c, axiom,
+c5 <=>
+![X,Y,Z,W,H1,H2,H3] : (
+  ( eat(pto(X,Y),H1,H2)
+  & (eat(pto(W,Y),H2,H3) | eat(pto(X,Y),H2,H3))
+  ) =>
+  ( eat(pto(X,Y),H1,H2)
+  & eat(pto(Z,Y),H2,H3)
+  )
+)).
+
+fof(c, conjecture,
+  c1 | c2 | c3 | c4 | c5
+).
+

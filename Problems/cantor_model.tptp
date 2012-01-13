@@ -1,0 +1,20 @@
+%fof(question, question,
+%  ?[F,X] : ~( g(j(F),X) <=> F @ (X) )
+%).
+
+fof(axiom, axiom,
+  ![X] : ( g(j(rep_true),X) <=> $true )
+).
+
+fof(axiom, axiom,
+  ![X] : ( g(j(rep_false),X) <=> $false )
+).
+
+fof(axiom, axiom,
+  ![X] : ( g(j(rep_silly),X) <=> (X=j(rep_true)) )
+).
+
+fof(axiom, axiom,
+  ![X] : ( g(j(rep_gxx),X) <=> g(X,X) )
+).
+

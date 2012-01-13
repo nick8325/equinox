@@ -1,0 +1,72 @@
+fof(axiom, axiom,
+  ![X,Xs] : (
+    sub(Xs, cons(X,Xs))
+  )
+).
+
+% we might just state transitivity as well...
+%fof(axiom, axiom,
+%  ![X,Xs,Ys] : (
+%    sub(Xs,Ys) => sub(Xs, cons(X,Ys))
+%  )
+%).
+
+fof(axiom, axiom,
+  ![Xs,Ys,Zs] : (
+    (sub(Xs,Ys) & sub(Ys,Zs)) => sub(Xs,Zs)
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    list(Xs) => ~sub(Xs,Xs)
+  )
+).
+
+fof(axiom, axiom,
+  ![X,Xs] : (
+    list(cons(X,Xs)) => (elem(X) & list(Xs))
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    list(Xs) => (Xs = nil | Xs = cons(head(Xs),tail(Xs)))
+  )
+).
+
+fof(axiom, axiom,
+  ![X,Xs] : (
+    list(cons(X,Xs)) => (head(cons(X,Xs)) = X & tail(cons(X,Xs)) = Xs)
+  )
+).
+
+fof(axiom, axiom,
+  ![X,Xs] : (
+    (list(nil) & list(cons(X,Xs))) => (nil != cons(X,Xs))
+  )
+).
+
+fof(axiom, axiom,
+  ![X,Xs] : (
+    rev(nil) = nil &
+    (list(rev(cons(X,Xs))) => rev(cons(X,Xs)) = app(rev(Xs),cons(X,nil)))
+  )
+).
+
+fof(axiom, axiom,
+  ![X,Xs,Ys] : (
+    app(nil,Ys) = Ys &
+    (list(app(cons(X,Xs),Ys)) => app(cons(X,Xs),Ys) = cons(X,app(Xs,Ys)))
+  )
+).
+
+fof(axiom,axiom, (
+    ps = app(rev(as),cons(a,nil)) % rev(cons(a,as))
+  & qs = app(as,cons(a,nil))
+  & list(ps)
+  & list(qs)
+  & ps != qs
+  )
+).
+

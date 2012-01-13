@@ -1,0 +1,32 @@
+fof(question, question,
+  ?[F : a_to_o, X : a] : ~( g(j(F),X) <=> peval(F,X) )
+).
+
+% eval : a_to_a * a -> a
+
+% peval : a_to_o * a -> o
+
+fof(and, axiom,
+  ![P,Q,X] : ( peval(and(P,Q),X) <=> (peval(P,X) & peval(Q,X)) )
+).
+
+fof(not, axiom,
+  ![P,X] : ( peval(not(P),X) <=> ~peval(P,X) )
+).
+
+fof(g, axiom,
+  ![A,B,X] : ( peval(g_c(A,B),X) <=> g(eval(A,X),eval(B,X)) )
+).
+
+fof(eq, axiom,
+  ![A,B,X] : ( peval(eq(A,B),X) <=> (eval(A,X) = eval(B,X)) )
+).
+
+fof(j, axiom,
+  ![A,X] : ( eval(j_c(A),X) = j(eval(A,X)) )
+).
+
+fof(x, axiom,
+  ![X] : ( eval(x,X) = X )
+).
+

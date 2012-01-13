@@ -1,0 +1,94 @@
+% induction schema
+
+fof(ind_schema, question,
+  ?[P] : ( 
+  ~( (papp(P,n0) & (![N] : (papp(P,N) => papp(P,s(N)))))
+        => ![N] : papp(P,N)
+         )
+  )
+).
+
+% natural numbers
+
+fof(nats, axiom,
+  ![X] : n0 != s(X)
+).
+
+fof(nats, axiom,
+  ![X] : (X=n0 | X=s(inv_s(X)))
+).
+
+fof(nats, axiom,
+  ![X,Y] : (s(X) = s(Y) => X = Y)
+).
+
+fof(nats, axiom,
+  ![X] : (s(X) != X)
+).
+
+% papp
+
+fof(papp, axiom,
+  ![P] : (papp(P,X) <=> (![Y] : papp2(P,X,Y)))
+).
+
+fof(papp_and, axiom,
+  ![P,Q,X,Y] : (papp2(and(P,Q),X,Y) <=> (papp2(P,X,Y) & papp2(Q,X,Y)))
+).
+
+fof(papp_not, axiom,
+  ![P,X,Y] : (papp2(not(P),X,Y) <=> ~papp2(P,X,Y))
+).
+
+fof(papp_eq, axiom,
+  ![A,B,X,Y] : (papp2(eq(A,B),X,Y) <=> app2(A,X,Y) = app2(B,X,Y))
+).
+
+fof(papp_p, axiom,
+  ![A,B,X,Y] : (papp2(pp(A,B),X,Y) <=> p(app2(A,X,Y),app2(B,X,Y)))
+).
+
+% app
+
+fof(app_s, axiom,
+  ![A,X,Y] : app2(ss(A),X,Y) = s(app2(A,X,Y))
+).
+
+fof(app_inv_s, axiom,
+  ![A,X,Y] : app2(inv_ss(A),X,Y) = inv_s(app2(A,X,Y))
+).
+
+fof(app_x, axiom,
+  ![X,Y] : app2(x,X,Y) = X
+).
+
+fof(app_y, axiom,
+  ![X,Y] : app2(y,X,Y) = Y
+).
+
+fof(app_n0, axiom,
+  ![X,Y] : app2(n0,X,Y) = n0
+).
+
+fof(app_a, axiom,
+  ![X,Y] : app2(aa,X,Y) = a
+).
+
+fof(app_b, axiom,
+  ![X,Y] : app2(bb,X,Y) = b
+).
+
+fof(app_c, axiom,
+  ![X,Y] : app2(cc,X,Y) = c
+).
+
+% definition of p
+
+fof(def_p1, axiom,
+  ![X,Y] : (p(X,Y) <=> (Y=s(inv_s(Y)) & (X=n0 | p(inv_s(X),inv_s(Y)))))
+).
+
+fof(negated_conjecture, axiom,
+  p(a,b) & p(b,a)
+).
+

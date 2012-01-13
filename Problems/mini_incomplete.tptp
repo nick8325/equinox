@@ -1,0 +1,17 @@
+cnf(axiom, axiom,
+  p(f(b),f(b))
+).
+
+cnf(axiom, axiom,
+  p(X,X)
+).
+
+cnf(axiom, axiom,
+  ~p(f(X),a)
+).
+
+cnf(axiom, axiom,
+  p(f(g(Y)),Y)
+).
+
+

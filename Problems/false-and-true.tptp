@@ -1,0 +1,130 @@
+%%% data types %%%
+
+cnf(axiom, axiom, (
+  ~diffv(X,X)
+)).
+
+cnf(axiom, axiom, (
+  ~diffv(X,Y) | diffv(X,Y)
+)).
+
+% booleans
+
+cnf(axiom, axiom, (
+  diffv(false,true)
+)).
+
+cnf(axiom, axiom, (
+  diffv(false,undef)
+)).
+
+cnf(axiom, axiom, (
+  diffv(true,undef)
+)).
+
+% naturals
+
+cnf(axiom, axiom, (
+  diffv(zero,succ(X))
+)).
+
+cnf(axiom, axiom, (
+  prev(succ(X)) = X
+)).
+
+cnf(axiom, axiom, (
+  prev(zero) = undef
+)).
+
+cnf(axiom, axiom, (
+  diffv(zero,undef)
+)).
+
+cnf(axiom, axiom, (
+  diffv(succ(X),undef)
+)).
+
+% lists
+
+cnf(axiom, axiom, (
+  diffv(nil,cons(X,Xs))
+)).
+
+cnf(axiom, axiom, (
+  head(cons(X,Xs)) = X
+)).
+
+cnf(axiom, axiom, (
+  tail(cons(X,Xs)) = Xs
+)).
+
+cnf(axiom, axiom, (
+  head(nil) = undef
+)).
+
+cnf(axiom, axiom, (
+  tail(nil) = undef
+)).
+
+cnf(axiom, axiom, (
+  diffv(nil,undef)
+)).
+
+cnf(axiom, axiom, (
+  diffv(cons(X,Xs),undef)
+)).
+
+%%% function definitions %%%
+
+% even
+
+cnf(axiom, axiom, (
+  even(zero) = true
+)).
+
+cnf(axiom, axiom, (
+  even(succ(X)) = odd(X)
+)).
+
+cnf(axiom, axiom, (
+  even(X) = undef | X=zero | X=succ(prev(X))
+)).
+
+% odd
+
+cnf(axiom, axiom, (
+  odd(zero) = false
+)).
+
+cnf(axiom, axiom, (
+  odd(succ(X)) = even(X)
+)).
+
+cnf(axiom, axiom, (
+  odd(X) = undef | X=zero | X=succ(prev(X))
+)).
+
+% doubleacc
+
+cnf(axiom, axiom, (
+  doubleacc(zero, Acc) = Acc
+)).
+
+cnf(axiom, axiom, (
+  doubleacc(succ(N), Acc) = doubleacc(N,succ(succ(Acc)))
+)).
+
+cnf(axiom, axiom, (
+  doubleacc(N, Acc) = undef | N = zero | N = succ(prev(N))
+)).
+
+%%% the questions %%%
+
+cnf(axiom, axiom, (
+  even(succ(a)) != even(a) | $answer(always_equal)
+)).
+
+cnf(axiom, axiom, (
+  ~diffv(even(succ(X)),even(X)) | $answer(not_equal_for(X))
+)).
+

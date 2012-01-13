@@ -1,0 +1,39 @@
+
+% name:		LTC.Relation.Divisibility._∣_
+fof(n3_51003923, axiom, ( ! [A] : ( ! [B] : ( ( n95873995(A,B) ) <=> ( ( ~( A = zero ) ) & ( ? [C] : ( B = kApp(kApp(n42,C),A) ) ) ) ) ) )).
+
+% name:		LTC.Minimal.cP₁
+fof(n24_166937883, axiom, ( kApp(pred,zero) = zero )).
+
+% name:		LTC.Minimal.cP₂
+fof(n26_166937883, axiom, ( ! [A] : ( kApp(pred,kApp(succ,A)) = A ) )).
+
+% name:		LTC.Minimal.true≠false
+fof(n37_166937883, axiom, ( ~( true = false ) )).
+
+% name:		LTC.Minimal.0≠S
+fof(n39_166937883, axiom, ( ! [A] : ( ~( zero = kApp(succ,A) ) ) )).
+
+% name:		LTC.Function.Arithmetic.+-0x
+fof(n5_258971667, axiom, ( ! [A] : ( kApp(kApp(n43,zero),A) = A ) )).
+
+% name:		LTC.Function.Arithmetic.+-Sx
+fof(n8_258971667, axiom, ( ! [A] : ( ! [B] : ( kApp(kApp(n43,kApp(succ,A)),B) = kApp(succ,kApp(kApp(n43,A),B)) ) ) )).
+
+% name:		LTC.Function.Arithmetic.minus-x0
+fof(n11_258971667, axiom, ( ! [A] : ( kApp(kApp(n45,A),zero) = A ) )).
+
+% name:		LTC.Function.Arithmetic.minus-xS
+fof(n14_258971667, axiom, ( ! [A] : ( ! [B] : ( kApp(kApp(n45,A),kApp(succ,B)) = kApp(pred,kApp(kApp(n45,A),B)) ) ) )).
+
+% name:		LTC.Function.Arithmetic.*-0x
+fof(n17_258971667, axiom, ( ! [A] : ( kApp(kApp(n42,zero),A) = zero ) )).
+
+% name:		LTC.Function.Arithmetic.*-Sx
+fof(n20_258971667, axiom, ( ! [A] : ( ! [B] : ( kApp(kApp(n42,kApp(succ,A)),B) = kApp(kApp(n43,B),kApp(kApp(n42,A),B)) ) ) )).
+
+% name:		LTC.Function.Arithmetic.Properties.*-leftIdentity
+fof(n130_219764581, axiom, ( ! [A] : ( ( n(A) ) => ( kApp(kApp(n42,kApp(succ,zero)),A) = A ) ) )).
+
+% name:		LTC.Relation.Divisibility.Properties.∣-refl-S
+fof(n7_53308083, conjecture, ( ! [A] : ( ( n(A) ) => ( n95873995(kApp(succ,A),kApp(succ,A)) ) ) )).

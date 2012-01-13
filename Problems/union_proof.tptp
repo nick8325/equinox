@@ -1,0 +1,16 @@
+
+cnf( axiom, axiom, ( $answer(def_empty(X)) | ~elem(X,empty) ) ).
+
+cnf( axiom, axiom, ( $answer(def_union_A(X,A,B)) | elem(X,union(A,B)) | ~elem(X,A) ) ).
+
+cnf( axiom, axiom, ( $answer(def_union_B(X,A,B)) | elem(X,union(A,B)) | ~elem(X,B) ) ).
+
+cnf( axiom, axiom, ( $answer(def_union_AB(X,A,B)) | ~elem(X,union(A,B)) | elem(X,A) | elem(X,B) ) ).
+
+cnf( axiom, axiom, ( A = B | ~elem(diff(A,B),A) | ~elem(diff(A,B),B) | $answer(def_seteq_neg(A,B))) ).
+cnf( axiom, axiom, ( A = B |  elem(diff(A,B),A) |  elem(diff(A,B),B) | $answer(def_seteq_pos(A,B))) ).
+
+cnf( negated_conjecture, negated_conjecture, ( union(a,b) != union(b,a) ) ).
+
+%cnf( negated_conjecture, negated_conjecture, ( union(empty,empty) != empty ) ).
+

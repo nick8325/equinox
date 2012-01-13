@@ -1,0 +1,21 @@
+
+cnf(a0, axiom,
+  ~equalish(successor(A),successor(B)) | equalish(A,B)
+).
+
+cnf(a1, axiom,
+  equalish(X,X)
+).
+
+cnf(a2, axiom,
+  ~equalish(successor(A),n0)
+).
+
+cnf(b0, axiom,
+  ~equalish(c,c) | equalish(successor(a),successor(b)) | equalish(successor(preL(Z)),Z)
+).
+
+cnf(b1, axiom,
+  ~equalish(c,c) | ~equalish(a,b) | equalish(successor(preL(Z)),Z)
+).
+

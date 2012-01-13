@@ -411,10 +411,11 @@ filePath =
 
 prob :: P ([FilePath],[Input Form])
 prob =
-  do incls <- many include
-     ins   <- many formula
+  do xs <- many ((Left `fmap` include) <|> (Right `fmap` formula))
+     let incls = [ incl | Left incl <- xs ]
+         infs  = [ inf  | Right inf <- xs ]
      white
-     return (incls,ins)
+     return (incls,infs)
 
 parseP :: String -> Either [String] ([FilePath],[Input Form])
 parseP s =

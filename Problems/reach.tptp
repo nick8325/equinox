@@ -1,0 +1,6 @@
+cnf(axiom,axiom,p(a,b)).
+cnf(axiom,axiom,~p(X,Y)|p(s(Y),X)).
+cnf(axiom,axiom,~p(X,Y)|p(Y,s(X))).
+cnf(axiom,axiom,~p(X,Y)|p(X,X)).
+cnf(axiom,axiom,~p(X,Y)|p(Y,Y)).
+cnf(axiom,axiom,~p(b,a)).

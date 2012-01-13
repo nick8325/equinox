@@ -1,0 +1,51 @@
+% "typer"
+
+fof(axiom,axiom,(
+  dom(a)
+)).
+
+fof(axiom,axiom,(
+  ![X] : (dom(X) => dom(f(X)))
+)).
+
+fof(axiom,axiom,(
+  ![X] : (dom(X) => dom(f_inv(X)))
+)).
+
+% "typade" axiom
+
+fof(axiom,axiom,(
+  ![X] : (dom(X) => f_inv(f(X)) = X)
+)).
+
+fof(axiom,axiom,(
+  ![X] : (dom(X) => f(X) != a)
+)).
+
+% first-class representation of functions
+
+fof(axiom,axiom,(
+  ![X] : (dom(X) => app(fun_f,X) = f(X))
+)).
+
+fof(axiom,axiom,(
+  ![X] : (dom(X) => app(fun_g,X) = g(X))
+)).
+
+fof(axiom,axiom,(
+  ![F,G,X] : (dom(X) => app(comp(F,G),X) = app(F,app(G,X)))
+)).
+
+%fof(axiom,axiom,(
+%  ![X] : (dom(X) => app(fun_f_inv,X) = f_inv(X))
+%)).
+
+fof(conjecture,conjecture, (
+  ?[F] : ( ~$answer(F)
+         & (![X,Y] : ((dom(X) & dom(Y)) => (app(F,X) = app(F,Y) => X=Y)))
+         & (?[A] : (dom(A) & ![X] : (dom(X) => app(F,X) != A)))
+         )
+)).
+
+
+

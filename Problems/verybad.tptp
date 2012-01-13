@@ -1,0 +1,3 @@
+cnf(axiom, axiom,  p(a,b,c,d,X,Y,Z,V) ).
+cnf(axiom, axiom, ~p(X,Y,Z,V,a,b,c,d) ).
+

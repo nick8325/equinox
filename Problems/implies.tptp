@@ -1,0 +1,112 @@
+fof(axiom,axiom,
+~(! [Z0]  : (((Z0 = unr | (cf(Z0) & bad != true & true != false))) => (! [Z1]  : (((Z1 = unr | (cf(Z1) & bad != true & true != false))) => ((implies(Z0,Z1) = unr | (cf(implies(Z0,Z1)) & bad != true & true != false)))))))
+).
+fof(axiom,axiom,
+! [ZP0]  : (((ZP0 = unr | (cf(ZP0) & bad != true & true != false))) => (! [ZP1]  : (((ZP1 = unr | (cf(ZP1) & bad != true & true != false))) => ((impliesp(ZP0,ZP1) = unr | (cf(impliesp(ZP0,ZP1)) & bad != true & true != false))))))
+).
+fof(axiom,axiom,
+false != true
+).
+fof(axiom,axiom,
+cf(true)
+).
+fof(axiom,axiom,
+cf(false)
+).
+fof(axiom,axiom,
+true != unr
+).
+fof(axiom,axiom,
+false != unr
+).
+fof(axiom,axiom,
+! [X,Y]  : ((X = true) => (and(X,Y) = $weak(Y)))
+).
+fof(axiom,axiom,
+! [X,Y]  : ((X = false) => (and(X,Y) = $weak(false)))
+).
+fof(axiom,axiom,
+! [X,Y]  : ((X = bad) => (and(X,Y) = bad))
+).
+fof(axiom,axiom,
+! [X,Y]  : (((X != bad & X != $weak(true) & X != $weak(false))) => (and(X,Y) = unr))
+).
+fof(axiom,axiom,
+! [Y0]  : (((Y0 = unr | (cf(Y0) & bad != true & true != false))) => (! [Y1]  : (((Y1 = unr | (cf(Y1) & bad != true & true != false))) => ((and(Y0,Y1) = unr | (cf(and(Y0,Y1)) & bad != true & true != false))))))
+).
+fof(axiom,axiom,
+! [X]  : ((X = true) => (not(X) = $weak(false)))
+).
+fof(axiom,axiom,
+! [X]  : ((X = false) => (not(X) = $weak(true)))
+).
+fof(axiom,axiom,
+! [X]  : ((X = bad) => (not(X) = bad))
+).
+fof(axiom,axiom,
+! [X]  : (((X != bad & X != $weak(true) & X != $weak(false))) => (not(X) = unr))
+).
+fof(axiom,axiom,
+! [Y0]  : (((Y0 = unr | (cf(Y0) & bad != true & true != false))) => ((not(Y0) = unr | (cf(not(Y0)) & bad != true & true != false))))
+).
+fof(axiom,axiom,
+! [X,Y]  : ((X = true) => (or(X,Y) = $weak(true)))
+).
+fof(axiom,axiom,
+! [X,Y]  : ((X = false) => (or(X,Y) = $weak(Y)))
+).
+fof(axiom,axiom,
+! [X,Y]  : ((X = bad) => (or(X,Y) = bad))
+).
+fof(axiom,axiom,
+! [X,Y]  : (((X != bad & X != $weak(true) & X != $weak(false))) => (or(X,Y) = unr))
+).
+fof(axiom,axiom,
+! [Y0]  : (((Y0 = unr | (cf(Y0) & bad != true & true != false))) => (! [Y1]  : (((Y1 = unr | (cf(Y1) & bad != true & true != false))) => ((or(Y0,Y1) = unr | (cf(or(Y0,Y1)) & bad != true & true != false))))))
+).
+fof(axiom,axiom,
+! [X,Y]  : (implies(X,Y) = $weak(or(not(X),Y)))
+).
+fof(axiom,axiom,
+! [X,Y]  : (iff(X,Y) = $weak(and(implies(X,Y),implies(Y,X))))
+).
+fof(axiom,axiom,
+! [Y0]  : (((Y0 = unr | (cf(Y0) & bad != true & true != false))) => (! [Y1]  : (((Y1 = unr | (cf(Y1) & bad != true & true != false))) => ((iff(Y0,Y1) = unr | (cf(iff(Y0,Y1)) & bad != true & true != false))))))
+).
+fof(axiom,axiom,
+! [X,A,B]  : (if(X,A,B) = $weak(and(implies(X,A),implies(not(X),B))))
+).
+fof(axiom,axiom,
+! [Y0]  : (((Y0 = unr | (cf(Y0) & bad != true & true != false))) => (! [Y1]  : (((Y1 = unr | (cf(Y1) & bad != true & true != false))) => (! [Y2]  : (((Y2 = unr | (cf(Y2) & bad != true & true != false))) => ((if(Y0,Y1,Y2) = unr | (cf(if(Y0,Y1,Y2)) & bad != true & true != false))))))))
+).
+fof(axiom,axiom,
+! [X,A,B]  : (ifbis(X,A,B) = $weak(or(or(and(A,B),and(not(A),c)),and(A,B))))
+).
+fof(axiom,axiom,
+! [Y0]  : (((Y0 = unr | (cf(Y0) & bad != true & true != false))) => (! [Y1]  : (((Y1 = unr | (cf(Y1) & bad != true & true != false))) => (! [Y2]  : (((Y2 = unr | (cf(Y2) & bad != true & true != false))) => ((ifbis(Y0,Y1,Y2) = unr | (cf(ifbis(Y0,Y1,Y2)) & bad != true & true != false))))))))
+).
+fof(axiom,axiom,
+! [X,A,B]  : ((X = true) => (ifbisbis(X,A,B) = $weak(A)))
+).
+fof(axiom,axiom,
+! [X,A,B]  : ((X = false) => (ifbisbis(X,A,B) = $weak(B)))
+).
+fof(axiom,axiom,
+! [X,A,B]  : ((X = bad) => (ifbisbis(X,A,B) = bad))
+).
+fof(axiom,axiom,
+! [X,A,B]  : (((X != bad & X != $weak(true) & X != $weak(false))) => (ifbisbis(X,A,B) = unr))
+).
+fof(axiom,axiom,
+! [Y0]  : (((Y0 = unr | (cf(Y0) & bad != true & true != false))) => (! [Y1]  : (((Y1 = unr | (cf(Y1) & bad != true & true != false))) => (! [Y2]  : (((Y2 = unr | (cf(Y2) & bad != true & true != false))) => ((ifbisbis(Y0,Y1,Y2) = unr | (cf(ifbisbis(Y0,Y1,Y2)) & bad != true & true != false))))))))
+).
+%fof(axiom,axiom,
+%! [F,X]  : (((cf(X) & cf(F))) => (cf(app(F,X))))
+%).
+fof(axiom,axiom,
+~(cf(bad))
+).
+fof(axiom,axiom,
+cf(unr)
+).
+

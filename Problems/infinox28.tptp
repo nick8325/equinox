@@ -1,0 +1,11 @@
+fof(a_0, axiom, ![B] : ![A] : (equalish(A,B) | ~equalish(successor(A),successor(B)))).
+fof(a_1, axiom, ![X] : equalish(X,X)).
+fof(a_2, axiom, ![A] : ~equalish(successor(A),n0)).
+
+fof(b_0, axiom, ~(![Y] : ![X] : (equalish(X,Y) | ~equalish(successor(X),successor(Y))) & ~(![Z] : ~![X] : ~equalish(successor(X),Z) & ![Z] : ~![X] : ~equalish(Z,successor(X))) & ![X] : equalish(X,X))).
+
+fof(b_1, axiom, ![P_1] : (~(~![Y] : (~equalish(P_1,Y) | ~![X] : (~equalish(successor(X),Y) | ~equalish(P_1,X))) | ~![Y] : (~equalish(P_1,Y) | ~![X] : (~equalish(Y,successor(X)) | ~equalish(P_1,X)))) | ~![X] : ((equalish(X,X) & equalish(P_1,successor(X))) | ~equalish(P_1,X)) | ~![Y] : ![X] : (equalish(X,Y) | ~equalish(successor(X),successor(Y)) | ~(equalish(P_1,X) & equalish(P_1,Y))))).
+
+fof(b_2, axiom, ![P_1] : (~(~![Y] : (~equalish(Y,P_1) | ~![X] : (~equalish(successor(X),Y) | ~equalish(X,P_1))) | ~![Y] : (~equalish(Y,P_1) | ~![X] : (~equalish(X,P_1) | ~equalish(Y,successor(X))))) | ~![X] : ((equalish(successor(X),P_1) & equalish(X,X)) | ~equalish(X,P_1)) | ~![Y] : ![X] : (equalish(X,Y) | ~equalish(successor(X),successor(Y)) | ~(equalish(X,P_1) & equalish(Y,P_1))))).
+
+fof(b_3, axiom, ~((~![Y] : (~equalish(Y,Y) | ~![X] : (~equalish(successor(X),Y) | ~equalish(X,X))) | ~![Y] : (~equalish(Y,Y) | ~![X] : (~equalish(X,X) | ~equalish(Y,successor(X))))) & ![X] : ((equalish(successor(X),successor(X)) & equalish(X,X)) | ~equalish(X,X)) & ![Y] : ![X] : (equalish(X,Y) | ~equalish(successor(X),successor(Y)) | ~(equalish(X,X) & equalish(Y,Y))))).

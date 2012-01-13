@@ -1,0 +1,4 @@
+fof(axiom, axiom,
+  p(a) & $true
+).
+

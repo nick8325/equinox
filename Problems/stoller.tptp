@@ -1,0 +1,432 @@
+
+%------------------------------------------------------------------------------
+% File     : SWV448+1 : TPTP v4.0.0. Released v4.0.0.
+% Domain   : Software Verification
+% Problem  : Establishing that there cannot be two leaders, part i1_p86
+% Version  : [Sve07] axioms : Especial.
+% English  :
+
+% Refs     : [Sto97] Stoller (1997), Leader Election in Distributed Systems
+%          : [Sve07] Svensson (2007), Email to Koen Claessen
+%          : [Sve08] Svensson (2008), A Semi-Automatic Correctness Proof Pr
+% Source   : [Sve07]
+% Names    : stoller_i1_p86 [Sve07]
+
+% Status   : Theorem
+% Rating   : 0.87 v4.0.0
+% Syntax   : Number of formulae    :   67 (  40 unit)
+%            Number of atoms       :  176 (  97 equality)
+%            Maximal formula depth :   22 (   4 average)
+%            Number of connectives :  167 (  58   ~;  12   |;  54   &)
+%                                         (  13 <=>;  30  =>;   0  <=)
+%                                         (   0 <~>;   0  ~|;   0  ~&)
+%            Number of predicates  :    6 (   0 propositional; 1-2 arity)
+%            Number of functors    :   33 (  16 constant; 0-2 arity)
+%            Number of variables   :  144 (   1 sgn; 143   !;   1   ?)
+%            Maximal term depth    :    4 (   2 average)
+
+% Comments :
+%------------------------------------------------------------------------------
+%----Include axioms for verification of Stoller's leader election algorithm
+%------------------------------------------------------------------------------
+fof(conj,conjecture,(
+    ! [V,W,X,Y] :
+      ( ( ! [Z,Pid0] :
+            ( elem(m_Ldr(Pid0),queue(host(Z)))
+           => ~ leq(host(Z),host(Pid0)) )
+        & ! [Z,Pid0] :
+            ( ( Pid0 != Z
+              & host(Pid0) = host(Z) )
+           => ( ~ setIn(Z,alive)
+              | ~ setIn(Pid0,alive) ) )
+        & ! [Z] :
+            ( ( ( index(status,host(Z)) = elec_1
+                | index(status,host(Z)) = elec_2 )
+              & setIn(Z,alive) )
+           => index(elid,host(Z)) = Z )
+        & ! [Z,Pid0] :
+            ( ( setIn(Z,alive)
+              & setIn(Pid0,alive)
+              & index(ldr,host(Z)) = host(Z)
+              & index(status,host(Z)) = norm
+              & index(status,host(Pid0)) = norm
+              & index(ldr,host(Pid0)) = host(Pid0) )
+           => Pid0 = Z )
+        & ! [Z,Pid20,Pid0] :
+            ( ( setIn(Pid0,alive)
+              & elem(m_Down(Pid20),queue(host(Pid0)))
+              & leq(nbr_proc,index(pendack,host(Pid0)))
+              & index(status,host(Pid0)) = elec_2
+              & host(Pid20) = index(pendack,host(Pid0)) )
+           => ~ ( setIn(Z,alive)
+                & index(ldr,host(Z)) = host(Z)
+                & index(status,host(Z)) = norm ) )
+        & ! [Z,Pid20,Pid0] :
+            ( ( setIn(Pid0,alive)
+              & elem(m_Ack(Pid0,Pid20),queue(host(Pid0)))
+              & leq(nbr_proc,index(pendack,host(Pid0)))
+              & index(status,host(Pid0)) = elec_2
+              & host(Pid20) = index(pendack,host(Pid0)) )
+           => ~ ( setIn(Z,alive)
+                & index(ldr,host(Z)) = host(Z)
+                & index(status,host(Z)) = norm ) )
+        & ! [Z,Pid20,Pid0] :
+            ( ( ! [V0] :
+                  ( ( ~ leq(host(Pid0),V0)
+                    & leq(s(zero),V0) )
+                 => ( setIn(V0,index(down,host(Pid0)))
+                    | V0 = host(Pid20) ) )
+              & ~ leq(host(Pid0),host(Z))
+              & elem(m_Down(Pid20),queue(host(Pid0)))
+              & index(status,host(Pid0)) = elec_1 )
+           => ~ ( setIn(Z,alive)
+                & index(ldr,host(Z)) = host(Z)
+                & index(status,host(Z)) = norm ) )
+        & queue(host(X)) = cons(m_Down(Y),V) )
+     => ( setIn(X,alive)
+       => ( ~ leq(host(X),host(Y))
+         => ( ~ ( ( index(ldr,host(X)) = host(Y)
+                  & index(status,host(X)) = norm )
+                | ( index(status,host(X)) = wait
+                  & host(Y) = host(index(elid,host(X))) ) )
+           => ( ( ! [Z] :
+                    ( ( ~ leq(host(X),Z)
+                      & leq(s(zero),Z) )
+                   => ( setIn(Z,index(down,host(X)))
+                      | Z = host(Y) ) )
+                & index(status,host(X)) = elec_1 )
+             => ( leq(nbr_proc,host(X))
+               => ! [Z] :
+                    ( ~ setIn(host(Z),setEmpty)
+                   => ! [V0] :
+                        ( host(X) = host(V0)
+                       => ! [W0] :
+                            ( host(X) != host(W0)
+                           => ( ( setIn(V0,alive)
+                                & setIn(W0,alive)
+                                & host(X) = host(V0)
+                                & index(ldr,host(W0)) = host(W0)
+                                & index(status,host(W0)) = norm )
+                             => W0 = V0 ) ) ) ) ) ) ) ) ) ) )).
+
+%------------------------------------------------------------------------------
+
+
+%------------------------------------------------------------------------------
+% File     : SWV011+0 : TPTP v4.0.0. Released v4.0.0.
+% Domain   : Software Verification
+% Axioms   : Axioms for verification of Stoller's leader election algorithm
+% Version  : [Sve07] axioms : Especial.
+% English  :
+
+% Refs     : [Sto97] Stoller (1997), Leader Election in Distributed Systems
+%          : [Sve07] Svensson (2007), Email to Koen Claessen
+%          : [Sve08] Svensson (2008), A Semi-Automatic Correctness Proof Pr
+% Source   : [Sve07]
+% Names    : stoller2 [Sve07]
+%          : con_sys [Sve07]
+%          : cons_snoc [Sve07]
+%          : arith [Sve07]
+%          : sets [Sve07]
+
+% Status   :
+% Syntax   : Number of formulae    :   66 (  40 unit)
+%            Number of atoms       :  111 (  62 equality)
+%            Maximal formula depth :   10 (   4 average)
+%            Number of connectives :   89 (  44   ~;   7   |;  14   &)
+%                                         (  13 <=>;  11  =>;   0  <=)
+%                                         (   0 <~>;   0  ~|;   0  ~&)
+%            Number of predicates  :    6 (   0 propositional; 1-2 arity)
+%            Number of functors    :   27 (  11 constant; 0-2 arity)
+%            Number of variables   :  119 (   0 sgn; 118   !;   1   ?)
+%            Maximal term depth    :    3 (   2 average)
+
+% Comments :
+%------------------------------------------------------------------------------
+%----Stoller axioms messages and such things
+%----NewPid
+fof(axiom,axiom,(
+    ! [Pid,Pid2] :
+      ( elem(m_Ack(Pid,Pid2),queue(host(Pid)))
+     => ( setIn(Pid,pids)
+        & setIn(Pid2,pids) ) ) )).
+
+fof(axiom,axiom,(
+    ! [P,Q] :
+      ( s(host(P)) = host(Q)
+     => host(P) != host(Q) ) )).
+
+fof(axiom,axiom,(
+    ! [P] : leq(s(zero),host(P)) )).
+
+fof(axiom,axiom,(
+    leq(s(zero),nbr_proc) )).
+
+fof(axiom,axiom,(
+    ! [P] : leq(host(P),nbr_proc) )).
+
+fof(axiom,axiom,(
+    elec_1 != elec_2 )).
+
+fof(axiom,axiom,(
+    elec_1 != wait )).
+
+fof(axiom,axiom,(
+    elec_1 != norm )).
+
+fof(axiom,axiom,(
+    elec_2 != wait )).
+
+fof(axiom,axiom,(
+    elec_2 != norm )).
+
+fof(axiom,axiom,(
+    norm != wait )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Z] : m_Ack(X,Y) != m_Halt(Z) )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Z] : m_Ack(X,Y) != m_Down(Z) )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Z] : m_Ack(X,Y) != m_NotNorm(Z) )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Z] : m_Ack(X,Y) != m_Ldr(Z) )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Z] : m_Ack(X,Y) != m_NormQ(Z) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_NotNorm(X) != m_Halt(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_Down(X) != m_Halt(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_Down(X) != m_Ldr(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_Down(X) != m_NotNorm(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_Down(X) != m_NormQ(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_NormQ(X) != m_Halt(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_Ldr(X) != m_Halt(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_Ldr(X) != m_NormQ(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_Ldr(X) != m_NotNorm(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] : m_NormQ(X) != m_NotNorm(Y) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( X != Y
+    <=> m_Halt(X) != m_Halt(Y) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( X != Y
+    <=> m_NormQ(X) != m_NormQ(Y) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( X != Y
+    <=> m_NotNorm(X) != m_NotNorm(Y) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( X != Y
+    <=> m_Ldr(X) != m_Ldr(Y) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( X != Y
+    <=> m_Down(X) != m_Down(Y) ) )).
+
+fof(axiom,axiom,(
+    ! [X1,X2,Y1,Y2] :
+      ( X1 != X2
+     => m_Ack(X1,Y1) != m_Ack(X2,Y2) ) )).
+
+fof(axiom,axiom,(
+    ! [X1,X2,Y1,Y2] :
+      ( Y1 != Y2
+     => m_Ack(X1,Y1) != m_Ack(X2,Y2) ) )).
+
+%----Axioms for a concurrent system; i.e. Pids and Alive
+fof(axiom,axiom,(
+    ! [Pid,Pid2] :
+      ( host(Pid) != host(Pid2)
+     => Pid != Pid2 ) )).
+
+fof(axiom,axiom,(
+    ~ setIn(nil,alive) )).
+
+%----Axioms for snoc and cons style of queues
+%----Injective
+fof(axiom,axiom,(
+    ! [X,Q] : head(cons(X,Q)) = X )).
+
+fof(axiom,axiom,(
+    ! [X,Q] : tail(cons(X,Q)) = Q )).
+
+fof(axiom,axiom,(
+    ! [Y,Q] : last(snoc(Q,Y)) = Y )).
+
+fof(axiom,axiom,(
+    ! [Y,Q] : init(snoc(Q,Y)) = Q )).
+
+%----Surjective
+fof(axiom,axiom,(
+    ! [Q] :
+      ( Q = q_nil
+      | Q = cons(head(Q),tail(Q)) ) )).
+
+fof(axiom,axiom,(
+    ! [Q] :
+      ( Q = q_nil
+      | Q = snoc(init(Q),last(Q)) ) )).
+
+%----Exclusive
+fof(axiom,axiom,(
+    ! [X,Q] : q_nil != cons(X,Q) )).
+
+fof(axiom,axiom,(
+    ! [Y,Q] : q_nil != snoc(Q,Y) )).
+
+%----Equal singleton queue
+fof(axiom,axiom,(
+    ! [X] : cons(X,q_nil) = snoc(q_nil,X) )).
+
+%----Snoc+cons equals cons+snoc
+fof(axiom,axiom,(
+    ! [X,Y,Q] : snoc(cons(X,Q),Y) = cons(X,snoc(Q,Y)) )).
+
+%----Elem
+fof(axiom,axiom,(
+    ! [X] : ~ elem(X,q_nil) )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Q] :
+      ( elem(X,cons(Y,Q))
+    <=> ( X = Y
+        | elem(X,Q) ) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Q] :
+      ( elem(X,snoc(Q,Y))
+    <=> ( X = Y
+        | elem(X,Q) ) ) )).
+
+%----Ordered
+fof(axiom,axiom,(
+    ! [X] :
+      ( pidElem(X)
+    <=> ? [Y] :
+          ( X = m_Halt(Y)
+          | X = m_Down(Y) ) ) )).
+
+fof(axiom,axiom,(
+    ! [X] : pidMsg(m_Halt(X)) = X )).
+
+fof(axiom,axiom,(
+    ! [X] : pidMsg(m_Down(X)) = X )).
+
+fof(axiom,axiom,(
+    ordered(q_nil) )).
+
+fof(axiom,axiom,(
+    ! [X] :
+      ( ordered(cons(X,q_nil))
+      & ordered(snoc(q_nil,X)) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Q] :
+      ( ordered(cons(X,Q))
+    <=> ( ordered(Q)
+        & ! [Y] :
+            ( ( elem(Y,Q)
+              & pidElem(X)
+              & pidElem(Y)
+              & host(pidMsg(Y)) = host(pidMsg(X)) )
+           => leq(pidMsg(X),pidMsg(Y)) ) ) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Q] :
+      ( ordered(snoc(Q,X))
+    <=> ( ordered(Q)
+        & ! [Y] :
+            ( ( elem(Y,Q)
+              & pidElem(X)
+              & pidElem(Y)
+              & host(pidMsg(Y)) = host(pidMsg(X)) )
+           => leq(pidMsg(Y),pidMsg(X)) ) ) ) )).
+
+%----Helper axioms
+fof(axiom,axiom,(
+    ! [Q,X,Y] :
+      ( ordered(Q)
+     => ordered(snoc(Q,m_Ack(X,Y))) ) )).
+
+fof(axiom,axiom,(
+    ! [Q,X] :
+      ( ordered(Q)
+     => ordered(snoc(Q,m_Ldr(X))) ) )).
+
+fof(axiom,axiom,(
+    ! [Q,X,Y] :
+      ( ( ordered(cons(m_Halt(X),Q))
+        & host(X) = host(Y)
+        & elem(m_Down(Y),Q) )
+     => leq(X,Y) ) )).
+
+fof(axiom,axiom,(
+    ! [X] : ~ leq(s(X),X) )).
+
+fof(axiom,axiom,(
+    ! [X] : leq(X,X) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( leq(X,Y)
+      | leq(Y,X) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( ( leq(X,Y)
+        & leq(Y,X) )
+    <=> X = Y ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y,Z] :
+      ( ( leq(X,Y)
+        & leq(Y,Z) )
+     => leq(X,Z) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( leq(X,Y)
+    <=> leq(s(X),s(Y)) ) )).
+
+fof(axiom,axiom,(
+    ! [X,Y] :
+      ( leq(X,s(Y))
+    <=> ( X = s(Y)
+        | leq(X,Y) ) ) )).
+
+%----Set axioms
+fof(axiom,axiom,(
+    ! [X] : ~ setIn(X,setEmpty) )).
+
+%------------------------------------------------------------------------------
+

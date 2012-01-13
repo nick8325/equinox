@@ -1,0 +1,19 @@
+g(j(rep_silly),j(rep_true)) = $true
+g(j(rep_true),*) = $true
+g(j(rep_true),j(rep_true)) = $true
+g(j(rep_gxx),j(rep_true)) = $true
+
+j(rep_silly) = <..>
+j(rep_true) = <..>
+j(rep_false) = <..>
+j(rep_gxx) = <..>
+
+rep_false = <..>
+
+rep_silly = <..>
+
+rep_true = <..>
+
+rep_gxx = <..>
+
+$true = <..>

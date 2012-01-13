@@ -1,0 +1,96 @@
+fof(axiom, axiom,
+  ![X,Xs] : (
+    isCons(Xs) =>
+    sub(tail(Xs), Xs)
+  )
+).
+
+% we might just state transitivity as well...
+%fof(axiom, axiom,
+%  ![X,Xs,Ys] : (
+%    sub(Xs,Ys) => sub(Xs, cons(X,Ys))
+%  )
+%).
+
+fof(axiom, axiom,
+  ![Xs,Ys,Zs] : (
+    (sub(Xs,Ys) & sub(Ys,Zs)) => sub(Xs,Zs)
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    list(Xs) => ~sub(Xs,Xs)
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    isCons(Xs) => (list(Xs) & list(tail(Xs)) & elem(head(Xs)))
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    list(rev(Xs)) => list(Xs)
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    list(tail(Xs)) => isCons(Xs)
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    elem(head(Xs)) => isCons(Xs)
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs,Ys] : (
+    list(app(Xs,Ys)) => (list(Xs) & list(Ys))
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs] : (
+    list(Xs) => (Xs = nil | isCons(Xs))
+  )
+).
+
+fof(axiom, axiom,
+  ~isCons(nil)
+).
+
+% forall quantification?
+fof(axiom, axiom,
+  ![Xs] : (
+    rev(nil) = nil &
+    (isCons(Xs) => ![Ys] : ((isCons(Ys) & head(Ys) = head(Xs) & tail(Ys) = nil) => (rev(Xs) = app(rev(tail(Xs)),Ys))))
+  )
+).
+
+fof(axiom, axiom,
+  ![Xs,Ys] : (
+    app(nil,Ys) = Ys &
+    (isCons(Xs) => ![Zs] : ((isCons(Zs) & head(Zs) = head(Xs) & tail(Zs) = app(tail(Xs),Ys)) => app(Xs,Ys) = Zs))
+  )
+).
+
+fof(conjecture, conjecture,
+  ![As,Bs,X,Y,Xs] : (
+    %( As = rev(cons(X,cons(Y,Xs)))
+    %& Bs = app(Xs,cons(Y,cons(X,nil)))
+    ( As = rev(Xs)
+    & Bs = Xs
+    & list(As)
+    & list(Bs)
+    ) =>
+    As = Bs
+  )
+).
+
+
+

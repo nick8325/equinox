@@ -1,0 +1,78 @@
+% Using Equinox version 5.0alpha, 2010-06-29 the theorem is proved
+% instantly, but using Equinox version 6.0alpha, 2011-08-19,
+% pre-release, the theorem is not proved in 10 minutes.
+
+%-----------------------------------------------------------------------------
+% This file was generated automatically by agda2atp version 2.2.11.1.
+%-----------------------------------------------------------------------------
+
+%-----------------------------------------------------------------------------
+% The common required definitions.
+
+% End common required definitions.
+
+%-----------------------------------------------------------------------------
+% The general axioms.
+
+% The original Agda term was:
+% Name:		Test.Succeed.Definition8.+-0x
+% Role:		axiom
+% Position:	/home/asr/code/phd/agda2atp/Test/Succeed/Definition8.agda:29,3-7
+fof(n24_206180627, axiom, ( ! [A] : ( kAppFn(kAppFn(n43,zero),A) = A ) )).
+
+% The original Agda term was:
+% Name:		Test.Succeed.Definition8.+-Sx
+% Role:		axiom
+% Position:	/home/asr/code/phd/agda2atp/Test/Succeed/Definition8.agda:30,3-7
+fof(n27_206180627, axiom, ( ! [A] : ( ! [B] : ( kAppFn(kAppFn(n43,kAppFn(succ,A)),B) = kAppFn(succ,kAppFn(kAppFn(n43,A),B)) ) ) )).
+
+% End general axioms.
+
+%-----------------------------------------------------------------------------
+% The required ATP definitions by the general axioms.
+
+% End required ATP definitions by the general axioms.
+
+%-----------------------------------------------------------------------------
+% The general hints.
+
+% End general hints.
+
+%-----------------------------------------------------------------------------
+% The required ATP definitions by the general hints.
+
+% End required ATP definitions by the general hints.
+
+%-----------------------------------------------------------------------------
+% The local hints.
+
+% End local hints.
+
+%-----------------------------------------------------------------------------
+% The required ATP definitions by the local hints.
+
+% End required ATP definitions by the local hints.
+
+%-----------------------------------------------------------------------------
+% The required ATP definitions by the conjecture.
+
+% The original Agda term was:
+% Name:		Test.Succeed.Definition8._.P
+% Role:		definition
+% Position:	/home/asr/code/phd/agda2atp/Test/Succeed/Definition8.agda:38,3-4
+fof(n39_206180627, definition, ( ! [A] : ( ! [B] : ( ! [C] : ( ( kAppP1(n,A) ) => ( ( kAppP1(n,B) ) => ( ( kAppP1(n,C) ) => ( ! [D] : ( ( kAppP4(p_39_206180627,A,B,C,D) ) <=> ( kAppFn(kAppFn(n43,kAppFn(kAppFn(n43,D),B)),C) = kAppFn(kAppFn(n43,D),kAppFn(kAppFn(n43,B),C)) ) ) ) ) ) ) ) ) )).
+
+% End required ATP definitions by the conjecture.
+
+%-----------------------------------------------------------------------------
+% The conjecture.
+
+% The original Agda term was:
+% Name:		Test.Succeed.Definition8._.iStep
+% Role:		prove
+% Position:	/home/asr/code/phd/agda2atp/Test/Succeed/Definition8.agda:45,13-18
+fof(n43_206180627, conjecture, ( ! [A] : ( ! [B] : ( ! [C] : ( ( kAppP1(n,A) ) => ( ( kAppP1(n,B) ) => ( ( kAppP1(n,C) ) => ( ! [D] : ( ( kAppP1(n,D) ) => ( ( kAppP4(p_39_206180627,A,B,C,D) ) => ( kAppP4(p_39_206180627,A,B,C,kAppFn(succ,D)) ) ) ) ) ) ) ) ) ) )).
+
+% End conjecture.
+
+% End ATP pragma conjecture file.

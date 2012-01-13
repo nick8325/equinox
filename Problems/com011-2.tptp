@@ -1,0 +1,40 @@
+cnf(cls_conjecture_0,negated_conjecture,
+    ( in(f,constrains(a,union(a,b,t),t),program(t)) )).
+
+cnf(cls_conjecture_1,negated_conjecture,
+    ( in(f,transient(a,t),program(t)) )).
+
+cnf(cls_conjecture_2,negated_conjecture,
+    ( ~ in(f,leadsto(a,b,t),program(t)) )).
+
+cnf(cls_Set_ODiffE_1,axiom,
+    ( ~ in(C,minus(A,B,set(T)),T)
+    | in(C,A,T) )).
+
+cnf(cls_Set_OsubsetI_0,axiom,
+    ( in(some(A,B,T),A,T)
+    | lessequals(A,B,set(T)) )).
+
+cnf(cls_Set_OsubsetI_1,axiom,
+    ( ~ in(some(A,B,T),B,T)
+    | lessequals(A,B,set(T)) )).
+
+cnf(cls_UNITY_Oconstrains__weaken__L_0,axiom,
+    ( ~ in(F,constrains(A,H,T),program(T))
+    | ~ lessequals(B,A,set(T))
+    | in(F,constrains(B,H,T),program(T)) )).
+
+cnf(cls_WFair_OensuresI_0,axiom,
+    ( ~ in(F,constrains(minus(A,B,set(T)),union(A,B,T),T),program(T))
+    | ~ in(F,transient(minus(A,B,set(T)),T),program(T))
+    | in(F,ensures(A,B,T),program(T)) )).
+
+cnf(cls_WFair_OleadsTo__Basis_0,axiom,
+    ( ~ in(F,ensures(A,B,T),program(T))
+    | in(F,leadsto(A,B,T),program(T)) )).
+
+cnf(cls_WFair_Otransient__strengthen_0,axiom,
+    ( ~ in(F,transient(A,T),program(T))
+    | ~ lessequals(B,A,set(T))
+    | in(F,transient(B,T),program(T)) )).
+

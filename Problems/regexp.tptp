@@ -1,0 +1,22 @@
+
+% concatenation
+
+fof(cat_associative, axiom, (
+  ![Xs,Ys,Zs] : cat(Xs,cat(Ys,Zs)) = cat(cat(Xs,Ys),Zs)
+)).
+
+fof(cat_decompose, axiom, (
+  ![As,Bs,Ps,Qs] : ($answer(As,Bs,Ps,Qs) | (cat(As,Bs) = cat(Ps,Qs) => ?[Zs] : ((Ps=cat(As,Zs) & Bs=cat(Zs,Qs)) | (As=cat(Ps,Zs) & Qs=cat(Zs,Bs))) ))
+)).
+
+fof(cat_nil, axiom, (
+  ![Xs,Ys] : ((cat(Xs,Ys) = Xs <=> Ys=nil) & (cat(Ys,Xs) = Xs <=> Ys=nil))
+)).
+
+% question
+
+fof(cat_unique, conjecture, (
+  ![Xs,Ys1,Ys2] : (cat(Xs,Ys1) = cat(Xs,Ys2) => Ys1=Ys2)
+)).
+
+

@@ -1,0 +1,23 @@
+cnf(axiom, axiom,
+  ~leq(X,Y) | ~leq(Y,Z) | leq(X,Z)
+).
+
+cnf(axiom, axiom,
+  leq(X,Y) | leq(Y,X)
+).
+
+cnf(axiom, axiom,
+  X=Y | ~leq(X,Y) | ~leq(Y,X)
+).
+
+cnf(axiom, axiom,
+  select(update(A,I,X),I) = X
+).
+
+cnf(axiom, axiom,
+  select(update(A,I,X),J) = select(A,J) | I=J
+).
+
+cnf(axiom, axiom,
+  leq(I,J) | ~leq(select(a,I),select(a,J))
+).

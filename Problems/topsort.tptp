@@ -1,0 +1,29 @@
+
+fof(axiom, axiom, (
+  ![R] : ( spo(R)
+       <=> ( ![X]     : ~ord(R,X,X)
+           & ![X,Y,Z] : ((ord(R,X,Y) & ord(R,Y,Z)) => ord(R,X,Z))
+           )
+         )
+)).
+
+fof(axiom, axiom, (
+  ![R] : ( to(R)
+       <=> ( spo(R)
+           & ![X,Y] : (ord(R,X,Y) | X=Y | ord(R,Y,X))
+           )
+         )
+)).
+
+fof(conjecture, conjecture, (
+  ![R] : ( spo(R) =>
+    ?[T1,T2] : ( (to(T1) & to(T2)) &
+      (
+      &
+      )
+    )
+  )
+)).
+
+
+

@@ -1,0 +1,28 @@
+fof(axiom, axiom,
+  ![X] : step(app(i,X),X)
+).
+
+%fof(axiom, axiom,
+%  ![X,Y] : step(app(app(k,X),Y),X)
+%).
+
+fof(axiom, axiom,
+  ![F,G,X] : step(app(app(app(s,F),G),X),app(app(F,X),app(G,X)))
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z] : (step(X,Y) => step(app(X,Z),app(Y,Z)))
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z] : (step(X,Y) => step(app(Z,X),app(Z,Y)))
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z] : ((step(X,Y) & step(Y,Z)) => step(X,Z))
+).
+
+fof(conjecture, conjecture,
+  ?[X] : (~$answer(X) & step(app(X,X),app(X,X)))
+).
+

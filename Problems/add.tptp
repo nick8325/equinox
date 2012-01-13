@@ -1,0 +1,73 @@
+%% definition %%
+
+fof(axiom,axiom,(
+  ![Y] :
+    add(n0,Y) = Y
+)).
+
+fof(axiom,axiom,(
+  ![X,Y] :
+    add(s(X),Y) = s(add(X,Y))
+)).
+
+%% conjecture %%
+
+fof(conjecture,conjecture,(
+  add(a,n0) = a
+)).
+
+%% natural numbers %%
+
+fof(axiom,axiom,(
+  ![P,X] : ($answer(P) | papp(P,X) | invalid(P))
+)).
+
+fof(axiom,axiom,(
+  ![P] : (~invalid(P) | ~papp(P,n0) | papp(P,ceiling(P)))
+)).
+
+fof(axiom,axiom,(
+  ![P] : (~invalid(P) | ~papp(P,n0) | ~papp(P,s(ceiling(P))))
+)).
+
+fof(axiom,axiom,(
+  ![P] : ~$answer(P)
+)).
+
+%fof(axiom,axiom,(
+%  ((papp(fusk,n0) & ![X] : (papp(fusk,X) => papp(fusk,s(X)))) => ![X] : papp(fusk,X))
+%)).
+
+%% what predicates exist? %%
+
+fof(axiom,axiom,(
+  ![X] :
+    fapp(n0,X) = n0
+)).
+
+fof(axiom,axiom,(
+  ![X] :
+    fapp(a,X) = a
+)).
+
+fof(axiom,axiom,(
+  ![X] :
+    fapp(x,X) = X
+)).
+
+fof(axiom,axiom,(
+  ![F,G,X] :
+    fapp(add(F,G),X) = add(fapp(F,X),fapp(G,X))
+)).
+
+fof(axiom,axiom,(
+  ![F,G,X] :
+    (papp(eq(F,G),X) <=> (fapp(F,X) = fapp(G,X)))
+)).
+
+%fof(axiom,axiom,(
+%  ![P,X] :
+%    (papp(not(P),X) <=> ~papp(P,X))
+%)).
+
+

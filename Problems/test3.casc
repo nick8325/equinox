@@ -1,0 +1,114 @@
+% 10 locations of the automaton (l0 to l9), all different.
+fof(mux, axiom, ~m3_loc(l0) & ~m2_loc(l0) & ~m1_loc(l0) & ~m0_loc(l0)).
+fof(mux, axiom, ~m3_loc(l1) & ~m2_loc(l1) & ~m1_loc(l1) &  m0_loc(l1)).
+fof(mux, axiom, ~m3_loc(l2) & ~m2_loc(l2) &  m1_loc(l2) & ~m0_loc(l2)).
+fof(mux, axiom, ~m3_loc(l3) & ~m2_loc(l3) &  m1_loc(l3) &  m0_loc(l3)).
+fof(mux, axiom, ~m3_loc(l4) &  m2_loc(l4) & ~m1_loc(l4) & ~m0_loc(l4)).
+fof(mux, axiom, ~m3_loc(l5) &  m2_loc(l5) & ~m1_loc(l5) &  m0_loc(l5)).
+fof(mux, axiom, ~m3_loc(l6) &  m2_loc(l6) &  m1_loc(l6) & ~m0_loc(l6)).
+fof(mux, axiom, ~m3_loc(l7) &  m2_loc(l7) &  m1_loc(l7) &  m0_loc(l7)).
+fof(mux, axiom,  m3_loc(l8) & ~m2_loc(l8) & ~m1_loc(l8) & ~m0_loc(l8)).
+fof(mux, axiom,  m3_loc(l9) & ~m2_loc(l9) & ~m1_loc(l9) &  m0_loc(l9)).
+
+% 2 letters of the alphabet (a and b), all different.
+fof(mux, axiom, m0_letter(a) & ~m0_letter(b)).
+fof(mux, axiom, ~(a = b)).
+
+% The set of locations
+fof(locations, axiom,
+ ![X]:( ((X = l0) | (X = l1) | (X = l2) | (X = l3) | (X = l4) | (X = l5) | (X = l6) | (X = l7) | (X = l8) | (X = l9)))).
+
+% The set of letters
+fof(letter, axiom,
+ ![X]:(letter(X) <=>
+        ((X = a) | (X = b)))).
+
+% The set of accepting locations
+fof(accepting, axiom,
+ ![X]:(acc(X) <=>
+        ((X = l0) | (X = l3) | (X = l9)))).
+
+% The set of initial locations
+fof(initial, axiom,
+ ![X]:(ini(X) <=>
+        ((X = l0) | (X = l3) | (X = l8)))).
+
+% The transition relation
+fof(transitions, axiom,
+! [X,L,C1] : ( trans_rel(X,L,C1) <=>
+   (
+    ( (X = l0) & (L = a) & (incell(l1, C1)) ) |
+    ( (X = l0) & (L = b) & (incell(l2, C1)) ) |
+
+    ( (X = l1) & (L = b) & (incell(l0, C1)) ) |
+
+    ( (X = l2) & (L = a) & (incell(l0, C1)) ) |
+
+    ( (X = l3) & (L = a) & (incell(l4, C1)) ) |
+    ( (X = l3) & (L = b) & (incell(l6, C1)) ) |
+
+    ( (X = l4) & (L = b) & (incell(l5, C1)) ) |
+
+    ( (X = l5) & (L = b) & (incell(l3, C1)) ) |
+
+    ( (X = l6) & (L = a) & (incell(l7, C1)) ) |
+
+    ( (X = l7) & (L = b) & (incell(l3, C1)) ) |
+
+    ( (X = l8) & (L = a) & (incell(l9, C1)) ) |
+    ( (X = l8) & (L = b) & (incell(l9, C1)) ) |
+
+    ( (X = l9) & (L = a) & (incell(l9, C1)) ) | 
+    ( (X = l9) & (L = b) & (incell(l9, C1)) )
+   ))).
+
+% Definition of subset
+fof(subset, axiom, ! [ C, C1] : (subset(C, C1) <=>
+	 ( ! [ X ] : (incell(X, C) => incell(X, C1)) ))).
+
+% Sorting for incell
+% not hurting, likely not needed.
+fof(subset, axiom, ! [ X, C] : (incell(X, C) => ( loc(X) & cell(C)) )).
+
+% Definition of strong preimage
+fof(def_strongpre, axiom,
+ ! [ C,L,C1 ] : ( (C = strongpre(C1,L)) =>
+                   ( ! [ X ] : ( incell(X,C) <=> ( ? [ C2 ] : (trans_rel(X,L,C2) & subset(C2, C1)))))
+)).
+
+% Every strongpreimage is contained in one of the other cells.
+% Should this be stated as a property rather than an axiom?
+fof(acdef, axiom, ! [ C, L ] : ( (cell(C) & letter(L)) => (? [ C1 ] : (cell(C1) & subset(strongpre(C,L), C1))))
+).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Some examples on the specific instance.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% fof(reach, axiom, trans_rel(l0,a,c4)).
+
+%fof(reach, axiom, ~trans_rel(l0,b,l1)).
+%fof(reach, axiom, ~trans_rel(l0,a,l2)).
+%fof(reach, axiom,  trans_rel(l0,b,l2)).
+% fof(reach, axiom, ![X0,L1,X1] : (~(trans_rel(X0,L1,X1) & X0 = l1) | (L = b & X1 = l0))).
+
+% fof(reach, axiom, ( trans_rel(l0,a,l1) & trans_rel(l1,b,l2) &  trans_rel(l0,b,l2))).
+
+% fof(reachable, axiom,? [X0,L1,X1,L2,X2,L3,X3,L4,X4] : ( trans_rel(X0,L1,X1) & trans_rel(X1,L2,X2) &  trans_rel(X2,L3,X3) & trans_rel(X3, L4, X4))).
+
+% fof(spre17, axiom, ! [ X ] : (incell(X, cell17) <=> ( X = l1 | X = l7))).
+
+fof(spre17, axiom, incell(l0, cell17)).
+fof(spre17, axiom, incell(l1, cell17)).
+fof(spre17, axiom, incell(l2, cell17)).
+fof(spre17, axiom, incell(l3, cell17)).
+fof(spre17, axiom, incell(l4, cell17)).
+fof(spre17, axiom, incell(l5, cell17)).
+fof(spre17, axiom, incell(l6, cell17)).
+fof(spre17, axiom, incell(l7, cell17)).
+fof(spre17, axiom, incell(l8, cell17)).
+fof(spre17, axiom, incell(l9, cell17)).
+
+ 

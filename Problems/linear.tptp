@@ -1,0 +1,20 @@
+fof(axiom, axiom, (
+  ![X] : X != add(X,one)
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : add(X,Y) = add(Y,X)
+)).
+
+fof(axiom, axiom, (
+  ![X,Y,Z] : add(X,add(Y,Z)) = add(add(X,Y),Z)
+)).
+
+fof(axiom, axiom, (
+  ![X] : add(X,zero) = X
+)).
+
+fof(axiom, axiom, (
+  ![X] : add(X,minus(X)) = zero
+)).
+

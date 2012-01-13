@@ -1,0 +1,68 @@
+%%% PROBLEM %%%
+
+fof(axiom, axiom, (
+  nat(n0)
+)).
+
+fof(axiom, axiom, (
+  ![X] : (nat(X) => nat(f(X)))
+)).
+
+fof(axiom, axiom, (
+  ![X] : (nat(X) => f(X) != n0)
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : ((nat(X) & nat(Y) & f(X)=f(Y)) => X=Y)
+)).
+
+%%% PREDICATES %%%
+
+fof(axiom, axiom, (
+  ![X] : pred(p_true,X)
+)).
+
+%fof(axiom, axiom, (
+%  ![P,X] : (pred(P,X) <=> ~pred(p_not(P),X))
+%)).
+
+%fof(axiom, axiom, (
+%  ![P,Q,X] : (pred(p_and(P,Q),X) <=> (pred(P,X) & pred(Q,X)))
+%)).
+
+fof(axiom, axiom, (
+  ![X] : (pred(p_nat,X) <=> nat(X))
+)).
+
+%%% FUNCTIONS %%%
+
+fof(axiom, axiom, (
+  ![X] : app(f_f,X) = f(X)
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : app(app(f_g,X),Y) = g(X,Y)
+)).
+
+fof(axiom, axiom, (
+  ![X,Y] : app(k(Y),X) = Y
+)).
+
+fof(axiom, axiom, (
+  ![F,X,A,B] : app(s(F,A,B),X) = app(app(F,A),app(F,B))
+)).
+
+%%% CONJECTURE INFINOX %%%
+
+fof(conjecture, conjecture, (
+  ?[P,F,A] :
+  ( ~$answer(P,F,A)
+  & (pred(P,A))
+  & (![X] : (pred(P,X) => pred(P,app(F,X))))
+  & (![X] : (pred(P,X) => app(F,X)!=A))
+  & (![X,Y] : ((pred(P,X) & pred(P,Y) & app(F,X)=app(F,Y)) => X=Y))
+  )
+)).
+
+
+

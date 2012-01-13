@@ -16,6 +16,7 @@ main: paradox.exe equinox.exe infinox.exe smellysox.exe
 
 
 paradox: paradox.exe
+smellyparadox: smellyparadox.exe
 equinox: equinox.exe
 infinox: infinox.exe
 equiparadox: equiparadox.exe
@@ -35,6 +36,9 @@ Sat.o: Sat.hs
 
 paradox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
 	$(GHC) $(HSAT) $(HFLAGS) -main-is Paradox.Main.main --make Paradox.Main -o paradox
+        
+smellyparadox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+	$(GHC) $(HSAT) $(HFLAGS) -main-is Paradox.Smelly.main --make Paradox.Smelly -o smellyparadox
         
 #-- Equinox
 

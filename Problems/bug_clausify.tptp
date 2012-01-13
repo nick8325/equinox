@@ -1,0 +1,10 @@
+fof(lex, axiom, ![X,Y]:(present(X,Y) <=> ~absent(X,Y) )).
+fof(ent,axiom, ~(![C]:(?[LM]:(student(LM,C))=>?[B]:(present(B,C))) =>
+  ![C]:(?[LM]:(student(LM,C))=>~?[B]:(absent(B,C)))) ).
+
+fof(lex, axiom, ![Y]:((?[X]:present(X,Y)) => (![X]:present(X,Y)) )).
+fof(lex, axiom, ![Y]:((?[X]:absent(X,Y)) => (![X]:absent(X,Y)) )).
+
+fof(lex, axiom, ![Y]:((?[X]:present(X,Y)) => (![Z]:present(Z,Y)) )).
+fof(lex, axiom, ![Y]:((?[X]:absent(X,Y)) => (![Z]:absent(Z,Y)) )).
+

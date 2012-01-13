@@ -1,0 +1,88 @@
+fof(axiom, axiom,
+  ![A,B,Env] :
+    (eval(and(A,B),Env) <=> (eval(A,Env) & eval(B,Env)))
+).
+
+fof(axiom, axiom,
+  ![A,B,Env] :
+    (eval(or(A,B),Env) <=> (eval(A,Env) | eval(B,Env)))
+).
+
+fof(axiom, axiom,
+  ![A,Env] :
+    (eval(not(A),Env) <=> ~eval(A,Env))
+).
+
+fof(axiom, axiom,
+  ![A,B,X,Y,Z,V,W] :
+    (eval(let_v(B,A),env(X,Y,Z,V,W)) <=> eval(A,env(X,Y,Z,B,W)))
+).
+
+fof(axiom, axiom,
+  ![A,B,X,Y,Z,V,W] :
+    (eval(let_w(B,A),env(X,Y,Z,V,W)) <=> eval(A,env(X,Y,Z,V,B)))
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z,V,W] :
+    (eval(x,env(X,Y,Z,V,W)) <=> X=true)
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z,V,W] :
+    (eval(y,env(X,Y,Z,V,W)) <=> Y=true)
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z,V,W] :
+    (eval(z,env(X,Y,Z,V,W)) <=> Z=true)
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z,V,W] :
+    (eval(v,env(X,Y,Z,V,W)) <=> V=true)
+).
+
+fof(axiom, axiom,
+  ![X,Y,Z,V,W] :
+    (eval(w,env(X,Y,Z,V,W)) <=> W=true)
+).
+
+fof(axiom, axiom,
+  ![A,B] :
+    (mono(and(A,B)) <=> (mono(A) & mono(B)))
+).
+
+fof(axiom, axiom,
+  ![A,B] :
+    (mono(or(A,B)) <=> (mono(A) & mono(B)))
+).
+
+fof(axiom, axiom,
+  ![A] :
+    ~mono(not(A))
+).
+
+fof(axiom, axiom,
+  mono(x) & mono(y) & mono(z) & mono(v) & mono(w)
+).
+
+fof(conjecture, conjecture,
+  ?[P,Q,Nx,Ny,Nz] :
+    ( mono(P) & mono(Q) & mono(Nx) & mono(Ny) & mono(Nz) 
+    & ![A,B,Nx_,Ny_,Nz_] :
+      ( ( A   = inv(P)
+        & B   = inv(let_v(A,Q))
+        & Nx_ = let_v(A,let_w(B,Nx))
+        & Ny_ = let_v(A,let_w(B,Ny))
+        & Nz_ = let_v(A,let_w(B,Nz))
+        )        
+     => ![X,Y,Z,V,W] :
+          ( (eval(Nx_,env(X,Y,Z,V,W)) <=> eval(inv(x),env(X,Y,Z,V,W)))
+          & (eval(Ny_,env(X,Y,Z,V,W)) <=> eval(inv(y),env(X,Y,Z,V,W)))
+          & (eval(Nz_,env(X,Y,Z,V,W)) <=> eval(inv(z),env(X,Y,Z,V,W)))
+          )
+      )
+    )
+).
+

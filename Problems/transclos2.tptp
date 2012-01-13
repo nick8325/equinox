@@ -1,0 +1,64 @@
+
+fof(axiom, axiom, (
+  ![X,Y] : (p(X,Y) => ~q(X,Y))
+)).
+
+fof(axiom, axiom, (
+  ![X,Y,Z] : ((~q(X,Y) & ~q(Y,Z)) => ~q(X,Z))
+)).
+
+fof(axiom, axiom, (
+  ![X] : ~q(X,X)
+)).
+
+fof(axiom, axiom, (
+  p_tc(a,b)
+)).
+
+fof(axiom, axiom, (
+  q(a,b)
+)).
+
+%% transitive closure p_tc %%
+
+fof(axiom, axiom, (
+  ![P] : ($answer(P) |
+  ((![X,Y] : ((papp(P,X) & p(X,Y)) => papp(P,Y))) =>
+    (![X,Y] : ((papp(P,X) & p_tc(X,Y)) => papp(P,Y)))))
+)).
+
+%% fapp, papp %%
+
+fof(axiom, axiom, (
+  ![X] : fapp(a,X) = a
+)).
+
+fof(axiom, axiom, (
+  ![X] : fapp(b,X) = b
+)).
+
+fof(axiom, axiom, (
+  ![X] : fapp(x,X) = X
+)).
+
+fof(axiom, axiom, (
+  ![X,V,W] : (papp(p_(V,W),X) <=> p(fapp(V,X),fapp(W,X)))
+)).
+
+fof(axiom, axiom, (
+  ![X,V,W] : (papp(q_(V,W),X) <=> q(fapp(V,X),fapp(W,X)))
+)).
+
+fof(axiom, axiom, (
+  ![X,V,W] : (papp(p_tc_(V,W),X) <=> p_tc(fapp(V,X),fapp(W,X)))
+)).
+
+fof(axiom, axiom, (
+  ![X,V,W] : (papp(and(V,W),X) <=> (papp(V,X) & papp(W,X)))
+)).
+
+fof(axiom, axiom, (
+  ![X,V] : (papp(not(V),X) <=> ~papp(V,X))
+)).
+
+

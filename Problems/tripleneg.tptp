@@ -1,0 +1,36 @@
+fof(axiom, axiom,
+![X,Y,Z,V,W] :
+  (eval(x,X,Y,Z,V,W) <=> X=true)
+).
+
+fof(axiom, axiom,
+![X,Y,Z,V,W] :
+  (eval(y,X,Y,Z,V,W) <=> Y=true)
+).
+
+fof(axiom, axiom,
+![X,Y,Z,V,W] :
+  (eval(z,X,Y,Z,V,W) <=> Z=true)
+).
+
+fof(axiom, axiom,
+![X,Y,Z,V,W] :
+  (eval(v,X,Y,Z,V,W) <=> V=true)
+).
+
+fof(axiom, axiom,
+![X,Y,Z,V,W] :
+  (eval(w,X,Y,Z,V,W) <=> W=true)
+).
+
+fof(axiom, axiom,
+![X,Y,Z,V,W,P,Q] :
+  (eval(and(P,Q),X,Y,Z,V,W) <=> (eval(P,X,Y,Z,V,W) & eval(Q,X,Y,Z,V,W)))
+).
+
+fof(axiom, axiom,
+![X,Y,Z,V,W,P,Q] :
+  (eval(or(P,Q),X,Y,Z,V,W) <=> (eval(P,X,Y,Z,V,W) | eval(Q,X,Y,Z,V,W)))
+).
+
+p(x,y,z,not(q(x,y,z,not(r(x,y,z)))),not(r(x,y,z))).

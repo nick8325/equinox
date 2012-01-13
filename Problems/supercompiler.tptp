@@ -1,0 +1,197 @@
+%%% data types %%%
+
+% booleans
+
+cnf(axiom, axiom, (
+  false != true
+)).
+
+cnf(axiom, axiom, (
+  false != undef
+)).
+
+cnf(axiom, axiom, (
+  true != undef
+)).
+
+% naturals
+
+cnf(axiom, axiom, (
+  zero != succ(X)
+)).
+
+cnf(axiom, axiom, (
+  prev(succ(X)) = X
+)).
+
+cnf(axiom, axiom, (
+  prev(zero) = undef
+)).
+
+cnf(axiom, axiom, (
+  zero != undef
+)).
+
+cnf(axiom, axiom, (
+  succ(X) != undef
+)).
+
+% lists
+
+cnf(axiom, axiom, (
+  nil != cons(X,Xs)
+)).
+
+cnf(axiom, axiom, (
+  head(cons(X,Xs)) = X
+)).
+
+cnf(axiom, axiom, (
+  tail(cons(X,Xs)) = Xs
+)).
+
+cnf(axiom, axiom, (
+  head(nil) = undef
+)).
+
+cnf(axiom, axiom, (
+  tail(nil) = undef
+)).
+
+cnf(axiom, axiom, (
+  nil != undef
+)).
+
+cnf(axiom, axiom, (
+  cons(X,Xs) != undef
+)).
+
+%%% function definitions %%%
+
+% even
+
+cnf(axiom, axiom, (
+  even(zero) = true
+)).
+
+cnf(axiom, axiom, (
+  even(succ(X)) = odd(X)
+)).
+
+cnf(axiom, axiom, (
+  even(X) = undef | X=zero | X=succ(prev(X))
+)).
+
+% odd
+
+cnf(axiom, axiom, (
+  odd(zero) = false
+)).
+
+cnf(axiom, axiom, (
+  odd(succ(X)) = even(X)
+)).
+
+cnf(axiom, axiom, (
+  odd(X) = undef | X=zero | X=succ(prev(X))
+)).
+
+% doubleacc
+
+cnf(axiom, axiom, (
+  doubleacc(zero, Acc) = Acc
+)).
+
+cnf(axiom, axiom, (
+  doubleacc(succ(N), Acc) = doubleacc(N,succ(succ(Acc)))
+)).
+
+cnf(axiom, axiom, (
+  doubleacc(N, Acc) = undef | N = zero | N = succ(prev(N))
+)).
+
+% sl
+
+cnf(axiom, axiom, (
+  sl(nil) = true
+)).
+
+cnf(axiom, axiom, (
+  sl(cons(Y,Ys)) = sl(Ys)
+)).
+
+cnf(axiom, axiom, (
+  sl(Xs)=undef | Xs=nil | Xs=cons(head(Xs),tail(Xs))
+)).
+
+%%% supercompiler database %%%
+
+cnf(axiom, axiom, (
+  seen(h1_even(X), even(var(X)))
+)).
+
+cnf(axiom, axiom, (
+  seen(h2_odd(X), odd(var(X)))
+)).
+
+cnf(axiom, axiom, (
+  seen(h3_even_doubleacc_succ(X), even(doubleacc(succ(X),zero)))
+)).
+
+cnf(axiom, axiom, (
+  sl_thing1(X,Y,Xs) = sl_thing2(sl(cons(Y,Xs)),X,Y,Xs)
+)).
+
+cnf(axiom, axiom, (
+  sl_thing2(true,X,Y,Xs) = sl_thing3(sl(cons(X,cons(Y,Xs))))
+)).
+
+cnf(axiom, axiom, (
+  sl_thing2(Z,X,Y,Xs) = undef | Z = true
+)).
+
+cnf(axiom, axiom, (
+  sl_thing3(true) = unr
+)).
+
+cnf(axiom, axiom, (
+  sl_thing3(false) = undef
+)).
+
+cnf(axiom, axiom, (
+  sl_thing3(X) = undef | X = true | X = false
+)).
+
+cnf(axiom, axiom, (
+  sl_thing4(X,Y,Xs) = sl_thing5(sl(Xs),Xs)
+)).
+
+cnf(axiom, axiom, (
+  sl_thing5(true,Xs) = sl_thing3(sl(Xs))
+)).
+
+cnf(axiom, axiom, (
+  sl_thing5(Z,Xs) = undef | Z = true
+)).
+
+cnf(axiom, axiom, (
+  seen(h3_sl_thing(X,Y,Xs), sl_thing1(var(X),var(Y),var(Xs)))
+)).
+
+%%% the questions %%%
+
+%- works!
+%cnf(axiom, axiom, (
+%  $answer(N) | ~seen(N, even(succ(var(x))))
+%)).
+
+%- works!
+cnf(axiom, axiom, (
+  $answer(N) | ~seen(N, even(doubleacc(succ(x),succ(succ(zero)))))
+)).
+
+%- works!
+%cnf(axiom, axiom, (
+%  $answer(N) | ~seen(N, sl_thing4(var(x),var(y),var(xs)))
+%)).
+

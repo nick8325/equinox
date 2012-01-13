@@ -1,0 +1,76 @@
+cnf(axiom, axiom, (
+  ~in(X,empty)
+)).
+
+cnf(axiom, axiom, (
+  del(X,H) = delFromTo(X,find(X,H),H)
+)).
+
+cnf(axiom, axiom, (
+  ~in(X,H) | find(X,delFromTo(V,W,H)) = find(X,H)
+)).
+
+cnf(axiom, axiom, (
+  delFromTo(X,Y,delFromTo(V,W,H)) = delFromTo(V,W,delFromTo(X,Y,H))
+)).
+
+cnf(axiom, axiom, (
+  delFromTo(X,Y,delFromTo(Y,Z,H)) = delFromTo(X,Z,H)
+)).
+
+cnf(axiom, axiom, (
+  in(X,delFromTo(V,V,H)) | ~in(X,H)
+)).
+
+cnf(axiom, axiom, (
+  in(X,delFromTo(V,W,H)) | V=W | ~in(V,H) | X=V | ~in(X,delFromTo(find(V,H),W,H))
+)).
+
+cnf(axiom, axiom, (
+  ~in(X,delFromTo(V,W,H)) | in(X,H)
+)).
+
+cnf(axiom, axiom, (
+  ~in(X,delFromTo(V,W,H)) | V=W | in(V,H)
+)).
+
+cnf(axiom, axiom, (
+  ~in(X,delFromTo(V,W,H)) | V=W | X!=V
+)).
+
+cnf(axiom, axiom, (
+  ~in(X,delFromTo(V,W,H)) | V=W | in(X,delFromTo(find(V,H),W,H))
+)).
+
+cnf(axiom, axiom, (
+  ~inFromTo(X,Y,H) | X=Y | in(X,H)
+)).
+
+cnf(axiom, axiom, (
+  ~inFromTo(X,Y,H) | X=Y | inFromTo(find(X,H),Y,H)
+)).
+
+cnf(axiom, axiom, (
+  ~inFromTo(X,Y,H) | ~inFromTo(Y,Z,H) | inFromTo(X,Z,H)
+)).
+
+cnf(axiom, axiom, (
+  ~in(X,H) | ~inFromTo(X,find(X,H),H)
+)).
+
+cnf(axiom, axiom, (
+  in(X,H) | inFromTo(X,find(X,H),H)
+)).
+
+%  x |-> z * ls(z,y)     ==> ls(x,y)
+
+fof(c, conjecture,
+![X,Y,Z,H1,H2,H3] : (
+  ( in(X,H1) & Z=find(X,H1) & H2=del(X,H1)
+  & inFromTo(Z,Y,H2) & H3=delFromTo(Z,Y,H2)
+  ) =>
+  ( inFromTo(X,Y,H1) & H3=delFromTo(X,Y,H1)
+  )
+)).
+
+

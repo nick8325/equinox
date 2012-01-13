@@ -1,0 +1,64 @@
+
+% IDEA:
+% something like
+% induct :: (Struct -> Prop) ->
+
+% structures
+
+fof(struct, axiom, (
+  ![P,Q] : sub(P,pair(P,Q))
+)).
+
+fof(struct, axiom, (
+  ![P,Q] : sub(Q,pair(P,Q))
+)).
+
+fof(struct, axiom, (
+  ![X,Y] : (fst(pair(X,Y))=X & snd(pair(X,Y))=Y)
+)).
+
+fof(struct, axiom, (
+  ![P,Q,R] : ((sub(P,Q) & sub(Q,R)) => sub(P,R))
+)).
+
+fof(struct, axiom, (
+  ![S] : (struct(S) <=> (S=nil | (?[P,Q] : (struct(P) & struct(Q) & S=pair(P,Q)))))
+)).
+
+% trees
+
+fof(str_leaf, axiom, (
+  ![X] : str(leaf(X)) = nil
+)).
+
+fof(str_bin, axiom, (
+  ![L,R] : str(bin(L,R)) = pair(str(L),str(R))
+)).
+
+fof(str_bin, axiom, (
+  ![T] : ((str(T)=nil | (?[P,Q] : str(T)=pair(P,Q)))  => ((?[X] : T=leaf(X)) | (?[L,R] : (T=bin(L,R))))) % weaker, no recursion
+)).
+
+% mirror
+
+fof(mirror_leaf, axiom, (
+  ![X] : mirror(leaf(X)) = leaf(X)
+)).
+
+fof(mirror_bin, axiom, (
+  ![L,R] : mirror(bin(L,R)) = bin(mirror(R),mirror(L))
+)).
+
+% theorem
+
+fof(IH, axiom, (
+  ![T] : (~sub(str(T),str(t)) | mirror(mirror(T))=T)
+)).
+
+fof(neg_conj, axiom, (
+  ( struct(str(t))
+  & mirror(mirror(t))!=t
+  )
+)).
+
+

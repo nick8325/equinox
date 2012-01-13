@@ -1,0 +1,48 @@
+
+zip xs ys =
+  case xs of
+    [] -> case ys of
+            []   -> []
+            q:qs -> BAD
+    p:ps -> case ys of
+              [] -> BAD
+              q:qs -> zip_ok ps (case same ps qs of
+                                   True  -> qs
+                                   False -> BAD)
+
+investigate paths to BAD in:
+
+zip xs (case same xs ys of
+          True  -> ys
+          False -> UNR)
+
+axioms:
+
+* xs1 = xs
+
+* ys1 = case same xs ys of
+          True  -> ys
+          False -> UNR
+
+path 1:
+
+  * xs1 = []
+
+  * ys1 = q:qs
+
+  ?
+
+path 2:
+
+  * xs1 = p:ps
+
+  * ys1 = []
+
+path 3:
+
+  * xs1 = p:ps
+
+  * ys1 = q:qs
+
+  * same ps qs = False
+

@@ -56,6 +56,8 @@ import Flags
 import Control.Monad
 import List( intersperse )
 
+import Observe
+
 data Lit
   = Lit Sat.Lit
   | Con :=: Con
@@ -236,7 +238,10 @@ getModelValue (a :=: b)  = checkModelEqual a b
 getModelValue (a :/=: b) = fmap not (checkModelEqual a b)
 getModelValue (Bool b)   = return b
 
-checkEqual = undefined
+checkEqual :: Con -> Con -> C (Maybe Bool)
+checkEqual a b =
+  do l <- norm (a :=: b)
+     getValue l 
 
 getRep :: Con -> C Con
 getRep a =
@@ -415,7 +420,12 @@ solve flags xs =
                 [ if x' /= y'
                     then do return False
                     else do put 1 "T: "
+                            --observe "path" (length p) `seq` return ()
                             addClause ((x :=: y) : [ x :/=: y | (x,y) <- p ])
+                            --sequence_
+                            --  [ addClause ((x :/=: y) : [ if eq == ceq then x :=: y else x :/=: y | eq@(x,y) <- p ])
+                            --  | ceq <- p
+                            --  ]
                             return True
                 | (x,y) <- neqs
                 , let x' = rep eqTab x

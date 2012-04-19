@@ -23,13 +23,16 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -}
 
-import System
+import System.Exit
   ( exitWith
   , ExitCode(..)
-  , getEnv
   )
 
-import Char
+import System.Environment
+  ( getEnv
+  )
+
+import Data.Char
   ( isSpace
   , isAlpha
   , isAlphaNum
@@ -38,25 +41,25 @@ import Char
   , isLower
   )
 
-import List
+import Data.List
   ( intersperse
   , (\\)
   , tails
   , nub
   )
 
-import IO
+import System.IO
   ( hFlush
   , stdout
+  )
+
+import System.IO.Error as IO
+  ( ioError
+  , userError
   , try
   )
 
-import System.IO.Error
-  ( ioError
-  , userError
-  )
-
-import Monad
+import Control.Monad
   ( guard
   )
 
@@ -100,7 +103,7 @@ readProblemWithRoots roots name =
                 do putStrLn "PARSE ERROR:"
                    sequence [ putWarning s | s <- err ]
                    exitWith (ExitFailure 1)
-   
+
               Right (includes,clauses) ->
                 do putStrLn "OK"
                    hFlush stdout
@@ -109,10 +112,10 @@ readProblemWithRoots roots name =
  where
   name_p | '.' `elem` name = name
          | otherwise       = name ++ ".p"
- 
+
   findFile [] =
     do return Nothing
-  
+
   findFile (name:names) =
     do -- on Cygwin, the variable TPTP expects Windows paths!
        -- putStrLn ("(trying '" ++ name ++ "'...)")
@@ -136,7 +139,7 @@ white =
   do munch isSpace
      option () $
        do char '%' <?> ""
-          many (satisfy (/= '\n')) 
+          many (satisfy (/= '\n'))
           char '\n'
           white
       <|>
@@ -147,11 +150,11 @@ white =
                 do anyChar
                    anyChar
                    return ()
-              
+
               body (_:s) =
                 do anyChar
                    body s
-              
+
               body [] =
                 do return ()
           body s
@@ -278,7 +281,7 @@ atom bnd =
 form :: Bnd -> P Form
 form bnd =
   do foper bnd ops
- <?> "formula"    
+ <?> "formula"
  where
   ops = [ ("<=>", Equiv)
         , ("<~>", \x y -> nt (x `Equiv` y))
@@ -314,7 +317,7 @@ funit bnd =
      token ":"
      f <- funit ((`S.union` S.fromList vs) `fmap` bnd)
      return (foldr q f (map (\v -> name v ::: V top) vs))
- <?> "formula unit"    
+ <?> "formula unit"
 
 lit :: P Form
 lit =
@@ -323,7 +326,7 @@ lit =
   do token "~"
      a <- atom Nothing
      return (nt a)
- <?> "literal"    
+ <?> "literal"
 
 claus :: P Form
 claus =
@@ -380,7 +383,7 @@ formula =
          return (s,t)
     | (s,t) <- typeList
     ]
-  
+
   typeList =
     [ ("axiom",              Fact)  -- ..
     , ("theorem",            Fact)  -- I see no reason to distinguish these
@@ -435,7 +438,7 @@ parseP s =
         , "Please report this as a bug in the parser."
         ]
  where
-  commas op = concat . intersperse (", " ++ op ++ " ") 
+  commas op = concat . intersperse (", " ++ op ++ " ")
 
 -------------------------------------------------------------------------
 -- the end.

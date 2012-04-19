@@ -29,7 +29,7 @@ import Data.Set( Set )
 import qualified Data.Set as S
 import Data.Map( Map )
 import qualified Data.Map as M
-import List hiding ( insert, delete, union )
+import Data.List hiding ( insert, delete, union )
 import Paradox.AnalysisTypes
 import Flags
 
@@ -62,13 +62,13 @@ instantiate flags predefs cs qcs =
     c1 `siz` c2 = length c1 `compare` length c2
 
   iqcs = [1..] `zip` qcs
-  
+
   syms = symbols cs
 
   isGround c = S.size (free c) == 0
-  
+
   con k = Fun (elt k) []
-  
+
   listType = head $
     [ tp | nil ::: ([] :-> tp) <- S.toList syms, nil == name "$nil" ] ++
     [ Type (prim "list") Nothing Full ]
@@ -86,7 +86,7 @@ instantiate flags predefs cs qcs =
    where
     transp []  = repeat []
     transp xss = concat [ x | x:_ <- xss ] : transp [ xs | _:xs <- xss ]
-   
+
     symmForType tp _ | tp == listType =
       -- d == 1
       [ [ [ Pos (fnil :=: con 1) ]
@@ -127,7 +127,7 @@ instantiate flags predefs cs qcs =
       fnil           = Fun (name "$nil"   ::: ([] :-> listType)) []
       ftail (xs,xs') = prd (name "$tail"  ::: ([listType,listType] :-> bool)) [xs,xs']
       fhead xs       = Fun (name "$head"  ::: ([listType] :-> elemType)) [xs]
-      
+
     symmForType tp predef =
       zipWith (\k f -> f k) [1..]
         -- do not use symmetries before predef size
@@ -176,7 +176,7 @@ instantiate flags predefs cs qcs =
            ]
      where
       numCons = predef + length allCons
-      
+
       allCons =
         [ t
         | Uniq (Bind v c) <- qcs
@@ -209,10 +209,10 @@ instantiate flags predefs cs qcs =
    where
     dom  = (dm % k) ::: ([] :-> bool)
     domk = dom `prd` []
-    
+
     newCon  = con k
     allCons = newCon : oldCons
-    
+
     qclauses =
       [ c
       | (i,qc) <- iqcs
@@ -224,7 +224,7 @@ instantiate flags predefs cs qcs =
       | c <- qclauses
       , not (isGround c)
       ]
-    
+
     clauses =
       [ ForAll
         ( -- constant equalities
@@ -256,7 +256,7 @@ instantiate flags predefs cs qcs =
           ++ qclauses
         )
       ]
-  
+
     atLeastOne :: QClause -> [Clause]
     atLeastOne (Uniq (Bind v@(_ ::: V tp) c)) =
       [ pre
@@ -269,7 +269,7 @@ instantiate flags predefs cs qcs =
                          | k  > k' -> []
                  _                 -> [(Neg domk :)]
       ]
-  
+
     atMostOne :: Int -> QClause -> [Clause]
     atMostOne i (Uniq (Bind v@(_ ::: V tp) c)) =
       [ [negat l, a]

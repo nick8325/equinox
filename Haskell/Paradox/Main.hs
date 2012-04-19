@@ -39,19 +39,19 @@ import Paradox.SolveInstances
 
 import Output
 
-import IO
+import System.IO
   ( hFlush
   , stdout
   )
 
-import List
+import Data.List
   ( group
   , sort
   , nub
   , intersperse
   )
 
-import System
+import System.Exit
   ( exitWith
   , ExitCode(..)
   )
@@ -64,12 +64,12 @@ main =
   do putStrLn "Paradox, version 4.0, 2010-06-29."
      --putStrLn "*** NOTE: THIS IS A NON-STANDARD, DELIBERATELY UNSOUND VERSION!"
      Main.main Paradox solveProblem
-  
+
 -------------------------------------------------------------------------
 -- problem
 
 solveProblem :: (?flags :: Flags) => [Clause] -> [Clause] -> IO ClauseAnswer
-solveProblem theory oblig =    
+solveProblem theory oblig =
   do {-
      putStrLn "==> Input clauses"
      sequence_ [ putStrLn (showClause c) | c <- csIn ]
@@ -137,28 +137,28 @@ solveProblem theory oblig =
 
     bigDom = if isFinite then maxDomain else 9999999 -- max domain size
     big    = 999999999
-  
+
     isize v = case tdomain t of
                 Nothing -> bigDom
                 Just k  -> k
      where
-      V t = typing v 
-   
+      V t = typing v
+
     groupN :: Ord a => [a] -> [(Int,a)]
     groupN = map (\xs -> (length xs, head xs))
            . group
            . sort
-   
+
     mask :: Symbolic a => a -> [(Int, Int)]
     mask c = groupN
            . map isize
            . S.toList
            . free
            $ c
-    
+
     masks = groupN
           $ map mask fcs ++ map mask qcs
-    
+
     estimate n =
       let x = sum [ fromIntegral a
                   * product [ (fromIntegral n' `min` n) ^ fromIntegral b
@@ -166,7 +166,7 @@ solveProblem theory oblig =
                             ]
                   | (a,msk) <- masks
                   ]
-          
+
        in x -- spy "est" (n,x) `seq` x
 
   ns' = [ i | i <- [1..n], i >= minSize ]
@@ -181,7 +181,7 @@ solveProblem theory oblig =
 
   numFuns = length [ () | f <- S.toList syms, _  :-> b <- [typing f], b /= bool ]
   numCons = length [ () | c <- S.toList syms, [] :-> b <- [typing c], b /= bool ]
-  
+
   (isFinite,maxDomain,maxDom,whyDom) = minn
     [ (numCons == numFuns, maximum (1 : [ n | t <- typs
                                             , Just n <- [tsize t]
@@ -197,15 +197,15 @@ solveProblem theory oblig =
         ns -> (True, mn, show mn, "  (" ++ why ++ ")")
          where
           (mn,why) = foldr1 (\(a,x) (b,y) -> if a < b then (a,x) else (b,y)) ns
-  
+
     limited c =
       case c of
         Pos (Var x :=: t) : ls
           | not (x `S.member` free t) && lim x ls -> Just n
-        
+
         Pos (t :=: Var x) : ls
           | not (x `S.member` free t) && lim x ls -> Just n
-        
+
         _ -> Nothing
        where
         lim x [] = True
@@ -214,8 +214,8 @@ solveProblem theory oblig =
         lim x (Pos (t :=: Var y) : ls)
           | x == y && not (x `S.member` free t) = lim x ls
         lim x _ = False
-        
+
         n = length c
-    
+
 ---------------------------------------------------------------------------
 -- the end.

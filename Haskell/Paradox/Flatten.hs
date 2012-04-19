@@ -29,19 +29,22 @@ import Data.Set( Set )
 import qualified Data.Set as S
 import Data.Map( Map )
 import qualified Data.Map as M
-import List ( (\\), sortBy, minimumBy, partition )
 import Paradox.AnalysisTypes
 import Paradox.Instantiate
-import Maybe
+import Data.Maybe
   ( fromJust
   )
 
-import Monad
+import Control.Monad
   ( mplus
   )
 
-import List
+import Data.List
   ( groupBy
+  , (\\)
+  , sortBy
+  , minimumBy
+  , partition
   , sort
   )
 
@@ -61,10 +64,10 @@ macify cs = ([(t,length ts)|(t,ts) <- cliques], flattenedCs, functionCs)
             ]
     ] ++
     splitAll (concatMap (flatten assignCons) (defCs ++ coreCs))
-  
+
   (ds, defCs, coreCs) =
     definitions cs
-    
+
   functionCs =
     [ Uniq (Bind y
       ( [ Pos (t :=: Var y) ]
@@ -128,21 +131,21 @@ findClique [] units = []
 findClique ts units = S.toList (largestClique S.empty graph)
  where
   cons = S.fromList ts
-  
+
   (posInfo, negInfo) = foldr gather (S.empty, S.empty) units
    where
     gather (Pos p) (pos, neg) = (pos `S.union` inst p, neg)
     gather (Neg p) (pos, neg) = (pos, neg `S.union` inst p)
-  
+
     inst p = S.fromList [ norm (subst sub p) | sub <- subs (S.toList (free p)) ]
      where
       norm (a :=: b) | b < a = b :=: a
       norm p                 = p
-    
+
     subs []     = [ids]
     subs (x:xs) = [ (x |=> t) |+| sub | sub <- subs xs, t <- ts ]
-  
-  edges = 
+
+  edges =
     [ (a,b)
     | (a,b) <- pairs (S.toList cons)
     , a `notEqual` b
@@ -163,8 +166,8 @@ findClique ts units = S.toList (largestClique S.empty graph)
 
       replace a b a' | a == a' = b
       replace a b (Fun f xs) = Fun f (map (replace a b) xs)
-  
-  graph = 
+
+  graph =
     M.fromListWith S.union $
       concat [ [(a, S.singleton b), (b, S.singleton a)]
              | (a,b) <- edges
@@ -172,7 +175,7 @@ findClique ts units = S.toList (largestClique S.empty graph)
         ++ [ (a, S.empty)
            | a <- ts
            ]
-  
+
   largestClique cl gr
     | M.null gr = cl
     | S.size cl >= 1 + S.size bs
@@ -207,7 +210,7 @@ definitions cs = ([ f | (_, Fun f _) <- list ], defCs, coreCs)
     ]
    where
     ts = topterms cs
-   
+
   list =
     [ (t, Fun (df % i ::: (map typ xs :-> typ t)) xs)
     | (t,i) <- deepTerms `zip` [1..]
@@ -234,13 +237,13 @@ definitions cs = ([ f | (_, Fun f _) <- list ], defCs, coreCs)
     norm (Fun f xs) sub ws     k =
       norms xs sub ws $ \xs' sub' ws' ->
         k (Fun f xs') sub' ws'
-    
+
     norms []     sub ws k = k [] sub ws
     norms (t:ts) sub ws k =
       norm t sub ws $ \t' sub' ws' ->
         norms ts sub' ws' $ \ts' sub'' ws'' ->
           k (t':ts') sub'' ws''
-  
+
   isOkTerm top (Var _)    = False
   isOkTerm top (Fun _ xs) = any (not . isVar) xs
                           -- && S.size (free xs) <= 1
@@ -249,7 +252,7 @@ definitions cs = ([ f | (_, Fun f _) <- list ], defCs, coreCs)
    where
     isVar (Var _) = True
     isVar _       = False
-    
+
     isAlreadyConnected vs (Var v)    = vs `S.isSubsetOf` S.fromList [v]
     isAlreadyConnected vs (Fun _ xs) = vs `S.isSubsetOf` S.fromList [ v | Var v <- xs ]
                                     || any (isAlreadyConnected vs) xs
@@ -270,7 +273,7 @@ definitions cs = ([ f | (_, Fun f _) <- list ], defCs, coreCs)
   replaceLit (Neg a) = Neg (replaceAtom a)
 
   replaceAtom (a :=: b) = replace a :=: replace b
-  
+
   replace (Var v)        = Var v
   replace t@(Fun f xs) =
     case M.lookup t' tab of
@@ -286,12 +289,12 @@ flatten :: (Map Term Term) -> Clause -> [Clause]
 flatten assignCons ls = simplify (defs ++ flatLs)
  where
   fls = free ls
-  
+
   vs = [ v
        | i <- [1..]
        , let v = vr % i
        ]
-  
+
   tab =
     M.fromList
       [ (t,v)
@@ -301,11 +304,11 @@ flatten assignCons ls = simplify (defs ++ flatLs)
                   Var v -> v
                   _     -> fv ::: V (typ t)
       ]
-  
+
   var t =
     case M.lookup t assignCons of
       Just ci                       -> ci
-      Nothing 
+      Nothing
         | tdomain (typ t) == Just 1 -> Fun (elt 1) []
         | otherwise                 -> Var (case M.lookup t tab of
                                               Just t' -> t'
@@ -316,12 +319,12 @@ flatten assignCons ls = simplify (defs ++ flatLs)
     | (t@(Fun f ts), v) <- M.toList tab
     , M.lookup t assignCons == Nothing
     ]
-  
+
   flatLs =
     [ flat `fmap` l
     | l <- ls
     ]
-  
+
   flat (Fun p ts :=: b) | b == truth =
     p `prd` map var ts
 
@@ -348,11 +351,11 @@ simplify = simp
     , c3 <- substVarEq c2
     , c4 <- substFunEq c3
     ]
-  
+
   trivial ls
     | any ((`S.member` S.fromList ls) . negat) ls = []
     | otherwise                                   = [ls]
-  
+
   identEq ls =
     case [ ()
          | Pos (s :=: t) <- ls
@@ -360,33 +363,33 @@ simplify = simp
          ] of
       [] -> [ls]
       _  -> []
-  
+
   substVarEq ls = substVar [] ls
    where
     substVar ls' (Neg (Var v :=: Var w) : ls) =
       simp (subst (v |=> Var w) (ls' ++ ls))
-    
+
     substVar ls' (Neg (Var v :=: t@(Fun c [])) : ls) | isElt c =
       simp (subst (v |=> t) (ls' ++ ls))
-    
+
     substVar ls' (Neg ((Fun c1 []) :=: t@(Fun c2 [])) : ls) | isElt c1 && isElt c2 && c1 /= c2 =
       []
-    
+
     substVar ls' (l:ls) =
       substVar (l:ls') ls
-    
+
     substVar ls' [] =
       [ls']
-  
+
   substFunEq ls = substFun [] ls
    where
     substFun ls' (l@(Neg (t :=: Var v)) : ls)
       | not (v `S.member` free t) =
       substTerm v t [] (ls' ++ ls) (substFun (l:ls') ls)
-    
+
     substFun ls' (l:ls) =
       substFun (l:ls') ls
-    
+
     substFun ls' [] =
       [ls']
 
@@ -396,7 +399,7 @@ simplify = simp
      where
       leftSubst  = t1 == Var v && isSmall t2
       rightSubst = t2 == Var v && isSmall t1
-      
+
       isSmall (Var _)    = True
       isSmall (Fun c []) = isElt c
       isSmall _          = False
@@ -404,7 +407,7 @@ simplify = simp
     substTerm v t ls' (l:ls) k
       | v `S.member` free l = k
       | otherwise           = substTerm v t (l:ls') ls k
-    
+
     substTerm v t ls' [] k =
       simp ls'
 
@@ -419,7 +422,7 @@ purify cs
  where
   (ps,cs')   = pure M.empty cs
   (ps',cs'') = purify cs'
-  
+
   pure tab [] =
     ( removePs
     , [ c
@@ -433,7 +436,7 @@ purify cs
       | (p,sgns) <- M.toList tab
       , S.size sgns == 1
       ]
-    
+
     setPs = S.fromList [ p | (p,_) <- removePs ]
     isRemoveP (Fun p _ :=: b) = b == truth && p `S.member` setPs
     isRemoveP _               = False
@@ -442,7 +445,7 @@ purify cs
    where
     posP = S.fromList [ p | Pos (Fun p xs :=: b) <- c, b == truth ]
     negP = S.fromList [ p | Neg (Fun p xs :=: b) <- c, b == truth ]
-   
+
     occurs =
       M.fromList $
         [ (pn,S.singleton True)  | pn <- S.toList $ posP `S.difference` negP ] ++
@@ -463,7 +466,7 @@ splitAll cs = splitting 1 cs (\_ -> [])
 
     connections =
       [ (v,ws)
-      | (v,ws) <- 
+      | (v,ws) <-
           M.toList $
             M.fromListWith S.union
               [ (v,S.fromList ws)
@@ -509,27 +512,27 @@ splitAll cs = splitting 1 cs (\_ -> [])
 
     break i ls k =
       case [ ls'
-           
+
            -- only try when number of variables is at least 3
            | S.size (free ls) >= 3
-           
+
            -- for all "non-recursive" definitions in ls
            , def@(Neg (t@(Fun _ _) :=: Var y)) <- ls
            , not (y `S.member` free t)
-           
+
            -- gather literals which contain y
            , let (lsWithY, lsWithoutY) =
                    partition ((y `S.member`) . free) (ls \\ [def])
-                 
+
            -- there should be at least 2 such literals ...
            , lWithY:(lsWithY'@(_:_)) <- [lsWithY]
-           
+
            -- now, partition the literals containing y
            -- into two separate groups, not containing
            -- any overlapping variables except the variables in def
            , let connToY = y `S.delete` free lsWithY
                  ok      = free def
-           
+
                  (lsLeft, lsRight) =
                    part (free lWithY) [lWithY] [] lsWithY'
                   where
@@ -537,15 +540,15 @@ splitAll cs = splitting 1 cs (\_ -> [])
                    part vs left right (l:ls)
                      | S.size ((ws `S.intersection` vs) `S.difference` ok) == 0 =
                          part vs left (l:right) ls
-                     
+
                      | otherwise =
                          part (vs `S.union` ws) (l:left) right ls
                     where
                      ws = free l
-           
+
            -- they should not all end up on one side
            , not (null lsRight)
-           
+
            -- construct the new clause with the extra literal
            , let y'  = prim "C" % i ::: typing y
                  ls' = [ def
@@ -558,7 +561,7 @@ splitAll cs = splitting 1 cs (\_ -> [])
         -- _       -> set ls : k i
         []      -> ls : k i
         (ls':_) -> splitting (i+1) [ls'] k
-    
+
 select :: [a] -> [(a,[a])]
 select []     = []
 select (x:xs) = (x,xs) : [ (y,x:ys) | (y,ys) <- select xs ]

@@ -28,17 +28,17 @@ module Parsek
   ( Parser         -- :: * -> * -> *; Functor, Monad, MonadPlus
   , Expect         -- :: *; = [String]
   , Unexpect       -- :: *; = [String]
-  
+
   -- parsers
   , satisfy        -- :: Show s => (s -> Bool) -> Parser s s
   , look           -- :: Parser s [s]
   , succeeds       -- :: Parser s a -> Parser s (Maybe a)
   , string         -- :: (Eq s, Show s) => [s] -> Parser s [s]
-  
+
   , char           -- :: Eq s => s -> Parser s s
   , noneOf         -- :: Eq s => [s] -> Parser s s
   , oneOf          -- :: Eq s => [s] -> Parser s s
- 
+
   , spaces         -- :: Parser Char ()
   , space          -- :: Parser Char Char
   , newline        -- :: Parser Char Char
@@ -71,14 +71,14 @@ module Parsek
   , chainl         -- :: Parser s a -> Parser s (a -> a -> a) -> a -> Parser s a
   , chainr1        -- :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
   , chainr         -- :: Parser s a -> Parser s (a -> a -> a) -> a -> Parser s a
- 
+
   , skipMany1      -- :: Parser s a -> Parser s ()
   , skipMany       -- :: Parser s a -> Parser s ()
   , many1          -- :: Parser s a -> Parser s [a]
   , many           -- :: Parser s a -> Parser s [a]
   , sepBy1         -- :: Parser s a -> Parser s sep -> Parser s [a]
   , sepBy          -- :: Parser s a -> Parser s sep -> Parser s [a]
-  
+
   -- parsing & parse methods
   , ParseMethod    -- :: * -> * -> * -> * -> *
   , ParseResult    -- :: * -> * -> *; = Either (e, Expect, Unexpect) r
@@ -91,27 +91,27 @@ module Parsek
   , allResults                 -- :: ParseMethod s a (Maybe s) [a]
   , allResultsStaged           -- :: ParseMethod s a (Maybe s) [[a]]
   , completeResults            -- :: ParseMethod s a (Maybe s) [a]
-  
+
   , shortestResultWithLeftover -- :: ParseMethod s a (Maybe s) (a,[s])
   , longestResultWithLeftover  -- :: ParseMethod s a (Maybe s) (a,[s])
   , longestResultsWithLeftover -- :: ParseMethod s a (Maybe s) ([a],[s])
   , allResultsWithLeftover     -- :: ParseMethod s a (Maybe s) [(a,[s])]
-  
+
   , completeResultsWithLine    -- :: ParseMethod Char a Int [a]
   )
  where
-  
-import Monad
+
+import Control.Monad
   ( MonadPlus(..)
   , guard
   )
 
-import List
+import Data.List
   ( union
   , intersperse
   )
 
-import Char
+import Data.Char
 
 infix  0 <?>
 infixr 1 <|>, <<|>
@@ -148,7 +148,7 @@ instance Functor (Parser s) where
 instance Monad (Parser s) where
   return a =
     Parser (\fut -> fut a)
-  
+
   Parser f >>= k =
     Parser (\fut -> f (\a -> let Parser g = k a in g fut))
 
@@ -158,7 +158,7 @@ instance Monad (Parser s) where
 instance MonadPlus (Parser s) where
   mzero =
     Parser (\fut exp -> Fail exp [])
-    
+
   mplus (Parser f) (Parser g) =
     Parser (\fut exp -> f fut exp `plus` g fut exp)
 
@@ -234,7 +234,7 @@ string s =
               then inputs xs
               else Fail (if null exp then [show s] else exp) [show [c]]
           )
-     
+
      in inputs s
   )
 
@@ -307,7 +307,7 @@ between :: Parser s open -> Parser s close -> Parser s a -> Parser s a
 between open close p = do open; x <- p; close; return x
 
 -- repetition
-                
+
 skipMany1,skipMany :: Parser s a -> Parser s ()
 skipMany1 p = do p; skipMany p
 skipMany  p = let scan = (do p; scan) <|> return () in scan
@@ -337,7 +337,7 @@ chainl1 p op = scan
  where
   scan   = do x <- p; rest x
   rest x = (do f <- op; y <- p; rest (f x y)) <|> return x
-                              
+
 -------------------------------------------------------------------------
 -- type ParseMethod, ParseResult
 
@@ -395,7 +395,7 @@ longestResults p xs = scan p [] [] xs
   scan (Fail _ _)     []  old _      = Right old
   scan (Fail _ _)     new _   _      = Right new
   scan (Look f)       new old xs     = scan (f xs) new old xs
- 
+
 allResultsStaged :: ParseMethod s a (Maybe s) [[a]]
 allResultsStaged p xs = Right (scan p [] xs)
  where
@@ -404,7 +404,7 @@ allResultsStaged p xs = Right (scan p [] xs)
   scan (Result res p) ys xs     = scan p (res:ys) xs
   scan (Fail _ _)     ys _      = [ys]
   scan (Look f)       ys xs     = scan (f xs) ys xs
- 
+
 allResults :: ParseMethod s a (Maybe s) [a]
 allResults p xs = scan p xs
  where
@@ -471,9 +471,9 @@ longestResultsWithLeftover p xs = scan p empty empty xs
   scan (Fail _ _)     ([],_)  old _        = Right old
   scan (Fail _ _)     new _   _            = Right new
   scan (Look f)       new    old    xs     = scan (f xs) new old xs
- 
+
   empty = ([],Nothing)
- 
+
 allResultsWithLeftover :: ParseMethod s a (Maybe s) [(a,[s])]
 allResultsWithLeftover p xs = scan p xs
  where
@@ -503,7 +503,7 @@ completeResultsWithLine p xs = scan p 1 xs
     case scan p n xs of
       Left  _    -> []
       Right ress -> ress
-  
+
   '\n' |> n = n+1
   _    |> n = n
 

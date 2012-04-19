@@ -33,12 +33,12 @@ import Data.Map( Map )
 import qualified Data.Map as M
 import Data.IORef
 import Flags
-import List( sortBy, intersperse )
-import IO
+import Data.List( sortBy, intersperse )
+import System.IO
 import Paradox.Instantiate
 import Output
 import Paradox.AnalysisTypes
-import Monad
+import Control.Monad
 
 {-
 data Loc = Loc
@@ -60,7 +60,7 @@ getLit = undefined
 solveInstances :: Flags -> [(Symbol,Bool)] -> Int -> [(Int,Bool,Symbol,[ClauseSet])] -> IO (ClauseAnswer,Int)
 solveInstances flags predsPure minSize css =
   do ref  <- newIORef (M.empty,M.empty)
-     
+
      let getFunLoc f =
            do (tabf,tabp) <- lift $ readIORef ref
               case M.lookup f tabf of
@@ -68,7 +68,7 @@ solveInstances flags predsPure minSize css =
                                lift $ writeIORef ref (M.insert f loc tabf,tabp)
                                return loc
                 Just loc -> do return loc
-                               
+
          getPredLoc p =
            do (tabf,tabp) <- lift $ readIORef ref
               case M.lookup p tabp of
@@ -76,13 +76,13 @@ solveInstances flags predsPure minSize css =
                                lift $ writeIORef ref (tabf,M.insert p loc tabp)
                                return loc
                 Just loc -> do return loc
-     
+
          processClauseSet k (ForAll cs) =
            do sequence_ [ processClause Nothing k c | c <- cs ]
-         
+
          processClauseSet k (ForAllNew k' cs) =
            do sequence_ [ processClause (Just k') k c | c <- cs ]
-         
+
          processClause mn k c =
            do ls' <- mapM processLit ls
               let args = [ isize t | v <- vs, let V t = typing v ]
@@ -108,16 +108,16 @@ solveInstances flags predsPure minSize css =
           where
            ls = c
            vs = S.toList (free c)
-           
+
            isize t =
              case tdomain t of
                Just n  -> n `min` k
                Nothing -> k
-           
+
            processLit l =
              do a <- processAtom (the l)
                 return (fmap (const a) l)
-           
+
            processAtom (Fun f xs :=: y) | y /= truth && not (isElt f) =
              do loc <- getFunLoc f
                 if arity f /= length xs then error ("arity fel! " ++ show (f,typing f)) else return ()
@@ -125,27 +125,27 @@ solveInstances flags predsPure minSize css =
             where
              xs' = map processTerm xs
              y'  = processTerm y
-           
+
            processAtom (Fun p xs :=: b) | b == truth =
              do loc <- getPredLoc p
                 return (loc :@ xs')
             where
              xs' = map processTerm xs
-           
+
            processAtom (a :=: b) =
              do loc <- getPredLoc (eq ::: ([top,top] :-> bool))
                 return (loc :@ (map processTerm [a,b]))
-           
+
            processTerm (Var v) =
              ArgV (v `ind` vs)
-           
+
            processTerm (Fun (c ::: _) []) | isEltName c =
              ArgN (getIndex c)
-         
+
            x `ind` (y:ys)
              | x == y    = 1
-             | otherwise = 1 + (x `ind` ys)             
-         
+             | otherwise = 1 + (x `ind` ys)
+
          domains minSize [] =
            do return (NoAnswerClause GaveUp,minSize)
 
@@ -156,24 +156,24 @@ solveInstances flags predsPure minSize css =
                 return ()
               --lift $ sequence_ [ putStrLn s | c <- clauses, s <- showClauseSet c ]
               let clauses' = flat clauses
-              
+
                   flat []                     = []
                   flat (ForAll cs       : ds) = map (\c -> ForAll [c])       cs ++ flat ds
                   flat (ForAllNew k' cs : ds) = map (\c -> ForAllNew k' [c]) cs ++ flat ds
 
                   tot = length clauses'
-              
+
               sequence_
                 [ do --lift $ print c
                      processClauseSet k c
-                | (i,c) <- [1..] `zip` clauses' 
+                | (i,c) <- [1..] `zip` clauses'
                 ]
-              
+
               assumption <- getPredLoc assump >>= \l -> return (Pos (l :@ []))
               ass <- getLit assumption
-              
+
               --simplify True False
-              
+
               --lift $ putStrLn ("solving...")
               r <- if minSize > k then return False else solve [ass]
               if r then
@@ -317,7 +317,7 @@ printTheModel flags k ref predsPure =
   putStrLnTSTP s
     | tstp flags = lift $ putStrLn s
     | otherwise  = return ()
-    
+
   (x,_) `first` (y,_) = show x `compare` show y
 
   tdomain' t = case tdomain t of

@@ -45,12 +45,12 @@ import Data.STRef
   , writeSTRef
   )
 
-import Char
+import Data.Char
   ( ord
   , chr
   )
 
-import List
+import Data.List
   ( nub
   )
 
@@ -103,7 +103,7 @@ inferTerm (Fun f xs) =
 
 inferAndUnify :: Symbol -> [Term] -> [TypeId s] -> T s ()
 inferAndUnify s xs ts
-  | length xs == length ts = 
+  | length xs == length ts =
       sequence_
         [ do t' <- inferTerm x
              t =:= t'
@@ -155,7 +155,7 @@ runT' (MkT m) =
                   ]
 
           typeIds' <- sequence
-                        [ do ((_,eq),t,_) <- typeInfo t' 
+                        [ do ((_,eq),t,_) <- typeInfo t'
                              return (t,eq)
                         | t' <- [ t | (_,ts)      <- M.toList ps', t <- ts ]
                              ++ [ t | (_,(ts,tr)) <- M.toList fs', t <- tr:ts ]
@@ -349,7 +349,7 @@ typeInfo (MkTypeId i ref) =
        Right t  -> do (inf,i,c) <- typeInfo t
                       writeSTRef ref (Right (MkTypeId i c))
                       return (inf,i,c)
-                      
+
 touchEq :: TypeId s -> Equality -> T s ()
 touchEq t eq' =
   do ((n,eq),_,ref) <- lift (typeInfo t)
@@ -417,17 +417,17 @@ MkTypeId i1 ref1 =:= MkTypeId i2 ref2 =
                       do writeSTRef ref1 (Right (MkTypeId i2 ref2))
                          writeSTRef ref2 (Left (n1+n2,(eq1 `max` eq2)))
                          return (i2,ref2)
-                    
+
                                   | otherwise ->
                       do writeSTRef ref2 (Right (MkTypeId i1 ref1))
                          writeSTRef ref1 (Left (n1+n2,(eq1 `max` eq2)))
                          return (i1,ref1)
-                    
+
                     Right (MkTypeId i2' ref2') ->
                       do (i,ref) <- unify i1 ref1 i2' ref2'
                          writeSTRef ref2 (Right (MkTypeId i ref))
                          return (i,ref)
-                      
+
              Right (MkTypeId i1' ref1') ->
                do (i,ref) <- unify i1' ref1' i2 ref2
                   writeSTRef ref1 (Right (MkTypeId i ref))

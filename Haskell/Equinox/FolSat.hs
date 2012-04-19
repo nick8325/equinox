@@ -26,8 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import Form
 import qualified Sat
 import Name( name, prim, (%), tr )
-import List hiding ( union, insert, delete )
-import Maybe
+import Data.List hiding ( union, insert, delete )
+import Data.Maybe
 import Equinox.Fair
 import Equinox.TermSat hiding ( Lit(..) )
 import Equinox.TermSat ( Lit )
@@ -37,7 +37,7 @@ import qualified Data.Set as S
 import Data.Map( Map )
 import qualified Data.Map as M
 import Data.Maybe( isJust, fromJust )
-import IO
+import System.IO
 import Flags
 import Control.Monad
 import Equinox.PSequence
@@ -70,7 +70,7 @@ prove flags theory oblig =
  where
   cs = concatMap (norm []) (theory ++ oblig)
   (groundCs,nonGroundCs) = partition isGround cs
-  syms = S.filter (not . isVarSymbol) (symbols cs)  
+  syms = S.filter (not . isVarSymbol) (symbols cs)
 
 -----------------------------------------------------------------------------
 
@@ -135,12 +135,12 @@ solveFOL flags syms st cls =
                   , t == bool
                   , nam == name "$answer"
                   ] ++ [ name "$no_answer" ::: ([] :-> bool) ]
-  
+
   min    = head $ [ mn
                   | mn@(nam ::: (_ :-> t)) <- S.toList syms
                   , t == bool
                   , nam == name "$min"
-                  ] ++ [ name "$no_min" ::: ([] :-> bool) ]  
+                  ] ++ [ name "$no_min" ::: ([] :-> bool) ]
 
   refine rf mOldModel st ths =
     do ans   <- getTable answer
@@ -162,7 +162,7 @@ solveFOL flags syms st cls =
                else
                 return ()
               return Unsatisfiable
-         
+
          -- found a candidate model, let's check it
          _ ->
            do model <- getModel mOldModel st
@@ -195,7 +195,7 @@ solveFOL flags syms st cls =
   getModel mOldModel st =
     do tabs <- getModelTables
        st'  <- getRep st
-       
+
        let dom = S.toList $ S.fromList $
              st' :
              [ c
@@ -246,23 +246,23 @@ solveWithConflict flags mins ass =
                    addClause (T.neg a : map T.neg mins)
                    b <- solve flags (a:ass)
                    if b then try mins else return ()
-          
+
           try mins
           return Nothing
       else
        do ls <- conflict
           let ass' = map neg ls
-                
+
           let try [] =
                 do return (Just ls)
-                    
+
               try (ass:asss) =
                 do mls <- solveWithConflict flags [] ass
                    case mls of
                      Nothing -> do try asss
                      _       -> do lift $ putStr "<>"
                                    return mls
-              
+
            in try [ ass' \\ [a] | a <- ass' ]
 
 -----------------------------------------------------------------------------
@@ -281,12 +281,12 @@ clauseThread cl = thread True funs
         && deps `S.isSubsetOf` same model
           then skip dom deps
           else check ref model send)
-  
+
   skip dom deps =
     do return ( do return False
               , thread dom deps
               )
-  
+
   check ref model send = Sat.run $
     do vs    <- sequence [ newValue (domain model) | x <- xs ]
        dom   <- Sat.newLit
@@ -301,12 +301,12 @@ clauseThread cl = thread True funs
        sequence_ [ buildLit (base,stars) st dom mmap fmap vmap l
                  | l <- cl
                  ]
-     
+
        let findAllSubs i | i > 100 = -- an arbitrary choice! just testing
              -- ouch
              do Sat.lift (send '>')
                 return (Left [])
-     
+
            findAllSubs i =
              do b <- solveMin [ Sat.neg (v =? st) | v <- vs ] ([dom] ++ ms)
                 if b then
@@ -362,19 +362,19 @@ addClauseSub sub cl =
  where
   term (Var x) =
     do return (fromJust $ M.lookup x sub)
-  
+
   term (Fun f [t]) | show f == "$weak" =
     do term t
-  
+
   term (Fun f ts) =
     do as <- sequence [ term t | t <- ts ]
        f `app` as
-  
+
   atom (s :=: t) =
     do a <- term s
        b <- term t
        return (a T.:=: b)
-  
+
   literal (Pos a) = atom a
   literal (Neg a) = neg `fmap` atom a
 
@@ -421,10 +421,10 @@ build opts@(base,stars) st mmap fmap vmap (Fun f ts) =
      let opts' | show f == "$answer" = (Sat.mkFalse,stars)
                | otherwise           = opts
      vs <- sequence [ build opts' st mmap fmap vmap t | t <- ts ]
-     
+
      let entries hist [] =
            do return []
-         
+
          entries hist ((xs,y):tab) =
            do e <- conj ( [ v =? x    | (v,x) <- vs `zip` xs, x /= st ]
                        ++ [ Sat.neg e | (zs,e) <- hist, and (zipWith over zs xs) ]
@@ -442,9 +442,9 @@ build opts@(base,stars) st mmap fmap vmap (Fun f ts) =
                 do return ()
               es <- entries ((xs,e):hist) tab
               return (e:es)
-      
+
          x `over` y = x==st || y==st || x==y
-      
+
      es <- entries [] tab
      Sat.addClause (Sat.neg m : es)
      return z
@@ -454,17 +454,17 @@ build opts@(base,stars) st mmap fmap vmap (Fun f ts) =
              Just tab' -> tab'
              Nothing   -> []
   ys     = S.toList (S.fromList (map snd tab))
-  
+
   tab = ( map snd $ sort
           [ (number (==st) xs,(xs,y))
           | (xs,y) <- tab'
           ] ) ++ [(replicate (arity f) st, df)]
    where
     number p = length . filter p
-    
+
     df | isFunSymbol f = head (results ++ [st])
        | otherwise     = st
-               
+
     results = map snd
             . reverse
             . sort
@@ -493,7 +493,7 @@ solveMin xs as =
                      if b then mins a else return True
                  else
                   do return True
-           
+
         in do a <- Sat.newLit
               mins a
       else
@@ -511,7 +511,7 @@ atMostOr k x ls | k == 0 =
 
 atMostOr k x ls | k >= length ls =
   do return ()
-  
+
 atMostOr k y ls =
   do Sat.addClause (y : map Sat.neg lsa)
      if not (null lsb) then
@@ -583,7 +583,7 @@ newValue xs = new (map head . group . sort $ xs)
  where
   new [x] =
     do return [(x,Sat.mkTrue)]
-  
+
   new [x,y] =
     do l <- Sat.newLit
        return [(x,Sat.neg l), (y, l)]
@@ -597,7 +597,7 @@ newValue xs = new (map head . group . sort $ xs)
 getModelValueValue :: Value a -> Sat.S a
 getModelValueValue [(x,_)] =
   do return x
-  
+
 getModelValueValue ((x,l):xls) =
   do b <- Sat.getModelValue l
      if b then return x else getModelValueValue xls
@@ -609,7 +609,7 @@ writeModel file fs =
   do tabs <- getModelTables
      let ts = M.toList tabs
      lift $ writeFile file $ unlines $ concat $ intersperse [""] $
-       [ [ show a ++ " := " ++ rep S.empty ts c ] 
+       [ [ show a ++ " := " ++ rep S.empty ts c ]
        | (a,[([],c)]) <- ts
        , isFunSymbol a
        , take 2 (show a) == "a_"

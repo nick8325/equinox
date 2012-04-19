@@ -5,7 +5,7 @@ module Equinox.ConSat
   , Weight        -- :: *
   , wapp
   , weight
-  
+
   , run           -- :: C a -> IO a
   , lift          -- :: IO a -> C a
   , contradiction -- :: C ()
@@ -22,7 +22,7 @@ module Equinox.ConSat
   , simplify      -- :: C ()
   )
  where
- 
+
 {-
 Equinox -- Copyright (c) 2003-2007, Koen Claessen
 
@@ -51,10 +51,10 @@ import Data.Set( Set )
 import qualified Data.Set as S
 import Data.Map( Map )
 import qualified Data.Map as M
-import IO
+import System.IO
 import Flags
 import Control.Monad
-import List( intersperse )
+import Data.List( intersperse )
 
 import Observe
 
@@ -72,7 +72,7 @@ instance Ord Lit where
   (a1 :=: b1)  `compare` (a2 :=: b2)  = upair a1 b1 `compare` upair a2 b2
   (a1 :/=: b1) `compare` (a2 :/=: b2) = upair a1 b1 `compare` upair a2 b2
   Bool b1      `compare` Bool b2      = b1 `compare` b2
-  
+
   Bool _    `compare` _         = LT
   _         `compare` Bool _    = GT
   Lit _     `compare` _         = LT
@@ -99,7 +99,7 @@ neg (Bool b)   = Bool (not b)
 
 data Weight = MkWeight{ depth :: !Int, siz :: !Int }
  deriving ( Eq, Ord )
- 
+
 wapp :: [Weight] -> Weight
 wapp ws = MkWeight (1 + maximum (0 : map depth ws)) (1 + sum (map siz ws))
 
@@ -189,7 +189,7 @@ setState :: State -> C ()
 setState s = MkC (\_ -> return ((),s))
 
 liftS :: Sat.S a -> C a
-liftS m = MkC (\s -> do x <- m; return (x,s))  
+liftS m = MkC (\s -> do x <- m; return (x,s))
 
 lift :: IO a -> C a
 lift io = liftS (Sat.lift io)
@@ -241,7 +241,7 @@ getModelValue (Bool b)   = return b
 checkEqual :: Con -> Con -> C (Maybe Bool)
 checkEqual a b =
   do l <- norm (a :=: b)
-     getValue l 
+     getValue l
 
 getRep :: Con -> C Con
 getRep a =
@@ -291,7 +291,7 @@ addClause xs =
          do --lift (putStrLn ("  [=> $true]"))
             --lift (hFlush stdout)
             return ()
-       
+
        [a :=: b] ->
          do --lift (putStrLn ("  [=> " ++ show b ++ " := " ++ show a ++ "]"))
             --lift (hFlush stdout)
@@ -312,17 +312,17 @@ addClause xs =
            LT -> a' :=: b'
            EQ -> Bool True
            GT -> b' :=: a'
-  
+
   simp (a :/=: b) = neg `fmap` simp (a :=: b)
   simp l          = return l
-  
+
   showClause :: [Lit] -> String
   showClause c =
       concat
     . intersperse " | "
     . map show
     $ c
-  
+
 solve :: Flags -> [Lit] -> C Bool
 solve flags xs =
   do xs' <- sequence [ norm x | x <- xs ]
@@ -342,7 +342,7 @@ solve flags xs =
  where
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
-  
+
   putTemp s = lift $
     do putStr s
        hFlush stdout
@@ -359,7 +359,7 @@ solve flags xs =
   check xs =
     do putLn 4 "--> ConSat: checking..."
        putTemp "(equ)"
-       
+
        -- gather & set permanent positive equalities
        s <- getState
        peqs <- getPeqs [] (M.toList (compares s))
@@ -368,12 +368,12 @@ solve flags xs =
               setRep a b
          | (a,b) <- peqs
          ]
-       
+
        -- gather & rebuild compares table info
        (eqs,neqs,comps) <- getEqNeq [] [] [] (M.toList (compares s))
-       
+
        let compares' = M.toList $ M.fromListWith (++) [ (ab,[x]) | (ab,x) <- comps ]
-       
+
        bs1 <- sequence
          [ or `fmap` if a /= b
              then sequence
@@ -405,14 +405,14 @@ solve flags xs =
                     ]
          | ((a,b),x:ys) <- compares'
          ]
-       
+
        s <- getState
        setState s{ compares = M.fromList [ (ab,x)
                                          | (ab@(a,b),x:_) <- compares'
                                          , a /= b
                                          ]
                  }
-       
+
        let eqTab      = classes M.empty eqs
            graph      = M.fromListWith S.union [ (x,S.singleton y) | (x,y) <- eqs ++ map swap eqs ]
            swap (x,y) = (y,x)
@@ -446,7 +446,7 @@ solve flags xs =
          Just True -> do --lift (putStrLn ("top-true: " ++ show x ++ " " ++ show ab))
                          getPeqs (ab:peqs) abxs
          _         -> do getPeqs peqs abxs
-       
+
   getEqNeq eqs neqs comps [] =
     do return (eqs,neqs,comps)
 
@@ -460,11 +460,11 @@ solve flags xs =
        if bl
          then getEqNeq (ab:eqs) neqs comps' abxs
          else getEqNeq eqs (ab:neqs) comps' abxs
-       
+
   rep eqTab x =
     case M.lookup x eqTab of
       Just x' -> x'
-      Nothing -> x 
+      Nothing -> x
 
   classes eqTab [] = cut eqTab (M.keys eqTab)
    where
@@ -498,24 +498,24 @@ solve flags xs =
    where
     bfs' backs ((x,z):xys) xys' | x == y =
       path (M.insert x z backs) [] y
-    
+
     bfs' backs ((x,z):xys) xys' | M.lookup x backs == Nothing =
       bfs' (M.insert x z backs) xys ([(v,x) | v <- neighbors x] ++ xys')
-      
+
     bfs' backs (_:xys) xys' =
       bfs' backs xys xys'
-    
+
     bfs' backs [] [] =
       error "bfs: no path!"
-    
+
     bfs' backs [] xys' =
       bfs' backs (reverse xys') []
-    
+
     neighbors x =
       case M.lookup x graph of
         Just xs -> S.toList xs
         Nothing -> error "bfs: not a node!"
-    
+
     path backs p y
       | x == y    = p
       | otherwise = case M.lookup y backs of

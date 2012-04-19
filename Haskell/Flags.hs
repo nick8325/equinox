@@ -33,6 +33,11 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -}
 
+import System.Exit
+  ( exitWith
+  , ExitCode(..)
+  )
+
 import System.Environment
   ( getArgs
   )
@@ -41,17 +46,17 @@ import GHC.Environment
   ( getFullArgs
   )
 
-import System
+import System.IO
 
-import List
+import Data.List
   ( groupBy
   , intersperse
   , (\\)
   )
 
-import Char
+import Data.Char
 
-import CPUTime
+import System.CPUTime
 
 import Control.Monad.Instances()
 
@@ -83,7 +88,7 @@ data Flags
   , temp         :: FilePath
   , filelist     :: Maybe FilePath
   , nrOfThreads  :: Int
-  
+
   -- infinox
   , elimit       :: Int
   , plimit       :: Int
@@ -96,8 +101,8 @@ data Flags
 	, outfile			 :: Maybe FilePath
   , prover       :: Prover
 	, leo					 :: Bool
-	
-  
+
+
   -- primitive
   , thisFile     :: FilePath
   , files        :: [FilePath]
@@ -161,7 +166,7 @@ initFlags =
 	, filelist		 = Nothing
   , leo 				 = False
   , prover       = E
-  
+
   -- primitive
   , thisFile     = ""
   , files        = []
@@ -379,7 +384,7 @@ options =
                 ]
     }
 
-	
+
 	, Option
     { long    = "filelist"
     , tools   = [Paradox, Equinox, Infinox]
@@ -435,7 +440,7 @@ getFlags tool =
             putStr (unlines err)
             putStrLn "Try --help."
             exitWith (ExitFailure (-1))
-       
+
        Right f ->
          do t <- getNrOfThreads
             return f{ start       = unPico picoT
@@ -526,25 +531,25 @@ argNum = MkArg ["<num>"] $ \xs ->
     x:xs       | all isDigit x -> Right (read x, xs)
     ('-':x):xs | all isDigit x -> Right (-read x, xs)
     _                          -> Left ["expected a number"]
-      
+
 argFile :: Arg FilePath
 argFile = MkArg ["<file>"] $ \xs ->
   case xs of
     x:xs -> Right (x, xs)
     _    -> Left ["expected a file"]
-      
+
 argName :: Arg FilePath
 argName = MkArg ["<name>"] $ \xs ->
   case xs of
     x:xs -> Right (x, xs)
     _    -> Left ["expected a name"]
-      
+
 argDots :: Arg FilePath
 argDots = MkArg ["<dot-spec>"] $ \xs ->
   case xs of
     x:xs -> Right (x, xs)
     _    -> Left ["expected a dot-spec"]
-      
+
 argNums :: Arg [Int]
 argNums = MkArg ["<nums>"] $ \xs ->
   case xs of
@@ -576,7 +581,7 @@ argList as = MkArg ["<" ++ concat (intersperse " | " as) ++ ">*"] $ \xs ->
        where
         w = takeWhile (/= ',') s
         r = tail (dropWhile (/= ',') s)
-    
+
       elts _ = Left ["argument list garbled"]
 
 parseFlags :: Tool -> Flags -> [String] -> Either [String] Flags

@@ -26,11 +26,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import Form
 import Control.Concurrent
 import Control.Exception
-import System
 import Flags
 import ParseProblem
 import Clausify
-import IO( hSetBuffering, stdout, BufferMode(..) )
+import System.IO( hSetBuffering, stdout, BufferMode(..) )
+
+import System.Exit
+  ( exitWith
+  , ExitCode(..)
+  )
 
 import Output
 
@@ -90,24 +94,24 @@ main' solveProblem =
                 n               = length obligs
             let ?flags          = ?flags{ thisFile = file }
             --sequence_ [ print t | t <- theory ]
-            
+
             putOfficial ("SOLVING: " ++ file)
             case obligs of
               -- Satisfiable/Unsatisfiable
               [] ->
                 do ans <- solveProblem theory []
                    putResult (show ans)
-              
+
               -- CounterSatisfiable/Theorem
               [oblig] ->
                 do ans <- solveProblem theory oblig
                    putResult (show (toConjectureAnswer ans))
-              
+
               -- Unknown/Theorem
               obligs ->
                 do let solveAll i [] =
                          do return Theorem
-                       
+
                        solveAll i (oblig:obligs) =
                          do putSubHeader ("Part " ++ show i ++ "/" ++ show n)
                             ans <- solveProblem theory oblig
@@ -115,12 +119,12 @@ main' solveProblem =
                             case ans of
                               Unsatisfiable -> solveAll (i+1) obligs
                               _             -> return (NoAnswerConjecture GaveUp)
-                   
+
                    ans <- solveAll 1 obligs
                    putResult (show ans)
        | file <- files ?flags
        ]
-        
+
 require :: Bool -> IO () -> IO ()
 require False m = do m; exitWith (ExitFailure 1)
 require True  m = do return ()

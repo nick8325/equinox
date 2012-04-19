@@ -69,7 +69,7 @@ import Foreign.Marshal.Alloc ( malloc, free )
 import System.IO             ( FilePath )
 import Foreign.Storable      ( Storable )
 import Control.Exception     ( finally )
-import Random
+import System.Random
 
 
 import Form                  ( Signed(..), the, sign )

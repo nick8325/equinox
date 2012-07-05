@@ -1,0 +1,45 @@
+name:                   equinox
+version:                6.0.1
+author:                 Koen Claessen
+maintainer:             nicksma@chalmers.se
+synopsis:               Equinox
+category:               Proving
+stability:              Experimental
+cabal-version:          >= 1.6
+build-type:             Simple
+homepage:               github.com/nick8325/equinox.git
+
+executable              equinox
+    ghc-options:        -threaded -fglasgow-exts -O2 -static -optl
+                        ../minisat/current-base/Solver.or
+                        ../minisat/current-base/Prop.or
+                        ../instantiate/MiniSatWrapper.or
+                        ../instantiate/MiniSatInstantiateClause.or
+    include-dirs:       ../instantiate ../minisat/current-base
+    extra-libraries:    stdc++
+    main-is:            Equinox/Main.hs
+
+    build-depends:
+        base            >= 4    && < 5,
+        mtl             >= 2.0,
+        containers      >= 0.3,
+        random          >= 1.0,
+        QuickCheck      >= 2.0
+
+executable              paradox
+    ghc-options:        -threaded -fglasgow-exts -O2 -static -optl
+                        ../minisat/current-base/Solver.or
+                        ../minisat/current-base/Prop.or
+                        ../instantiate/MiniSatWrapper.or
+                        ../instantiate/MiniSatInstantiateClause.or
+    include-dirs:       ../instantiate ../minisat/current-base
+    extra-libraries:    stdc++
+    main-is:            Paradox/Main.hs
+
+    build-depends:
+        base            >= 4    && < 5,
+        mtl             >= 2.0,
+        containers      >= 0.3,
+        random          >= 1.0,
+        QuickCheck      >= 2.0
+

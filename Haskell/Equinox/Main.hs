@@ -1,4 +1,4 @@
-module Equinox.Main where
+module Main where
 
 {-
 Equinox -- Copyright (c) 2003-2007, Koen Claessen
@@ -24,7 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -}
 
 import Sat
-import qualified Main
+import Runner
 import Form
 import Flags
 import Equinox.FolSat
@@ -37,8 +37,8 @@ main :: IO ()
 main =
 --  observing $
   do putStrLn "Equinox, version 6.0.1alpha, 2011-12-07, pre-release."
-     Main.main Equinox solveProblem
-  
+     runner Equinox solveProblem
+
 ---------------------------------------------------------------------------
 -- solve
 

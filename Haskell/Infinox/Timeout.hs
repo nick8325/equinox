@@ -31,9 +31,9 @@ import Data.Unique         (Unique, newUnique)
 import Control.Concurrent
 import Control.Concurrent.MVar
 import System.Process
+import System.Exit
 import System.Posix hiding (killProcess)
 import System.IO.Error hiding (try,catch)
-import System
 import System.IO
 
 -- An internal type that is thrown as a dynamic exception to

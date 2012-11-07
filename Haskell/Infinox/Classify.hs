@@ -1,7 +1,7 @@
 module Infinox.Classify where
 
-import IO
-import System (system)
+import System.IO
+import System.Process (system)
 import System.Time 
 import System.Directory (removeFile,createDirectoryIfMissing) 
 import Control.Concurrent (threadDelay)

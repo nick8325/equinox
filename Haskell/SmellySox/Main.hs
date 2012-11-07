@@ -9,7 +9,7 @@ import qualified SmellySox.FluffFun
 import qualified SmellySox.FluffPred
 import SmellySox.Test
 import SmellySox.Write
-import System
+import System.Environment
 import System.IO
 import Control.Monad
 import Data.List

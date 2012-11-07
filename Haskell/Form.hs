@@ -29,6 +29,7 @@ import Data.Map as M( Map )
 import qualified Data.Map as M
 import Data.List
 import Data.Maybe
+import Control.Monad.State
 
 import Name
 
@@ -424,6 +425,7 @@ class Symbolic a where
   free      :: a -> Set Symbol
   subterms  :: a -> Set Term
   subst'    :: Subst -> a -> Maybe a
+  occurring :: Symbol -> a -> State [Term] a
 
 {-
   symbols{| Unit |}    Unit      = S.empty
@@ -457,20 +459,31 @@ subst sub a = case subst' sub a of
 isGround :: Symbolic a => a -> Bool
 isGround x = S.null (free x)
 
+takeTerm :: Term -> State [Term] Term
+takeTerm t = do
+  ts <- get
+  case ts of
+    [] -> return t
+    (t':ts') -> do
+      put ts'
+      return t'
+
 instance Symbolic () where
-  symbols    () = S.empty
-  free       () = S.empty
-  subterms   () = S.empty
-  subst' sub () = Nothing
+  symbols     () = S.empty
+  free        () = S.empty
+  subterms    () = S.empty
+  subst' sub  () = Nothing
+  occurring s () = return ()
 
 instance (Symbolic a, Symbolic b) => Symbolic (a,b) where
-  symbols    (x,y) = symbols x `S.union` symbols y
-  free       (x,y) = free x `S.union` free y
-  subterms   (x,y) = subterms x `S.union` subterms y
-  subst' sub (x,y) =
+  symbols     (x,y) = symbols x `S.union` symbols y
+  free        (x,y) = free x `S.union` free y
+  subterms    (x,y) = subterms x `S.union` subterms y
+  subst' sub  (x,y) =
     case (subst' sub x, subst' sub y) of
       (Nothing, Nothing) -> Nothing
       (mx,      my)      -> Just (maybe x id mx, maybe y id my)
+  occurring s (x,y) = liftM2 (,) (occurring s x) (occurring s y)
 
 instance Symbolic a => Symbolic (Signed a) where
   symbols (Pos x) = symbols x
@@ -485,6 +498,9 @@ instance Symbolic a => Symbolic (Signed a) where
   subst' sub (Pos x) = Pos `fmap` subst' sub x
   subst' sub (Neg x) = Neg `fmap` subst' sub x
 
+  occurring s (Pos x) = Pos `fmap` occurring s x
+  occurring s (Neg x) = Neg `fmap` occurring s x
+
 instance Symbolic a => Symbolic [a] where
   symbols []     = S.empty
   symbols (x:xs) = symbols (x,xs)
@@ -498,23 +514,29 @@ instance Symbolic a => Symbolic [a] where
   subst' sub []     = Nothing
   subst' sub (x:xs) = uncurry (:) `fmap` subst' sub (x,xs)
 
+  occurring s [] = return []
+  occurring s (x:xs) = liftM2 (:) (occurring s x) (occurring s xs)
+
 instance (Ord a, Symbolic a) => Symbolic (Set a) where
   symbols s        = symbols (S.toList s)
   free s           = free (S.toList s)
   subterms s       = subterms (S.toList s)
   subst' sub       = (S.fromList `fmap`) . subst' sub . S.toList
+  occurring s set  = fmap S.fromList (occurring s (S.toList set))
 
 instance Symbolic Atom where
-  symbols    (s :=: t) = symbols (s,t)
-  free       (s :=: t) = free (s,t)
-  subterms   (s :=: t) = subterms (s,t)
-  subst' sub (s :=: t) = uncurry (:=:) `fmap` subst' sub (s,t)
+  symbols     (s :=: t) = symbols (s,t)
+  free        (s :=: t) = free (s,t)
+  subterms    (s :=: t) = subterms (s,t)
+  subst' sub  (s :=: t) = uncurry (:=:) `fmap` subst' sub (s,t)
+  occurring u (s :=: t) = liftM2 (:=:) (occurring u s) (occurring u t)
 
 instance Symbolic QClause where
-  symbols    (Uniq q) = symbols q
-  free       (Uniq q) = free q
-  subterms   (Uniq q) = subterms q
-  subst' sub (Uniq q) = Uniq `fmap` subst' sub q
+  symbols     (Uniq q) = symbols q
+  free        (Uniq q) = free q
+  subterms    (Uniq q) = subterms q
+  subst' sub  (Uniq q) = Uniq `fmap` subst' sub q
+  occurring s (Uniq q) = Uniq `fmap` occurring s q
 
 instance Symbolic Form where
   symbols (Atom a)      = symbols a
@@ -549,6 +571,14 @@ instance Symbolic Form where
   subst' sub (ForAll q)    = ForAll `fmap` subst' sub q
   subst' sub (Exists q)    = Exists `fmap` subst' sub q
 
+  occurring s (Atom a)      = Atom `fmap` occurring s a
+  occurring s (And xs)      = And `fmap` occurring s xs
+  occurring s (Or xs)       = Or `fmap` occurring s xs
+  occurring s (x `Equiv` y) = liftM2 Equiv (occurring s x) (occurring s y)
+  occurring s (Not x)       = Not `fmap` occurring s x
+  occurring s (ForAll q)    = ForAll `fmap` occurring s q
+  occurring s (Exists q)    = Exists `fmap` occurring s q
+
 instance Symbolic Term where
   symbols (Fun f xs) = f `S.insert` symbols xs
   symbols (Var x)    = S.singleton x
@@ -566,6 +596,11 @@ instance Symbolic Term where
 
   subst' sub (Fun f xs) = Fun f `fmap` subst' sub xs
   subst' sub x@(Var v)  = M.lookup v (mapp sub)
+
+  occurring s (Fun f xs) = Fun f `fmap` occurring s xs
+  occurring s x@(Var v)
+    | s == v = takeTerm x
+    | otherwise = return x
 
 instance Symbolic a => Symbolic (Bind a) where
   symbols   (Bind v a) = v `S.insert` symbols a
@@ -629,6 +664,10 @@ instance Symbolic a => Symbolic (Bind a) where
                   , w /= v'
                   ]
                 )
+
+  occurring s x@(Bind v a)
+    | s == v = return x
+    | otherwise = Bind v `fmap` occurring s a
 
 ----------------------------------------------------------------------
 -- input clauses

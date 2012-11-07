@@ -1,6 +1,6 @@
 module Infinox.Main where
 
-import qualified Main
+import Runner
 import Flags
 import Infinox.Classify
 ---------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import Infinox.Classify
 main :: IO ()
 main =
   do putStrLn "Infinox, version 1.0, 2009-07-20."
-     Main.main Infinox classifyProblem
+     runner Infinox classifyProblem
 
 ---------------------------------------------------------------------------
 -- the end.

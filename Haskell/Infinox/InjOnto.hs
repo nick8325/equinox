@@ -3,7 +3,7 @@ module Infinox.InjOnto where
 import qualified Data.Set as S
 import System.Directory
 
-import IO
+import System.IO
 
 
 import Form
@@ -12,7 +12,7 @@ import Infinox.Generate
 import Infinox.Util
 import Infinox.Conjecture
 import Data.List
-import System (system)
+import System.Process (system)
 import qualified Infinox.Symbols as Sym
 import Infinox.Settings
 import Flags(Method(InjNotSurj,SurjNotInj))

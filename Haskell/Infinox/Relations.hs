@@ -17,7 +17,7 @@ import Control.Monad.Reader
 import Data.List (nub)
 import Data.Set as S( Set )
 import Output
-import System (system)
+import System.Process (system)
 import qualified Data.Set as S
 
 continueRelations :: Method -> [Relation] -> Settings Result

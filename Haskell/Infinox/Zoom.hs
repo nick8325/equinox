@@ -1,10 +1,10 @@
 module Infinox.Zoom (zoom,shrink) where
 
-import IO
+import System.IO
 import Form
 import Infinox.Util (finiteModel)
 import Infinox.Conjecture (form2axioms)
-import Random
+import System.Random
 import Data.List
 
 -------------------------------------------------------------------------------

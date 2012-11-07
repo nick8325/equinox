@@ -59,7 +59,7 @@ import SmellySox.Sat hiding ((:=:))
 import SmellySox.CNF
 import SmellySox.Formula hiding (Not, (:=:), constants)
 import Data.List
-import Maybe
+import Data.Maybe
 
 data ExtensionVar = FalseExtended Atom | TrueExtended Atom deriving (Eq, Ord)
 data Method = FalseExtend | TrueExtend | Copy deriving Show

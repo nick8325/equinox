@@ -1,7 +1,7 @@
 module Infinox.Util where
 
-import System (system)
-import IO
+import System.Process (system)
+import System.IO
 import System.Directory
 import Infinox.Timeout
 import Infinox.Conjecture
@@ -9,6 +9,7 @@ import Infinox.Settings
 import Data.List (isInfixOf)
 import Form
 import Flags(Method,Prover(..))
+import ParseProblem
 
 import Control.Monad.Reader
 
@@ -57,7 +58,7 @@ proveProperty method (t,r,p) = do
 									else return [] 
 
 prove prover conj provefile timeout = do   
-   h' <- try $ openFile provefile AppendMode			
+   h' <- tryIO $ openFile provefile AppendMode			
    case h' of 
       Left e -> do 
          putStrLn "Error: unable to open provefile"					
@@ -71,7 +72,7 @@ prove prover conj provefile timeout = do
 
 
 leoprove conj provefile = do
-	h' <- try $ openFile provefile AppendMode
+	h' <- tryIO $ openFile provefile AppendMode
 	case h' of 
 		Left e -> do 
 			putStrLn "Error: unable to open provefile"					
@@ -86,7 +87,7 @@ leoprove conj provefile = do
 
 equinoxprove :: String -> FilePath -> IO Bool
 equinoxprove conjecture file = do
-	h' <- try $ openFile file AppendMode
+	h' <- tryIO $ openFile file AppendMode
 	case h' of 
 		Left e -> do 
 			putStrLn "Error: unable to open provefile"					

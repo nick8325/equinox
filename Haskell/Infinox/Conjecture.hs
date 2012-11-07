@@ -6,6 +6,7 @@ import qualified Data.Set as Set
 import Data.List
 import qualified Infinox.Symbols as Sym
 import Infinox.Types
+import Control.Monad.State 
 
 -----------------------------------------------------------------------------------------
 
@@ -34,9 +35,9 @@ existsPred s t p = existsSymbol s t (\f -> p (\x -> f [x]))
 existsSymbol :: Symbolic a => String -> a -> (([Term] -> a) -> Form) -> Form
 existsSymbol s t p = exist (Bind Sym.x (Bind Sym.y t')) (p f)
  where
-  ts     = [ Var (name (s ++ "_" ++ show i) ::: V top) | i <- [1..] ]
-  (t',_) = occurring Sym.star ts t
-  f      = \xs -> t' @@ xs
+  ts = [ Var (name (s ++ "_" ++ show i) ::: V top) | i <- [1..] ]
+  t' = evalState (occurring Sym.star t) ts
+  f  = \xs -> t' @@ xs
 
 -----------------------------------------------------------------------------------------
 

@@ -6,7 +6,7 @@ import Name hiding (eq)
 import Data.List
 import Infinox.Conjecture
 import qualified Infinox.Symbols as Sym
-import IO
+import System.IO
 import Infinox.Util
 import Output
 

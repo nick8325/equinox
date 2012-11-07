@@ -1,6 +1,6 @@
 module Infinox.Leo where
 
-import IO
+import System.IO
 import Infinox.Util
 import Output
 

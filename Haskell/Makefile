@@ -35,29 +35,29 @@ Sat.o: Sat.hs
 #-- Paradox
 
 paradox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) --make Paradox/Main.hs -o paradox
+	$(GHC) $(HSAT) $(HFLAGS) --make Paradox/Main.hs -o paradox.exe
 
 smellyparadox.exe: Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) -main-is Paradox.Smelly.main --make Paradox.Smelly -o smellyparadox
+	$(GHC) $(HSAT) $(HFLAGS) -main-is Paradox.Smelly.main --make Paradox.Smelly -o smellyparadox.exe
 
 #-- Equinox
 
 equinox.exe: Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) -threaded --make Equinox/Main.hs -o equinox
+	$(GHC) $(HSAT) $(HFLAGS) -threaded --make Equinox/Main.hs -o equinox.exe
 
 #-- Infinox
 
 infinox.exe: *.hs Infinox/*.hs
-	$(GHC) $(HFLAGS) -main-is Infinox.Main.main --make Infinox.Main -o infinox
+	$(GHC) $(HFLAGS) -main-is Infinox.Main.main --make Infinox.Main -o infinox.exe
 
 
 #-- SatPlay
 
 satplay.exe: Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) -main-is SatPlay.Main.main --make SatPlay.Main -o satplay
+	$(GHC) $(HSAT) $(HFLAGS) -main-is SatPlay.Main.main --make SatPlay.Main -o satplay.exe
 
 smellysox.exe: Sat.o SmellySox/*.hs SmellySox/Parser/Partff.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) --make SmellySox/Main -o smellysox
+	$(GHC) $(HSAT) $(HFLAGS) --make SmellySox/Main -o smellysox.exe
 
 SmellySox/Parser/Partff.hs: SmellySox/tff.cf
 	bnfc -p SmellySox.Parser SmellySox/tff.cf
@@ -67,7 +67,7 @@ SmellySox/Parser/Partff.hs: SmellySox/tff.cf
 #-- Zoomer
 
 zoomer.exe: Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
-	$(GHC) $(HSAT) $(HFLAGS) -main-is Zoomer.Main.main --make Zoomer.Main -o zoomer
+	$(GHC) $(HSAT) $(HFLAGS) -main-is Zoomer.Main.main --make Zoomer.Main -o zoomer.exe
 
 #-- Cleaning up
 

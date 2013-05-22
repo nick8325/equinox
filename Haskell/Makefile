@@ -12,7 +12,7 @@ GHC     = ghc
 #-- Main
 
 
-main: paradox.exe equinox.exe infinox.exe smellysox.exe
+main: paradox.exe equinox.exe infinox.exe
 
 
 paradox: paradox.exe

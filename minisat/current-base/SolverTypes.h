@@ -105,7 +105,7 @@ public:
 
     // -- use this function instead:
     template<class V>
-    friend Clause* Clause_new(const V& ps, bool learnt = false) {
+    static Clause* Clause_new(const V& ps, bool learnt = false) {
         assert(sizeof(Lit)      == sizeof(unsigned int));
         assert(sizeof(float)    == sizeof(unsigned int));
         void* mem = malloc(sizeof(Clause) + sizeof(unsigned int)*(ps.size()));

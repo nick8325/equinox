@@ -262,12 +262,12 @@ public:
              , progress_estimate(0)
              {
                 vec<Lit> dummy(2,lit_Undef);
-                propagate_tmpbin   = Clause_new(dummy);
-                analyze_tmpbin     = Clause_new(dummy);
+                propagate_tmpbin   = Clause::Clause_new(dummy);
+                analyze_tmpbin     = Clause::Clause_new(dummy);
                 dummy.pop();
-                bwdsub_tmpunit     = Clause_new(dummy);
+                bwdsub_tmpunit     = Clause::Clause_new(dummy);
                 dummy.pop();
-                propagate_tmpempty = Clause_new(dummy);
+                propagate_tmpempty = Clause::Clause_new(dummy);
                 if (log != NULL){
                     logfile = fopen(log, "w");
                     if (logfile == NULL){

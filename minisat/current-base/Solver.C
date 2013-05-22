@@ -86,7 +86,7 @@ bool Solver::newClause(const vec<Lit>& ps_, bool learnt, bool normalized)
         return enqueue(ps[0]);
     }else{
         // Allocate clause:
-        Clause* c   = Clause_new(ps, learnt);
+        Clause* c   = Clause::Clause_new(ps, learnt);
 
         if (learnt){
             // Put the second watch on the first literal with highest decision level:
@@ -1220,7 +1220,7 @@ bool Solver::eliminateVar(Var v, bool fail)
     elimtable[v].order = elimorder++;
     assert(elimtable[v].eliminated.size() == 0);
     for (int i = 0; i < cls.size(); i++){
-        elimtable[v].eliminated.push(Clause_new(*cls[i]));
+        elimtable[v].eliminated.push(Clause::Clause_new(*cls[i]));
         removeClause(*cls[i], false); 
     }
 

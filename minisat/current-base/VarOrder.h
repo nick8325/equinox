@@ -67,7 +67,7 @@ class VarOrder {
     static inline int irand(double& seed, int size) {
         return (int)(drand(seed) * size); }
 
-    friend class VarFilter;
+    friend struct VarFilter;
 public:
     VarOrder(SolverStats& s, const vec<char>& ass, const vec<double>& act) :
         stats(s), assigns(ass), activity(act), heap(VarOrder_lt(act)), random_seed(91648253)

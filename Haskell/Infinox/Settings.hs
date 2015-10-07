@@ -6,12 +6,13 @@ import Control.Monad.Reader
 import Form
 import Data.Set as S( Set )
 import qualified Data.Set as S
+import Control.Applicative
 
 import Flags 
 
 
 newtype Settings a = Settings { unSettings :: ReaderT MethodSettings IO a }
-   deriving (Monad, MonadReader MethodSettings, MonadIO )
+   deriving (Functor, Applicative, Monad, MonadReader MethodSettings, MonadIO )
 
 data MethodSettings = MSet 
    { axiomfile :: FilePath

@@ -54,6 +54,9 @@ import Data.List
   ( nub
   )
 
+import Control.Monad
+import Control.Applicative
+
 ---------------------------------------------------------------------------------
 -- types
 
@@ -296,6 +299,12 @@ newtype T s a =
       )
 
 -- monad
+
+instance Functor (T s) where fmap = liftM
+
+instance Applicative (T s) where
+  pure = return
+  (<*>) = liftM2 ($)
 
 instance Monad (T s) where
   return x =

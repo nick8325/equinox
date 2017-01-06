@@ -517,7 +517,7 @@ MkArg fs f `star` MkArg xs x =
                         Right (a,s'') -> Right (h a,s'')
   )
 
-instance Functor Arg where fmap = (<$>)
+instance Functor Arg where fmap f x = pure f <*> x
 
 instance Applicative Arg where
   pure = unit

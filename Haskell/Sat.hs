@@ -165,7 +165,7 @@ newLit = MiniSatM (\(s, _) -> M.newLit s)
 
 addClause ls = MiniSatM (\(s, _) -> M.addClause s ls)
 
-getModelValue l@(M.MkLit n) = MiniSatM (\(s, _) -> fromMaybe (if n > 0 then False else True) <$> M.modelValue s l)
+getModelValue l = MiniSatM (\(s, _) -> fromMaybe (M.minisat_sign l) <$> M.modelValue s l)
 conflict = MiniSatM (\(s, _) -> M.conflict s)
 getValue l  = MiniSatM (\(s, _) -> M.value s l)
 contradiction = addClause [] >> return ()

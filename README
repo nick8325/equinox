@@ -1,0 +1,11 @@
+Building Equinox
+----------------
+
+You need to have the Haskell MiniSat binding installed to build
+Equinox. The following commands should work:
+
+```
+cabal update
+cabal install minisat
+make
+```

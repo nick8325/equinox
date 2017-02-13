@@ -163,7 +163,7 @@ class Literal {
 
   void vars(vector<minisat_Var>& vs) const {
     for(int i = 0; i < args.size(); i++)
-      if(isVar(args[i])) vs.push_back({getArg(args[i])});
+      if(isVar(args[i])) vs.push_back(getArg(args[i]));
   }
 
   friend ostream& operator<<(ostream& o, const Literal& l) {

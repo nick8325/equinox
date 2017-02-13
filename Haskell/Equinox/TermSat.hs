@@ -20,7 +20,7 @@ module Equinox.TermSat
   , getModelTables -- :: T (Map Symbol [([Con],Con)])
   , addClause     -- :: [Lit] -> T ()
   , solve         -- :: Flags -> [Lit] -> T Bool
-  , simplify      -- :: Bool -> Bool -> T Bool
+  , simplify      -- :: T Bool
   )
  where
  
@@ -277,5 +277,5 @@ solve flags xs = sat xs
   pairs []     = [] 
   pairs (x:xs) = [ (x,y) | y <- xs ] ++ pairs xs   
   
-simplify :: Bool -> Bool -> T Bool
-simplify a b = liftC (C.simplify a b)
+simplify :: T Bool
+simplify = liftC C.simplify

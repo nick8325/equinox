@@ -3,6 +3,7 @@
 
 
 #include <vector>
+using std::vector;
 
 #if (__GNUC__ > 2)
 #include <ext/hash_map>
@@ -14,7 +15,7 @@
 #include <iostream>
 
 
-#include "Solver.h"
+#include "minisat.h"
 
 using namespace std;
 
@@ -42,20 +43,20 @@ class ArgAllocator {
   int              arity;
   int              size;
   int              num;
-  vec<DomElem*>    chunks;
+  vector<DomElem*>    chunks;
 
  public:
   ArgAllocator(int a) : 
     arity(a), size(1000), num(0) { 
-    chunks.push((DomElem*)malloc(sizeof(DomElem) * size * arity));
+    chunks.push_back((DomElem*)malloc(sizeof(DomElem) * size * arity));
   }
 
   DomElem* alloc(void) {
     if(num == size) {
       num = 0;
-      chunks.push((DomElem*)malloc(sizeof(DomElem) * size * arity));
+      chunks.push_back((DomElem*)malloc(sizeof(DomElem) * size * arity));
     }
-    return chunks.last() + (arity * num++);
+    return chunks.back() + (arity * num++);
   }
 };
 
@@ -92,29 +93,29 @@ struct EqArgs {
   EqArgs(int a) : arity(a) {}
 };
 
-typedef __gnu_cxx::hash_map<DomElem*,Var,HashArgs,EqArgs> varMap;
+typedef __gnu_cxx::hash_map<DomElem*,minisat_Var,HashArgs,EqArgs> varMap;
 
 /**************************************************************************************************/
 /*** a class for representing sets of literals ****************************************************/
 /**************************************************************************************************/
 
 class LitSet {
-  vec<bool> lset;
+  vector<bool> lset;
  public:
-  LitSet(void) { lset.growTo(100,false); };
+  LitSet(void) : lset(100) {}
 
-  void add(Lit l) {
-    int ind = toInt(l), siz;
+  void add(minisat_Lit l) {
+    int ind = l, siz;
     if(ind >= (int)lset.size()) {
-      for(siz = lset.size() * 2; ind >= siz; siz *= 2); lset.growTo(siz,false); }
+      for(siz = lset.size() * 2; ind >= siz; siz *= 2); lset.resize(siz); }
     lset[ind] = true;
   }
-  void del(Lit l) { if(toInt(l) < (int)lset.size()) lset[toInt(l)] = false; }
-  bool member(Lit l) { 
-    return toInt(l) < (int)lset.size() && lset[toInt(l)]; 
+  void del(minisat_Lit l) { if(l < (int)lset.size()) lset[l] = false; }
+  bool member(minisat_Lit l) {
+    return l < (int)lset.size() && lset[l];
   }
 
-  bool isCleared() const { 
+  bool isCleared() const {
       for (int i = 0; i < lset.size(); i++)
           if (lset[i])
               return false;
@@ -130,14 +131,14 @@ class LitSet {
 class Loc {
   static int   n;
   int          myname;
-  int          arity; 
+  int          arity;
   ArgAllocator mem;
   varMap       vmap;
  public:
   Loc(int a) : myname(n), arity(a), mem(a), vmap(100, HashArgs(a), EqArgs(a)) { n++; }
 
-  Var  get(Solver& s, const vec<int>& args, const vec<int>& bindings);
-  bool peek(const vec<int>& args, const vec<int>& bindings, Var& out);
+  minisat_Var  get(minisat_solver* s, const vector<int>& args, const vector<int>& bindings);
+  bool peek(const vector<int>& args, const vector<int>& bindings, minisat_Var& out);
 
   int  getArity(void) { return arity; }
   int  name(void) { return myname; }
@@ -149,22 +150,20 @@ class Loc {
 
 class Literal {
   Loc*     loc;
-  vec<Arg> args;
+  vector<Arg> args;
  public:
   bool        sign;
   Literal(void) { }
   Literal(Loc* l, bool s) : loc(l), sign(s) { }
-  Literal(Literal& l) {
-      
-  }
-  void setLoc(Loc* l) { loc = l; }; 
-  void addArg(Arg a)  { args.push(a); };
-  Var  get(Solver& s, const vec<int>& bindings) { return loc->get(s,args,bindings); }
-  bool peek(const vec<int>& args, const vec<int>& bindings, Var& out) { return loc->peek(args, bindings, out); }
+ Literal(const Literal& l) : loc(l.loc), args(l.args), sign(l.sign) { }
+  void setLoc(Loc* l) { loc = l; };
+  void addArg(Arg a)  { args.push_back(a); };
+  minisat_Var  get(minisat_solver* s, const vector<int>& bindings) { return loc->get(s,args,bindings); }
+  bool peek(const vector<int>& args, const vector<int>& bindings, minisat_Var& out) { return loc->peek(args, bindings, out); }
 
-  void vars(vec<Var>& vs) const {
-    for(int i = 0; i < args.size(); i++) 
-      if(isVar(args[i])) vs.push(getArg(args[i]));
+  void vars(vector<minisat_Var>& vs) const {
+    for(int i = 0; i < args.size(); i++)
+      if(isVar(args[i])) vs.push_back({getArg(args[i])});
   }
 
   friend ostream& operator<<(ostream& o, const Literal& l) {
@@ -184,11 +183,7 @@ class Literal {
   void swap(Literal& l) {
       Loc* tmp  = loc;  loc = l.loc;   l.loc = tmp;
       bool tmp2 = sign; sign = l.sign; l.sign = tmp2;
-      //args.swap(l.args);
-      vec<int> tvec;
-      args.moveTo(tvec);
-      l.args.moveTo(args);
-      tvec.moveTo(l.args);
+      args.swap(l.args);
   }
 };
 
@@ -198,8 +193,8 @@ class Literal {
 /**************************************************************************************************/
 
 class FOClause {
-  vec<Literal> lits;
-  vec<int>     sizes;
+  vector<Literal> lits;
+  vector<int>     sizes;
 
   LitSet       lset;
  public:
@@ -207,10 +202,10 @@ class FOClause {
   void     clear       (void)           { lits.clear(); sizes.clear(); }
   void     clearLits   (void)           { lits.clear(); }
   void     clearSize   (void)           { sizes.clear(); }
-  void     addSize     (int s)          { sizes.push(s); }
-  void     addLit      (Loc* l, bool s) { lits.push(); lits.last().setLoc(l); lits.last().sign = s; }
-  Literal& lastLit     (void)           { return lits.last(); }
-  bool     instantiate (Solver& s, int fresh);
+  void     addSize     (int s)          { sizes.push_back(s); }
+  void     addLit      (Loc* l, bool s) { lits.push_back(Literal()); lits.back().setLoc(l); lits.back().sign = s; }
+  Literal& lastLit     (void)           { return lits.back(); }
+  bool     instantiate (minisat_solver* s, int fresh);
 };
 
 

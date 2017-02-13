@@ -2,7 +2,6 @@
 
 #-- Variables
 
-MINISAT = minisat/current-base
 INST    = instantiate
 HASKELL = Haskell
 
@@ -12,15 +11,11 @@ HASKELL = Haskell
 
 #-- Main
 
-main: mk-minisat mk-instantiate mk-haskell
-
-mk-minisat:
-	make Solver.or -C $(MINISAT)
-	make Prop.or   -C $(MINISAT)
+main: mk-instantiate mk-haskell
 
 mk-instantiate:
-	make MiniSatWrapper.or           -C $(INST)
-	make MiniSatInstantiateClause.or -C $(INST)
+	make MiniSatInstantiateClause.o -C $(INST)
+	make MiniSatWrapper.o -C $(INST)
 
 mk-haskell:
 	make -C $(HASKELL)

@@ -1,9 +1,0 @@
-*.o
-*.or
-*.od
-*.op
-depend.mak
-minisat
-minisat_static
-scripts
-

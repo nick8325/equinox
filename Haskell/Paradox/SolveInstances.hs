@@ -187,7 +187,7 @@ solveInstances flags predsPure minSize css =
                    if not c then
                      do return (Unsatisfiable,k)
                     else
-                     do addClause [-ass]
+                     do addClause [neg ass]
                         let minSize' | k == minSize = k+1
                                      | otherwise    = minSize
                         domains minSize' rest

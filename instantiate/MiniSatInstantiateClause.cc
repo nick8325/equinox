@@ -1,16 +1,17 @@
 #include "MiniSatInstantiateClause.h"
+#include <cassert>
 
 /**************************************************************************************************/
 /*** Loc implementaion ****************************************************************************/
 /**************************************************************************************************/
 
-Var Loc::get(Solver& s, const vec<Arg>& args, const vec<int>& bindings) { 
+minisat_Var Loc::get(minisat_solver* s, const vector<Arg>& args, const vector<int>& bindings) { 
   assert(args.size() == (int)arity);
 
   //cout << "get [1] " << arity << args << bindings << endl;
 
   DomElem                argv[args.size()];
-  Var                    result;
+  minisat_Var            result;
 
   for(int i = 0; i < arity; i++) 
     argv[i] = isVar(args[i]) ? bindings[getArg(args[i])] : getArg(args[i]);
@@ -20,7 +21,7 @@ Var Loc::get(Solver& s, const vec<Arg>& args, const vec<int>& bindings) {
   if(i == vmap.end()) {
     DomElem* argp = mem.alloc();
     for(int i = 0; i < arity; i++) argp[i] = argv[i];
-    result     = s.newVar();
+    result     = minisat_newVar(s);
     vmap[argp] = result;
   } else result = (*i).second;
 
@@ -28,7 +29,7 @@ Var Loc::get(Solver& s, const vec<Arg>& args, const vec<int>& bindings) {
 }
 
 
-bool Loc::peek(const vec<int>& args, const vec<int>& bindings, Var& out)
+bool Loc::peek(const vector<int>& args, const vector<int>& bindings, minisat_Var& out)
 {
   assert(args.size() == (int)arity);
   DomElem                argv[args.size()];
@@ -46,8 +47,8 @@ bool Loc::peek(const vec<int>& args, const vec<int>& bindings, Var& out)
 }
 
 
-int nvars(const Literal& l, const vec<bool>& vset) {
-  vec<Var> vs; 
+int nvars(const Literal& l, const vector<bool>& vset) {
+  vector<minisat_Var> vs; 
   l.vars(vs); 
 
   int r = 0; 
@@ -55,13 +56,13 @@ int nvars(const Literal& l, const vec<bool>& vset) {
   return r;
 }
 
-void schedule(vec<Literal>& lits, vec<int>& variables, vec<int>& chunksize)
+void schedule(vector<Literal>& lits, vector<int>& variables, vector<int>& chunksize)
 {
   assert(variables.size() == chunksize.size());
-  vec<bool> varset(variables.size(),false);
+  vector<bool> varset(variables.size(),false);
   int i,j,k;
 
-  vec<Literal> tmp;
+  vector<Literal> tmp;
   // order literals
   for(i = 0; i < lits.size(); i++) {
     int minindex = i;
@@ -76,7 +77,7 @@ void schedule(vec<Literal>& lits, vec<int>& variables, vec<int>& chunksize)
 //    lits[minindex].moveTo(lits[i]);
 //    tmp.moveTo(lits[minindex]);
     
-    vec<int> vs; lits[i].vars(vs);
+    vector<int> vs; lits[i].vars(vs);
     for(j = 0; j < vs.size(); j++) varset[vs[j]] = true;
   }
 
@@ -84,7 +85,7 @@ void schedule(vec<Literal>& lits, vec<int>& variables, vec<int>& chunksize)
   k = 0;
   for(i = 0; i < varset.size(); i++) varset[i] = false;
   for(i = 0; i < lits.size(); i++) {
-    vec<int> vs; lits[i].vars(vs);
+    vector<int> vs; lits[i].vars(vs);
     for(j = 0; j < vs.size(); j++) 
       if(!varset[vs[j]]) { variables[k++] = vs[j]; varset[vs[j]] = true; }
     if(k > 0) chunksize[k-1]++;
@@ -94,7 +95,7 @@ void schedule(vec<Literal>& lits, vec<int>& variables, vec<int>& chunksize)
 
 
 // print a vector of literals
-inline ostream& operator<<(ostream& o, const vec<Literal>& literals) {
+inline ostream& operator<<(ostream& o, const vector<Literal>& literals) {
   for(int i = 0; i < literals.size(); i++) o << literals[i] << ' ';
   return o; }
 
@@ -105,14 +106,14 @@ int Loc::n = 0;
 /**************************************************************************************************/
 
 // precondition: fresh >= max(sizes)-1
-bool FOClause::instantiate(Solver& s, int fresh) {
+bool FOClause::instantiate(minisat_solver* s, int fresh) {
 
     assert(lset.isCleared());
-    assert(s.okay());
+    assert(minisat_okay(s));
 
-  vec<int> bindings(sizes.size(), -1);
-  vec<int> variables(sizes.size());
-  vec<int> chunksize(sizes.size());
+  vector<int> bindings(sizes.size(), -1);
+  vector<int> variables(sizes.size());
+  vector<int> chunksize(sizes.size());
 
   int maxe = 0;  // the largest domain-size of a variable
   int maxi = -1; // the first largest variable
@@ -140,23 +141,23 @@ bool FOClause::instantiate(Solver& s, int fresh) {
 //  cout << "variables: " << variables << endl;
 //  cout << "chunksize: " << chunksize << endl;
 
-  vec<Lit> cls;
+  vector<minisat_Lit> cls;
   //  LitSet      lset;
   
   // handle ground prefix
-  int lind; { vec<bool> varset(variables.size(),false);
+  int lind; { vector<bool> varset(variables.size(),false);
   for(lind = 0; lind < lits.size(); lind++) {
     Literal& l = lits[lind];
     //cout << "lit " << l << endl;
     if(nvars(l,varset) == 0) {
-      Lit g = Lit(l.get(s,bindings),!l.sign);
-      if(s.value(g) == l_True || lset.member(~g)) {
+      minisat_Lit g = minisat_mkLit_args(l.get(s,bindings),!l.sign);
+      if(minisat_value_Lit(s, g) == minisat_l_True || lset.member(minisat_negate(g))) {
 	//cout << "Done! " << s.get_nof_constraints() - count << endl; return true; }
 	//cout << "Done! " << s.get_nof_constraints()  << endl; 
 	for(i = 0; (int)i < cls.size(); i++) lset.del(cls[i]);
 	return true; }
-      else if(s.value(g) == l_Undef && !lset.member(g)) {
-	cls.push(g);
+      else if(minisat_value_Lit(s, g) == minisat_l_Undef && !lset.member(g)) {
+	cls.push_back(g);
 	lset.add(g);
       }
       else {
@@ -176,8 +177,8 @@ bool FOClause::instantiate(Solver& s, int fresh) {
 //	return false;
 //    }
     //bool ret = s.addClause(cls,true);
-    s.addClause(cls);
-    bool ret = s.okay();
+    minisat_addClause(s, cls.size(), cls.data());
+    bool ret = minisat_okay(s);
     //assert(ret);
     for(i = 0; (int)i < cls.size(); i++) lset.del(cls[i]);
     //cout << "Done! " << s.get_nof_constraints() - count << endl; return ret;
@@ -195,7 +196,7 @@ bool FOClause::instantiate(Solver& s, int fresh) {
   //cout << "fresh: " << fresh << endl;
   //cout << "fvar:  " << fvar << endl;
 
-  vec<int> currsize(chunksize.size(),0);
+  vector<int> currsize(chunksize.size(),0);
 
   // enumerate variable substitutions
   int top = 0; // number of variables with the value "fresh"
@@ -229,22 +230,22 @@ bool FOClause::instantiate(Solver& s, int fresh) {
       //vector<Lit> cs = cls;
       //sort(cs.begin(), cs.end(), Solver::IndexLitComparator());
 #ifndef NDEBUG
-      int count2 = s.nClauses();
+      int count2 = minisat_num_clauses(s);
 #endif
       //bool ret = s.addClause(cls,true);
       //fprintf(stderr, "ground clause (2): [ ");
       //s.printClause(cls);
       //fprintf(stderr, " ]\n");
-      s.addClause(cls);
-      bool ret = s.okay();
+      minisat_addClause(s, cls.size(), cls.data());
+      bool ret = minisat_okay(s);
       //bool ret = s.unsafe_add_clause(cs);
       //cout << "adding: " << cls << endl;
-      if (!s.okay())
+      if (!minisat_okay(s))
           return false;
       assert(ret);
       //assert(cls.size() == 1 || s.nClauses() == count2 + 1);
       i--;
-      while(currsize[i] > 0) { Lit g = cls.last(); cls.pop(); lset.del(g); currsize[i]--; }
+      while(currsize[i] > 0) { minisat_Lit g = cls.back(); cls.pop_back(); lset.del(g); currsize[i]--; }
       lind -= chunksize[i];
       continue;
     }
@@ -262,7 +263,7 @@ bool FOClause::instantiate(Solver& s, int fresh) {
 //	cout << "backtrack: " << currsize[i] << endl;
 //	cout << "    chunk: " << chunksize[i] << endl;
 //	cout << "     lind: " << lind << endl;
-	while(currsize[i] > 0) { Lit g = cls.last(); cls.pop(); lset.del(g); currsize[i]--; }
+	while(currsize[i] > 0) { minisat_Lit g = cls.back(); cls.pop_back(); lset.del(g); currsize[i]--; }
 	lind -= chunksize[i];
       }
     } else {
@@ -281,16 +282,16 @@ bool FOClause::instantiate(Solver& s, int fresh) {
       int oldind = lind;
       for(j = 0; j < chunksize[i]; j++) {
 	//cout << "lind: " << lind << endl;
-	Lit g = Lit(lits[lind].get(s,bindings),!lits[lind].sign);
+	minisat_Lit g = minisat_mkLit_args(lits[lind].get(s,bindings),!lits[lind].sign);
 	//cout << "lit: " << g << endl;
 	lind++;
-	if(s.value(g) == l_True || lset.member(~g)) {
-	  while(currsize[i] > 0) { Lit g = cls.last(); cls.pop(); lset.del(g); currsize[i]--; }
+	if(minisat_value_Lit(s, g) == minisat_l_True || lset.member(minisat_negate(g))) {
+	  while(currsize[i] > 0) { minisat_Lit g = cls.back(); cls.pop_back(); lset.del(g); currsize[i]--; }
 	  lind = oldind;
 	  goto apa;
 	}
-	else if(s.value(~g) == l_Undef && !lset.member(g)) {
-	  cls.push(g);
+	else if(minisat_value_Lit(s, minisat_negate(g)) == minisat_l_Undef && !lset.member(g)) {
+	  cls.push_back(g);
 	  lset.add(g);
 	  currsize[i]++;
 	}
@@ -351,8 +352,8 @@ int main() {
   c.instantiate(s,2);
   s.export_dimacs(cout);
 
-  vec<Arg> args; args.push(varArg(0)); args.push(varArg(1)); 
-  vec<int> bind(2);
+  vector<Arg> args; args.push(varArg(0)); args.push(varArg(1)); 
+  vector<int> bind(2);
 
   for(int i = 0; i < 3; i++)
     for(int j = 0; j < 3; j++) {

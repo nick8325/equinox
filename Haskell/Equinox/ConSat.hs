@@ -532,5 +532,5 @@ conflict =
   do s <- getState
      return (contr s)
 
-simplify :: Bool -> Bool -> C Bool
-simplify a b = liftS (Sat.simplify a b)
+simplify :: C Bool
+simplify = liftS Sat.simplify

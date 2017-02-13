@@ -2,11 +2,10 @@
 
 #-- Variables
 
-MINISAT = ../minisat/current-base
 INST    = ../instantiate
-OBJS    = $(MINISAT)/Solver.or $(MINISAT)/Prop.or $(INST)/MiniSatWrapper.or $(INST)/MiniSatInstantiateClause.or
+OBJS    = $(INST)/MiniSatInstantiateClause.o $(INST)/MiniSatWrapper.o
 HFLAGS  = -fglasgow-exts -O2 -threaded
-HSAT    = -lstdc++ -I../instantiate -I$(MINISAT) $(OBJS)
+HSAT    = -lstdc++ -I../instantiate $(OBJS)
 GHC     = ghc
 
 #-- Main
@@ -30,15 +29,15 @@ Sat.o: Sat.hs
 
 #-- Paradox
 
-../paradox$(EXE): Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+../paradox$(EXE): Sat.o *.hs Paradox/*.hs ../instantiate/*.o
 	$(GHC) $(HSAT) $(HFLAGS) --make Paradox/Main.hs -o ../paradox
 
-../smellyparadox$(EXE): Sat.o *.hs Paradox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+../smellyparadox$(EXE): Sat.o *.hs Paradox/*.hs ../instantiate/*.o
 	$(GHC) $(HSAT) $(HFLAGS) -main-is Paradox.Smelly.main --make Paradox.Smelly -o ../smellyparadox
 
 #-- Equinox
 
-../equinox$(EXE): Sat.o *.hs Equinox/*.hs ../instantiate/*.or ../minisat/current-base/*.or
+../equinox$(EXE): Sat.o *.hs Equinox/*.hs ../instantiate/*.o
 	$(GHC) $(HSAT) $(HFLAGS) -threaded --make Equinox/Main.hs -o ../equinox
 
 #-- Infinox
@@ -49,10 +48,10 @@ Sat.o: Sat.hs
 
 #-- SatPlay
 
-../satplay$(EXE): Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
+../satplay$(EXE): Sat.o *.hs ../instantiate/*.o
 	$(GHC) $(HSAT) $(HFLAGS) -main-is SatPlay.Main.main --make SatPlay.Main -o ../satplay
 
-../smellysox$(EXE): Sat.o SmellySox/*.hs SmellySox/Parser/Partff.hs ../instantiate/*.or ../minisat/current-base/*.or
+../smellysox$(EXE): Sat.o SmellySox/*.hs SmellySox/Parser/Partff.hs ../instantiate/*.o
 	$(GHC) $(HSAT) $(HFLAGS) --make SmellySox/Main -o ../smellysox
 
 SmellySox/Parser/Partff.hs: SmellySox/tff.cf
@@ -62,7 +61,7 @@ SmellySox/Parser/Partff.hs: SmellySox/tff.cf
 
 #-- Zoomer
 
-../zoomer$(EXE): Sat.o *.hs ../instantiate/*.or ../minisat/current-base/*.or
+../zoomer$(EXE): Sat.o *.hs ../instantiate/*.o
 	$(GHC) $(HSAT) $(HFLAGS) -main-is Zoomer.Main.main --make Zoomer.Main -o ../zoomer
 
 #-- Cleaning up

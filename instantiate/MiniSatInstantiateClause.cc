@@ -1,3 +1,4 @@
+#define NDEBUG
 #include "MiniSatInstantiateClause.h"
 #include <cassert>
 

@@ -20,6 +20,7 @@ main: ../paradox$(EXE) ../equinox$(EXE) ../infinox$(EXE)
 
 
 Sat.o: Sat.hs
+	$(GHC)-pkg latest minisat >/dev/null 2>/dev/null || (cabal update && cabal install minisat --with-ghc=$(GHC))
 	$(GHC) -fglasgow-exts --make Sat.hs
 
 #-- EquiParadox

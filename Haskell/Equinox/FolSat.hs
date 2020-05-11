@@ -314,7 +314,7 @@ clauseThread cl = thread True funs
                      cs <- sequence [ getModelValueValue v | v <- vs ]
                      let sub = M.fromList (xs `zip` cs)
                      Sat.addClause [ Sat.neg (v =? c) | (v,c) <- vs `zip` cs, c /= st ]
-                     Left subs <- findAllSubs (i+1)
+                     ~(Left subs) <- findAllSubs (i+1)
                      return (Left (sub:subs))
                  else
                   do if i == 0 then

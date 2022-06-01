@@ -1,11 +1,7 @@
-Building Equinox
-----------------
+This repository holds various tools for first-order logic:
 
-You need to have the Haskell MiniSat binding installed to build
-Equinox. The following commands should work:
+* paradox, a finite model finder
+* equinox, a theorem prover
+* infinox, a tool for proving that no finite models exist
 
-```
-cabal update
-cabal install minisat
-make
-```
+Build with cabal or stack.

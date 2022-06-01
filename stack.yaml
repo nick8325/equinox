@@ -1,0 +1,7 @@
+resolver: lts-19.9
+
+packages:
+- .
+
+extra-deps:
+- minisat-0.1.3

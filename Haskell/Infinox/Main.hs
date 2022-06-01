@@ -1,4 +1,4 @@
-module Infinox.Main where
+module Main where
 
 import Runner
 import Flags

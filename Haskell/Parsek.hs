@@ -1,5 +1,3 @@
-{-# OPTIONS -fglasgow-exts #-}
-
 {-
 Parsek -- Copyright (c) 2003-2007, Koen Claessen
 
@@ -160,6 +158,7 @@ instance Monad (Parser s) where
   Parser f >>= k =
     Parser (\fut -> f (\a -> let Parser g = k a in g fut))
 
+instance MonadFail (Parser s) where
   fail s =
     Parser (\fut exp -> Fail exp [s])
 

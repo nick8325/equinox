@@ -1,0 +1,109 @@
+cabal-version:      2.4
+
+name:               paradox
+version:            4.0
+category:           Theorem Provers
+license:            MIT
+copyright:          LICENSE
+
+synopsis:           Tools for first-order theorem proving (paradox, equinox, infinox)
+
+author:             Koen Claessen, Niklas Sörensson, Ann Lillieström
+maintainer:         nick@smallbone.se
+homepage:           https://github.com/nick8325/equinox
+
+executable equinox
+    main-is: Equinox/Main.hs
+
+    hs-source-dirs: Haskell
+    default-language: Haskell2010
+    default-extensions: ImplicitParams, RankNTypes
+    build-depends: base >= 4.14, containers, QuickCheck, mtl, minisat, random
+    ghc-options: -threaded
+
+    cxx-sources:
+        instantiate/MiniSatInstantiateClause.cc
+        instantiate/MiniSatWrapper.cc
+    include-dirs: instantiate
+
+    other-modules:
+        Clausify
+        Equinox.ConSat
+        Equinox.Fair
+        Equinox.FolSat
+        Equinox.PSequence
+        Equinox.TermSat
+        Equinox.TopSort
+        Flags
+        Form
+        Name
+        Observe
+        Output
+        ParseProblem
+        Parsek
+        Runner
+        Sat
+        Str
+
+executable paradox
+    main-is: Paradox/Main.hs
+
+    hs-source-dirs: Haskell
+    default-language: Haskell2010
+    default-extensions: ImplicitParams, RankNTypes
+    build-depends: base >= 4.14, containers, mtl, minisat, random
+    ghc-options: -threaded
+
+    cxx-sources:
+        instantiate/MiniSatInstantiateClause.cc
+        instantiate/MiniSatWrapper.cc
+    include-dirs: instantiate
+
+    other-modules:
+        Clausify
+        Flags
+        Form
+        Name
+        Output
+        Paradox.AnalysisTypes
+        Paradox.Flatten
+        Paradox.Instantiate
+        Paradox.SolveInstances
+        ParseProblem
+        Parsek
+        Runner
+        Sat
+        Str
+
+executable infinox
+    main-is: Infinox/Main.hs
+
+    hs-source-dirs: Haskell
+    default-language: Haskell2010
+    default-extensions: ImplicitParams, RankNTypes, FlexibleContexts
+    build-depends: base >= 4.14, containers, mtl, random, process, unix, directory, old-time
+    ghc-options: -threaded
+
+    other-modules:
+        Clausify
+        Flags
+        Form
+        Infinox.Auto
+        Infinox.Classify
+        Infinox.Conjecture
+        Infinox.Generate
+        Infinox.InjOnto
+        Infinox.Leo
+        Infinox.Relations
+        Infinox.Settings
+        Infinox.Symbols
+        Infinox.Timeout
+        Infinox.Types
+        Infinox.Util
+        Infinox.Zoom
+        Name
+        Output
+        ParseProblem
+        Parsek
+        Runner
+        Str

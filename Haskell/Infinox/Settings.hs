@@ -1,4 +1,3 @@
-
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Infinox.Settings where
 
@@ -34,30 +33,30 @@ runWithSettings :: MethodSettings -> Settings a  -> IO a
 runWithSettings msig =  flip runReaderT msig . unSettings
 
 data Signature = Sig {psymbs :: Set Symbol, fsymbs :: Set Symbol,  hasEq :: Bool}
-	deriving (Eq,Show)
+        deriving (Eq,Show)
 
 getSignature :: [Form] -> String -> Signature
 getSignature fs t = Sig 
-	(S.filter isPredSymbol syms)
-	(case t of 
-			"-"				->	(S.filter isFunSymbol syms)
-			s					->	S.fromList $ getSymb s (S.toList syms)
-	)
-	(or (map hasEquality fs))
-	where
-		syms = symbols fs
-		hasEquality (Atom (t1 :=: t2)) = t2 /= truth
-		hasEquality (And fs) = S.member True $ S.map hasEquality fs
-		hasEquality (Or fs) = S.member True $ S.map hasEquality fs
-		hasEquality (Not f) = hasEquality f
-		hasEquality (Equiv f1 f2) = hasEquality f1 || hasEquality f2
-		hasEquality (ForAll (Bind s f)) = hasEquality f
-		hasEquality (Exists (Bind s f)) = hasEquality f
+        (S.filter isPredSymbol syms)
+        (case t of 
+                        "-"                             ->      (S.filter isFunSymbol syms)
+                        s                                       ->      S.fromList $ getSymb s (S.toList syms)
+        )
+        (or (map hasEquality fs))
+        where
+                syms = symbols fs
+                hasEquality (Atom (t1 :=: t2)) = t2 /= truth
+                hasEquality (And fs) = S.member True $ S.map hasEquality fs
+                hasEquality (Or fs) = S.member True $ S.map hasEquality fs
+                hasEquality (Not f) = hasEquality f
+                hasEquality (Equiv f1 f2) = hasEquality f1 || hasEquality f2
+                hasEquality (ForAll (Bind s f)) = hasEquality f
+                hasEquality (Exists (Bind s f)) = hasEquality f
   
 -------------- collecting symbols ---------------------------------------------
 
 getSymb s xs = filter (((==) s).show.symbolname) xs
-symbolname (r ::: _) = r	
+symbolname (r ::: _) = r        
 
 -------------------------------------------------------------------------------
 

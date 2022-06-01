@@ -429,6 +429,8 @@ instance Symbolic a => Symbolic (Seq a) where
   free       = free . toList
   subterms   = subterms . toList
   subst' sub = (fromList `fmap`) . subst' sub . toList
+  occurring s (List xs) = fmap List (occurring s xs)
+  occurring s (x `Cat` y) = liftM2 Cat (occurring s x) (occurring s y)
 
 instance Functor Seq where
   fmap f (List xs)   = List (map f xs)

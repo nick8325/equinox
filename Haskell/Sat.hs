@@ -90,7 +90,7 @@ addClauses_ mn d ls s =
        addArg (ArgV i) = solver_clause_add_lit_var s (fromIntegral i)
        addLit (Loc l :@ args) b = do
          withForeignPtr l (flip (solver_clause_add_lit s) (toCBool b))
-	 mapM_ addArg args
+         mapM_ addArg args
 
        signed f x = f (the x) (sign x)
     

@@ -37,8 +37,8 @@ import Form
 -- outputs
 
 data Result = None | F Form | FF Form Form | TF Term Form | Some |
-								TFF Term Form Form
-	deriving (Eq,Show)
+                                                                TFF Term Form Form
+        deriving (Eq,Show)
 
 putInfo :: String -> IO ()
 putInfo s = putStrLn s

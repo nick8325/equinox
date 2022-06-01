@@ -2,7 +2,7 @@ module Flags
   ( Flags(..)
   , Tool(..)
   , Prover(..)
-	, Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto,Leo,Trans)
+        , Method(InjNotSurj,SurjNotInj,Serial,Relation,Auto,Leo,Trans)
   , getFlags
   , getTimeLeft
   , getTimeSpent
@@ -58,7 +58,6 @@ import Data.Char
 
 import System.CPUTime
 
-import Control.Monad.Instances()
 import Control.Applicative
 
 -------------------------------------------------------------------------
@@ -68,8 +67,8 @@ data Tool
   = Paradox
   | Equinox
   | Infinox
-	| SatPlay
-	| Zoomer
+        | SatPlay
+        | Zoomer
  deriving ( Eq, Show )
 
 data Flags
@@ -99,9 +98,9 @@ data Flags
   , relation     :: Maybe String
   , subset       :: Maybe String
   , method       :: [Method]
-	, outfile			 :: Maybe FilePath
+        , outfile                        :: Maybe FilePath
   , prover       :: Prover
-	, leo					 :: Bool
+        , leo                                    :: Bool
 
 
   -- primitive
@@ -116,10 +115,10 @@ data Method
   | SurjNotInj
   | Serial
   | Trans
-	| Bijection
-	| Relation
-	| Auto
-	| Leo
+        | Bijection
+        | Relation
+        | Auto
+        | Leo
  deriving ( Eq, Show, Read, Bounded, Enum )
 
 data Prover = E | Equi
@@ -163,9 +162,9 @@ initFlags =
   , relation     = Nothing --Just "-"
   , subset       = Nothing --Just "-"
   , method       = [InjNotSurj,SurjNotInj,Serial, Trans, Auto,Leo]
-	, outfile			 = Nothing
-	, filelist		 = Nothing
-  , leo 				 = False
+        , outfile                        = Nothing
+        , filelist               = Nothing
+  , leo                                  = False
   , prover       = E
 
   -- primitive
@@ -265,7 +264,7 @@ options =
                 ]
     }
 
-	, Option
+        , Option
     { long    = "temp"
     , tools   = [Infinox]
     , meaning = (\s f -> f{ temp = s }) <$> argName
@@ -311,7 +310,7 @@ options =
     }
 
 {-
-	, Option
+        , Option
     { long    = "leo"
     , tools   = [Infinox]
     , meaning = unit (\f -> f{ leo = True })
@@ -332,7 +331,7 @@ options =
   , Option
     { long    = "method"
     , tools   = [Infinox]
-		, meaning = (\m f -> f{ method = map read m }) <$> argList (map show [(minBound :: Method) .. maxBound])
+                , meaning = (\m f -> f{ method = map read m }) <$> argList (map show [(minBound :: Method) .. maxBound])
     , help    = [ "Method to use."
                 , "Default: --method InjNotSurj"
                 ]
@@ -375,7 +374,7 @@ options =
                 ]
     }
 
-	, Option
+        , Option
     { long    = "outfile"
     , tools   = [Infinox]
     , meaning = (\file f -> f{ outfile = Just file }) <$> argName
@@ -386,7 +385,7 @@ options =
     }
 
 
-	, Option
+        , Option
     { long    = "filelist"
     , tools   = [Paradox, Equinox, Infinox]
     , meaning = (\file f -> f{ filelist = Just file }) <$> argName

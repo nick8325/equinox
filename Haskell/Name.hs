@@ -9,7 +9,7 @@ module Name
   , isSimpleName
   , isEltName
   , getIndex
-	, normalName
+        , normalName
   )
  where
 

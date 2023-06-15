@@ -24,7 +24,7 @@ clausify inps = run $ clausifyInputs nil nil inps
     do return ( map clean (toList theory)
               , map (map clean) (toList obligs)
               )
-  
+
   -- Here, one could imagine adding NegatedConjecture as ONE oblig also ...
   clausifyInputs theory obligs (inp:inps) | kind inp /= Conjecture =
     do cs <- clausForm (tag inp) (what inp)
@@ -35,7 +35,7 @@ clausify inps = run $ clausifyInputs nil nil inps
 
   clausifyObligs theory obligs s [] inps =
     do clausifyInputs theory obligs inps
-  
+
   clausifyObligs theory obligs s (a:as) inps =
     do cs <- clausForm s (nt a)
        clausifyObligs theory (obligs +++ fromList [cs]) s as inps
@@ -50,12 +50,12 @@ clean cl = nub (subst sub cl)
  where
   xs  = free cl
   sub = makeTab ids S.empty ([1..] `zip` S.toList xs)
- 
+
   makeTab sub used []                   = sub
   makeTab sub used ((i,x@(n ::: t)):xs) = makeTab sub' (S.insert n' used) xs
    where
     strippedN = strip n
-    
+
     n' = head [ n'
               | let new j = "SV" ++ show i
                          ++ "_" ++ show strippedN
@@ -63,9 +63,9 @@ clean cl = nub (subst sub cl)
               , n' <- strippedN : [ name (new j) | j <- [1..] ]
               , not (n' `S.member` used)
               ]
-    
-    x' = n' ::: t 
-    
+
+    x' = n' ::: t
+
     sub' | x == x'   = sub
          | otherwise = (x |=> Var x') |+| sub
 
@@ -74,10 +74,10 @@ split p =
   case positive p of
     ForAll (Bind x p) ->
       [ ForAll (Bind x p') | p' <- split p ]
-    
+
     And ps ->
       concatMap split (S.toList ps)
-    
+
     p `Equiv` q ->
       split (nt p \/ q) ++ split (p \/ nt q)
 
@@ -94,22 +94,22 @@ split p =
  where
   select []     = []
   select (x:xs) = (x,xs) : [ (y,x:ys) | (y,ys) <- select xs ]
-  
+
   first (n,x) (m,y) = n `compare` m
-  
+
   siz (And ps)            = S.size ps
   siz (ForAll (Bind _ p)) = siz p
   siz (_ `Equiv` _)       = 2
   siz _                   = 0
 
-{-  
+{-
     Or ps | S.size ps > 0 && n > 0 ->
       [ Or (S.fromList (p':ps')) | p' <- split p ]
      where
       pns = [(p,siz p) | p <- S.toList ps]
       ((p,n),pns') = getMax (head pns) [] (tail pns)
       ps' = [ p' | (p',_) <- pns' ]
-    
+
   getMax pn@(p,n) pns [] = (pn,pns)
   getMax pn@(p,n) pns (qm@(q,m):qms)
     | m > n     = getMax qm (pn:pns) qms
@@ -156,7 +156,7 @@ removeEquivAux inEquiv p =
     Not p ->
       do (defs,pos,neg) <- removeEquivAux inEquiv p
          return (defs,neg,pos)
-  
+
     And ps ->
       do dps <- sequence [ removeEquivAux inEquiv p | p <- S.toList ps ]
          let (defss,poss,negs) = unzip3 dps
@@ -226,11 +226,11 @@ removeExists (And ps) =
 removeExists (Or ps) =
   do ps <- sequence [ removeExists p | p <- S.toList ps ]
      return (Or (S.fromList ps))
-    
+
 removeExists (ForAll (Bind x p)) =
   do p' <- removeExists p
      return (ForAll (Bind x p'))
-    
+
 removeExists (Exists b@(Bind x p)) =
   -- skolemterms have only variables as arguments, arities are large(r)
   do t <- skolem x (free b)
@@ -316,7 +316,7 @@ makeOr fcs
               )
  where
   (fcs1,fcs2) = split [] fcs
-  
+
   split fcs1 []                            = (fcs1,[])
   split fcs1 (fc@(_,(cc,_)):fcs) | cc <= 1 = split (fc:fcs1) fcs
   split fcs1 fcs@((_,(cc,_)):_)  | cc <= 2 = (take 2 fcs ++ fcs1, drop 2 fcs)
@@ -337,7 +337,7 @@ removeForAll (And ps) =
 removeForAll (Or ps) =
   do ps <- sequence [ removeForAll p | p <- S.toList ps ]
      return (Or (S.fromList ps))
-    
+
 removeForAll (ForAll (Bind x p)) =
   do x' <- fresh x
      p' <- removeForAll p
@@ -380,7 +380,7 @@ instance Applicative M where
 instance Monad M where
   return x =
     M (\s n -> (x, n))
-  
+
   M h >>= f =
     M (\s n -> let (x,n') = h s n; M h' = f x in h' s n')
 

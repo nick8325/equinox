@@ -10,8 +10,8 @@ classifyWithLeo axiomfile = do
 
 
 
-conjecture = "thf(c4,conjecture," ++ 
-        
+conjecture = "thf(c4,conjecture," ++
+
         -- exists (G : i -> i) : forall (X:i) : forall (Y:i) : ( G(X) = G(Y) ==> X = Y) &&
 
         "?[G:$i>$i] :(((![X:$i]:( ![Y:$i]:(~((G @ X) = (G @ Y))|(X = Y)))) & " ++
@@ -23,7 +23,7 @@ conjecture = "thf(c4,conjecture," ++
         --exists (X:i) : exists (Y:i) : (X != Y &&
         " | ((?[X:$i] : ?[Y:$i] : ((X != Y) & " ++
         --G(X) = G(Y)) &&
-                        "((G @ X) = (G @ Y)))) & " ++ 
-        --forall(Y:i) : exists (X:i) : G(X) = Y 
+                        "((G @ X) = (G @ Y)))) & " ++
+        --forall(Y:i) : exists (X:i) : G(X) = Y
                                 " (![Y:$i] : ?[X:$i] : ((G@X) = Y)))))."
-                
+

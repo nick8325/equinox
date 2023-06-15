@@ -2,3 +2,5 @@
 *.o
 *.or
 depend.mk
+/.stack-work/
+/dist-newstyle/

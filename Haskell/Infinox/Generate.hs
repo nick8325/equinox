@@ -28,41 +28,41 @@ eq t1 t2 = Atom (t1 :=: t2)
 
 -----------collecting terms and predicates from the problem--------------------
 
-collectRelations rel preds hasEq = 
+collectRelations rel preds hasEq =
         case rel of
                                                         Nothing         -> if hasEq then [equalityX] else []
-                                                        Just "-"        -> let 
+                                                        Just "-"        -> let
                                                                                                                 rs = nub (sortForms (getRelations preds))  in
-                                                                                                                        if hasEq then (equalityX : rs) else rs 
+                                                                                                                        if hasEq then (equalityX : rs) else rs
                                                         Just r          -> getRelations $ getSymb r preds
-        
 
-collectSubsets p preds = 
+
+collectSubsets p preds =
         case p of
                         Nothing                 -> []
                         Just "-"                -> sortForms  $ nub $ getSubsets preds False False False
                                                                                         --Possibility to add negation, conjunction and disjunction here
-                        Just p' -> case getSymb p' preds of 
+                        Just p' -> case getSymb p' preds of
                                                                                 [p]   -> getSubsets [p] False False False
                                                                                 []    -> []
 
-collectTestTerms sig t fs depth =   
+collectTestTerms sig t fs depth =
         let
                 funterms' = getFuns $ S.unions $ map subterms fs
-                funterms        = case t of 
+                funterms        = case t of
                                                                                         "-" -> funterms'
-                                                                                        _               -> getNamedFun t funterms'              
+                                                                                        _               -> getNamedFun t funterms'
         in
          sortTerms $ nub $ getFunsFromSymbols (fsymbs sig) t depth
                  ++
                  (S.toList $ generateFromTerms (S.toList funterms))
-                
-                
-getFunsFromSymbols syms t depth = 
+
+
+getFunsFromSymbols syms t depth =
         let
                 funsymbols = S.toList (S.filter isFunSymbol syms) in
                         generateFromSymbols funsymbols depth
-                
+
 --pick out the functional terms - i.e. all functions with at least one variable
 getFuns :: Set Term -> Set Term
 getFuns = S.filter function
@@ -83,9 +83,9 @@ getNamedFun fun ts = S.filter (((==) fun).funname) ts
 --construct relations from functions
 
 makeRelations :: Term -> [Relation]
-makeRelations fun@(Fun (f ::: a) ts) = 
-        let p = (f:::a) in 
-                [(Atom ((Fun p ts)  :=: Var Sym.y))] 
+makeRelations fun@(Fun (f ::: a) ts) =
+        let p = (f:::a) in
+                [(Atom ((Fun p ts)  :=: Var Sym.y))]
 
 -----------Generation of new terms---------------------------------------------
 
@@ -95,31 +95,31 @@ generateFromTerms ts = S.unions $ map fixVars ts
         where
                 fixVars t = S.map (fixVar t) (free t)
 
-                fixVar (Var x) z   = 
+                fixVar (Var x) z   =
                         Var (if x == z then Sym.x else star)
 
-                fixVar (Fun f ts)  z   = if and [not (includesVar z t) | t <- ts] then 
+                fixVar (Fun f ts)  z   = if and [not (includesVar z t) | t <- ts] then
                         Var star else Fun f [fixVar t z | t <- ts]
 
                 includesVar z (Var x) = z == x
                 includesVar z (Fun f ts) = or [includesVar z t | t <- ts]
-                
+
 
 --generate all terms with the given symbols, up to depth n
 --WARNING! with many symbols or arities > 2, do not use depths > 2!
 generateFromSymbols ss depth = concat $ init $
         generate ss [[Var star, Var Sym.x]] depth
-        
+
 generate _ ts 0 = ts
                 --invariant: ts non-empty.
 generate ss ts n = generate ss (funs:ts) (n-1)
         where
-                funs = [ Fun (f ::: ftype) terms | f ::: (ftype@(args :-> _)) <- ss, 
+                funs = [ Fun (f ::: ftype) terms | f ::: (ftype@(args :-> _)) <- ss,
                                                                                                                                                                 terms <- termLists (length args) ts, hasX terms ]
-                termLists 0 _ = [[]] 
-                termLists n (ts:tts) = 
+                termLists 0 _ = [[]]
+                termLists n (ts:tts) =
                 --at least one argument in each produced list must have depth (n-1)
-                        nub $ concat [ insertions t terms | 
+                        nub $ concat [ insertions t terms |
                                                                                                 t <- ts, terms <- arglists (n-1) (concat (ts:tts)) ]
 
 arglists 0 args = [[]]
@@ -132,20 +132,20 @@ isArg a (x:xs) = a == x || isArg a xs
 
 hasX = isArg (Var Sym.x)
 
-insertions :: a -> [a] -> [[a]] 
-insertions a [] = [ [a] ] 
-insertions a list@(x : xs) = (a : list) : [ x : z | z <- insertions a xs ] 
-        
+insertions :: a -> [a] -> [[a]]
+insertions a [] = [ [a] ]
+insertions a list@(x : xs) = (a : list) : [ x : z | z <- insertions a xs ]
+
 ----------Generation of predicates---------------------------------------------
 
---generate limiting predicates, possibly using connectives ~, /\, \/                                                            
-getSubsets ps och eller inte = let 
-   ps' = sortForms $ generatePreds ps 
-   ps1 = (if inte then [Not p | p <- ps',not (eq p)] else []) 
+--generate limiting predicates, possibly using connectives ~, /\, \/
+getSubsets ps och eller inte = let
+   ps' = sortForms $ generatePreds ps
+   ps1 = (if inte then [Not p | p <- ps',not (eq p)] else [])
    ps2 = (if eller then
-      [Or (S.fromList [p1,p2]) | 
+      [Or (S.fromList [p1,p2]) |
          p1 <- ps', p2 <- ps', p1  <  p2, not (eq p1), not (eq p2)]   else [])
-   ps3 = if och then [And (S.fromList [p1,p2]) | 
+   ps3 = if och then [And (S.fromList [p1,p2]) |
             p1 <- ps', p2 <- ps', p1 < p2, not (eq p1), not (eq p2) ] else [] in
       ps' ++ ps1 ++ ps2 ++ ps3
         where
@@ -153,28 +153,28 @@ getSubsets ps och eller inte = let
                 eq _                                          = False
 
 --Get all relations with 2 or more "X-variables" - to check for reflexivity
-getRelations = (filter twoOrMorex) . generatePreds 
-   where 
+getRelations = (filter twoOrMorex) . generatePreds
+   where
       twoOrMorex (Atom (t1 :=: t2)) = sum [countx t | t <- [t1,t2]] >= 2
       countx (Var x) | x == Sym.x = 1
       countx (Var _)              = 0
       countx (Fun f ts)           = sum [countx t | t <- ts]
-        
+
 --Generation of predicates containing at least one "X"-argument,
 --all other arguments are represented by "*"
 generatePreds  [] = []
 generatePreds (p:ps) = generateFromPSymbol p ++ generatePreds ps
         where
                 args n = arglists n [Var star, Var Sym.x]
-                generateFromPSymbol (p ::: ptype@(pargs :-> rtype)) | rtype == bool = 
+                generateFromPSymbol (p ::: ptype@(pargs :-> rtype)) | rtype == bool =
                                 [ Atom ( prd (p ::: ptype) ts) | ts <- args (length pargs), hasX ts]
 
 
-                
+
 genRelsXY :: Form -> [Form]
 --ex p(X,*,X,*,X) ==> [p(X,*,Y,*,X), p(X,*,Y,*,Y), p(X,*,X,*,Y)]
---From predicates with arguments "*" and "X", create all predicates with at 
---least one X and one Y, *'s are left unchanged. 
+--From predicates with arguments "*" and "X", create all predicates with at
+--least one X and one Y, *'s are left unchanged.
 genRelsXY (Not form) = map Not $ genRelsXY form
 genRelsXY (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | (t1',t2') <- getRelations t1 t2]
 
@@ -182,21 +182,21 @@ genRelsXY (Atom (t1 :=: t2)) = map Atom $ filter hasXY [ t1' :=: t2' | (t1',t2')
                 hasXY (t1 :=: t2) = isArg (Var Sym.x) [t1,t2]  && isArg (Var Sym.y) [t1,t2]
                 getRelations t1 t2 = case t1 of
                         Fun f ts        -> zip (map (Fun f) $ genRelsXY' ts) (repeat t2)
-                        Var _                   -> [(Var Sym.x,Var Sym.y)] 
+                        Var _                   -> [(Var Sym.x,Var Sym.y)]
                 genRelsXY'   [] = [[]]
-                genRelsXY'  (Var x:ts) 
+                genRelsXY'  (Var x:ts)
                                                         | x == Sym.x = map  ((Var Sym.x) : )   (genRelsXY'' ts)
                         --the first variable that is not a star is always "X"
                                                         | x == star  = map  ((Var star) : )   (genRelsXY' ts)
 
                         --after fixing the first variable to "X", any "X" can be substituted for either "X" or "Y".
                 genRelsXY'' [] = [[]]
-                genRelsXY'' (Var s:ts) 
+                genRelsXY'' (Var s:ts)
                                                         | s == star  = map ((Var star) : )   (genRelsXY'' ts)
-                                                        | s == Sym.x = (map ((Var Sym.x) : ) (genRelsXY'' ts)) ++        
+                                                        | s == Sym.x = (map ((Var Sym.x) : ) (genRelsXY'' ts)) ++
                                                                         (map ((Var Sym.y) : ) (genRelsXY'' ts))
                         --all predicates in the resultlist must include both X and Y.
-      
+
 -------------------------------------------------------------------------------
 
 --sorting
@@ -205,7 +205,7 @@ compareForms :: Form -> Form -> Ordering
 a `compareForms` b = stamp a `compare` stamp b
  where
   stamp a = (arity a, size a)
-  
+
   arity (Atom (t1 :=: t2))  = numberOfArgs t1 + numberOfArgs t2
   arity (And xs)            = sum (map arity (S.toList xs))
   arity (Or xs)             = sum (map arity (S.toList xs))

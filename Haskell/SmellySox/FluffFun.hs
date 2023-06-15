@@ -34,10 +34,10 @@ annotate formula = do
       constants' = map typingFun (Set.toList nonMonotone) ++ constants formula
       typingAxiom f = foldr (Quant ForAll) axiom vars
         where vars = [ Var{name = "SmellySox" ++ show i, ty = ty} | (ty, i) <- zip (args f) [1..] ]
-              axiom = 
+              axiom =
                 foldr (Binop And) resultAxiom
                       [(f :@: map (:@: []) vars) `eq`
-                        (f :@: (map (:@: []) prefix ++ 
+                        (f :@: (map (:@: []) prefix ++
                                 [typingFun (ty v) :@: [v :@: []]] ++
                                 map (:@: []) suffix))
                       | n <- [0..length vars-1],

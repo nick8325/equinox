@@ -27,7 +27,7 @@ fair :: Int -> [a] -> [[a]]
 fair n xs = concat [ enumWith xs en | en <- enums n k ]
  where
   k = length xs
-  
+
   enumWith xs ns | all (==0) ns = [ [] ]
   enumWith xs ns =
     [ x : en

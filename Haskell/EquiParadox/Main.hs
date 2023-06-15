@@ -66,12 +66,12 @@ main :: IO ()
 main =
   do putStrLn "EquiParadox, version 1.0, 2008-07."
      Main.main solveProblem
-  
+
 -------------------------------------------------------------------------
 -- problem
 
 solveProblem :: (?flags :: Flags) => [Clause] -> IO Answer
-solveProblem csIn = 
+solveProblem csIn =
   run $
     do lift $ putStrLn "Start!"
        d1 <- newCon "!1"
@@ -97,7 +97,7 @@ solveProblem csIn =
   cs                         = map annotateTypes csSimp
   symsSet                    = symbols cs
   syms                       = [ f | f <- S.toList symsSet, not (isVarSymbol f) ]
-  
+
 -------------------------------------------------------------------------
 -- instantiation
 
@@ -113,18 +113,18 @@ instantiateDomains tps mtk (n,ds) c =
      where
       (newVs,oldVs) = partition isNew allVs
       isNew v       = typ (Var v) == t
-      
+
       ds'           = take k ds
       d'            = last ds'
-      
+
       insts oldVs []     = do return ()
       insts oldVs (v:vs) = do instClauses (oldVs ++ [(v,[d'])] ++ [(v,init ds') | v <- vs]) c
                               insts ((v,ds'):oldVs) vs
- where      
+ where
   allVs         = S.toList (free c)
   pair x        = (x,take (typeSize x) ds)
   typeSize x    = head' "112" [ k | (t,k,_) <- tps, typ (Var x) == t ]
-  
+
 instClauses :: [(Symbol,[Con])] -> Clause -> T ()
 instClauses vars c = insts vars M.empty
  where
@@ -173,10 +173,10 @@ loopDomainSizes flags syms tps (n,ds) cs =
            else
             let tp =
                   head' "161" (sortBy cmp [ tp | tp@(_,_,leqk:_) <- tps, neg leqk `elem` cnf ])
-                
+
                 (_,k1,_) `cmp` (_,k2,_) =
                   k1 `compare` k2
-             
+
              in increaseDomain flags syms tp tps (n,ds) cs
 
 checkTotality :: Flags -> [Symbol] -> [(Type,Int,[Lit])] -> (Int,[Con]) -> [Clause] -> T Answer
@@ -190,7 +190,7 @@ checkTotality flags syms tps (n,ds) cs =
 checkTotalitySym :: Symbol -> [(Type,Int,[Lit])] -> (Int,[Con]) -> T Bool
 checkTotalitySym (f@(_ ::: (_ :-> t))) tps (n,ds) | t == bool =
   do return True
-  
+
 checkTotalitySym (f@(_ ::: (_ :-> t))) tps (n,ds) =
   do leqs' <- sequence [ getModelValue leq | leq <- leqs ]
      let (k,leq) = head' "179" [ (k,leq) | (k,(leq,True)) <- [1..] `zip` reverse (leqs `zip` leqs') ]
@@ -222,25 +222,25 @@ increaseDomain flags syms tp@(t,k,leqs@(leqk:_)) tps (n,ds) cs =
                      _                   -> newLit
           addClause [neg leqk,leqk'] -- d<=k -> d<=k+1
 
-          let tp' = 
+          let tp' =
                 (t,k+1,leqk':leqs)
-          
+
               tps' =
                 [ if t2 == t
                     then tp'
                     else tp2
                 | tp2@(t2,_,_) <- tps
                 ]
-                
+
               n' | k >= n    = k+1
                  | otherwise = n
-          
+
           ds' <- if n' > n
                    then do d' <- newCon (show n'); return (ds++[d'])
                    else do return ds
-                   
-          lift $ putStrLn $ 
-            "instantiating... (" ++ show t ++ "++)"         
+
+          lift $ putStrLn $
+            "instantiating... (" ++ show t ++ "++)"
           sequence_ [ do lift $ print c
                          instantiateDomains tps' (Just (t,k+1)) (n',ds') c
                     | c <- cs

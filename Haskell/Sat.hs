@@ -3,7 +3,7 @@ module Sat
   , M.Lit         -- :: *; Eq, Ord, Show
   , Arg(..)       -- :: *
   , Atm(..)       -- :: *
-  
+
   , run           -- :: S a -> IO a
   , lift          -- :: IO a -> S a
   , contradiction -- :: S ()
@@ -20,10 +20,10 @@ module Sat
   , newLoc        -- :: Int -> S Loc
   , getLit        -- :: Signed Atm -> S Lit
   , addClauses    -- :: [Int] -> [Signed Atm] -> S ()
-  
+
   , mkTrue
   , mkFalse
-  
+
   -- for debugging
   --, printStderr   -- :: String -> IO ()
   )
@@ -80,7 +80,7 @@ newLoc p = lift $ do
 addClauses :: Maybe Int -> [Int] -> [Signed Atm] -> S ()
 addClauses mn d ls = MiniSatM (\(_, s) -> addClauses_ mn d ls s)
 
-addClauses_ mn d ls s = 
+addClauses_ mn d ls s =
   do solver_clause_begin s
      mapM_ (signed addLit) ls
      mapM_ (solver_clause_add_size s . fromIntegral) d
@@ -93,7 +93,7 @@ addClauses_ mn d ls s =
          mapM_ addArg args
 
        signed f x = f (the x) (sign x)
-    
+
 
 getLit :: Signed Atm -> S M.Lit
 getLit atom = MiniSatM $ \(_, s) -> do
@@ -180,7 +180,7 @@ lift       f  = MiniSatM (const f)
 newtype Inst = Inst (Ptr ())
 
 foreign import ccall unsafe "static Wrapper.h"   s_new            :: M.Solver -> IO Inst
-foreign import ccall unsafe "static Wrapper.h"   s_delete         :: Inst -> IO () 
+foreign import ccall unsafe "static Wrapper.h"   s_delete         :: Inst -> IO ()
 foreign import ccall unsafe "static Wrapper.h"   loc_new          :: CInt -> IO (Ptr ())
 foreign import ccall unsafe "static Wrapper.h &loc_free"   loc_free         :: FunPtr ((Ptr ()) -> IO ())
 foreign import ccall unsafe "static Wrapper.h"   loc_arity        :: (Ptr ()) -> IO CInt

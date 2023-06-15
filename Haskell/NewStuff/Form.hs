@@ -44,7 +44,7 @@ data Form
   | ForAll Symbol Form
   | Exists Symbol Form
   | Bool Bool
-  
+
 data Term
   = Fun Symbol [Term]
   | Var Symbol

@@ -86,7 +86,7 @@ timeout n f
 -}
 
 test = do
-        timeOut2 (2*(10^6)) "eprover" "utdata" (words "--tstp-in --tstp-out -tAuto -xAuto --output-level=0 /home/ann/Documents/Infinox/TPTP-v3.5.0/Problems/ALG/ALG221+1.p") 
+        timeOut2 (2*(10^6)) "eprover" "utdata" (words "--tstp-in --tstp-out -tAuto -xAuto --output-level=0 /home/ann/Documents/Infinox/TPTP-v3.5.0/Problems/ALG/ALG221+1.p")
 
 timeOut2 :: Int  -> String -> String -> [String] -> IO (Maybe ExitCode)
 timeOut2 n exe output args =
@@ -95,33 +95,32 @@ timeOut2 n exe output args =
       h  <- runProcess exe args Nothing Nothing Nothing (Just h2) Nothing
       res <- newEmptyMVar
 
-      forkIO (do 
-         ex <- waitForProcess h 
+      forkIO (do
+         ex <- waitForProcess h
          putMVar res (Just ex)
                         )
 
-      id <- forkIO (do 
+      id <- forkIO (do
          threadDelay n
          --terminateProcess h
-         let 
-            kill 0 = do 
+         let
+            kill 0 = do
                putStrLn "Paradox still running..."
                return ()
             kill m = do
                ex <- try (terminateProcess h) :: IO (Either IOError ())
                case ex of
-                  Left _ -> do 
-                              threadDelay (n `div` 10) 
+                  Left _ -> do
+                              threadDelay (n `div` 10)
                               kill (m-1)
-                  Right _ -> return () 
+                  Right _ -> return ()
          kill 100
          putMVar res Nothing
                         )
-      
+
       x <- takeMVar res
       hClose h2
       killThread id
 --      putStrLn $ show x
-      return x 
-                
+      return x
 

@@ -12,7 +12,7 @@ obsRef = unsafePerformIO (newIORef [])
 
 observe :: Show a => String -> a -> a
 observe s x =
-  (sx==sx) `seq` 
+  (sx==sx) `seq`
     unsafePerformIO $
       do table <- readIORef obsRef
          writeIORef obsRef ((s,sx):table)

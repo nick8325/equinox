@@ -2,7 +2,7 @@ module SmellySox.Cheese where
 
 {- Monotonicity calculus
 
-   Formulas: 
+   Formulas:
 
    K |- C1, ... K |- Cn
    -----------------------  (alpha)
@@ -23,18 +23,18 @@ module SmellySox.Cheese where
    Literals:
 
    G,K |- L    (alpha, ~S)
-   ---------- 
+   ----------
    G,K |- ~L   (alpha,S)
 
-    
+
    ------------- (alpha, -)
    G,K |- t = u
 
-    
+
    t,u have type b != alpha
    ------------------------- (alpha, +)
-   G,K |- t = u  
- 
+   G,K |- t = u
+
 
    safe(G,t)  safe(G,u)  t,u have type alpha
    ------------------------------------------ (alpha, +)
@@ -45,12 +45,12 @@ module SmellySox.Cheese where
    ------------------------------------------------ (alpha,+)
    K,G |- p(t1,...,tn)
 
-   
+
    -------------------- (alpha,-)
    K,G |- p(t1,...,tn)
 
 
-   safe(G,t) = isVar(t) ==> elem t G 
+   safe(G,t) = isVar(t) ==> elem t G
 
 
 -}
@@ -107,7 +107,7 @@ guards (Pos (p :@: ts)) x                    = if x :@: [] `elem` ts then SatVar
 guards (Neg (p :@: ts)) x                    = if x :@: [] `elem` ts then SatVar (FalseExtended p) else FFalse
 
 literal :: Clause -> Literal -> Type -> SatFormula ExtensionVar
-literal c l ty = 
+literal c l ty =
   case l of (t1 :=: t2) | typeOf t1 == ty -> safe c t1 :&: safe c t2
             (Pos (p :@: ts)) | ty `elem` map typeOf ts -> Not (SatVar (FalseExtended p)) :|: conj (map (safe c) ts)
             (Neg (p :@: ts)) | ty `elem` map typeOf ts -> Not (SatVar (TrueExtended p)) :|: conj (map (safe c) ts)

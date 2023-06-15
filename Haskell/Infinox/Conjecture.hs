@@ -6,11 +6,11 @@ import qualified Data.Set as Set
 import Data.List
 import qualified Infinox.Symbols as Sym
 import Infinox.Types
-import Control.Monad.State 
+import Control.Monad.State
 
 -----------------------------------------------------------------------------------------
 
---Applying a function/predicate containing variables X (and possibly Y and Z) to 
+--Applying a function/predicate containing variables X (and possibly Y and Z) to
 --one or two or three arguments.
 (@@) :: Symbolic a => a -> [Term] -> a
 p @@ []                 = p
@@ -44,7 +44,7 @@ existsSymbol s t p = exist (Bind Sym.x (Bind Sym.y t')) (p f)
 --translating to fof-form.
 
 noClashString :: [Form] -> String
-noClashString p = head [ s | i <- [0..] , let s = "x" ++ show i, 
+noClashString p = head [ s | i <- [0..] , let s = "x" ++ show i,
         null (filter (isInfixOf s) (map show (Set.toList (symbols p))))]
 
 form2axioms :: [Form] -> String -> String
@@ -55,18 +55,18 @@ form2axioms fs noClash = form2axioms' fs noClash 0
 
 form2axiom :: Form -> String -> Int -> String
 form2axiom f s n =
-        "fof(" ++ "a_" ++ (show n) ++ ", " ++ "axiom" ++ 
+        "fof(" ++ "a_" ++ (show n) ++ ", " ++ "axiom" ++
                 ", " ++ showNormal s f ++ ")."
- 
+
 form2conjecture :: String ->  Int -> Form -> String
 form2conjecture noClash n f =
-        "fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++ 
+        "fof(" ++ "c_" ++ (show n) ++ ", " ++ "conjecture" ++
                         ", (" ++ showNormal noClash f ++ "))."
 
 showNormal x f = show  $ normalBinds x $ mapOverTerms (giveNormalName x) f
 
-giveNormalName x fun@(Fun symb ts) = 
-        if fun == truth then fun 
+giveNormalName x fun@(Fun symb ts) =
+        if fun == truth then fun
                 else Fun (normalSymb x symb) (map (giveNormalName x) ts)
 giveNormalName x (Var symb) = Var $ normalSymb x symb
 
@@ -86,9 +86,9 @@ n1 = name "f"
 n2 = name "subset"
 s1 = (n1 :::  ([top] :-> bool))
 s2 = (n2 :::  ([top] :-> bool))
-t1 = Fun s1  [Var ((name "X") ::: (V top))] 
+t1 = Fun s1  [Var ((name "X") ::: (V top))]
 t2 = Fun s2  [Var ((name "X") ::: (V top))]
- 
+
 test3 = Atom $  t1 :=: truth
 
 p1 = Atom $ t2 :=: truth

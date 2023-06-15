@@ -56,7 +56,7 @@ data Form = Const Bool
           | Binop Binop Form Form
           | Not Form
           | Quant Quant Atom Form
-     
+
 
 data Kind = Axiom | Hypothesis | Definition | Conjecture | NegatedConjecture
 

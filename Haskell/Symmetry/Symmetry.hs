@@ -61,4 +61,3 @@ func k =
 sorted :: Ord a => [a] -> Bool
 sorted xs = sort xs == xs
 
-

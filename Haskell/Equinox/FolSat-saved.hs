@@ -64,18 +64,18 @@ prove flags cs =
  where
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
-  
+
   (groundCs,nonGroundCs') = partition isGround cs
-  
+
   nonGroundCs = concatMap (norm []) nonGroundCs'
-  
+
   syms = symbols cs
-  
+
   fs' = S.filter (\f ->
     case f of
       _ ::: (_ :-> t) -> t /= bool
       _               -> False) syms
-  
+
   trueX = prim "True" ::: V bool
 
   star = prim "*" ::: ([] :-> top)
@@ -88,10 +88,10 @@ prove flags cs =
 
   norm ls' [] =
     [reverse ls']
-  
+
   norm ls' (Neg (Var x :=: Var y) : ls) =
     norm [] (subst (x |=> Var y) (reverse ls' ++ ls))
-  
+
   norm ls' (Pos (Var x :=: Fun f ts) : ls) =
     norm (Pos (Fun f ts :=: Var x) : ls') ls
 
@@ -110,12 +110,12 @@ prove flags cs =
   cclause cl = (defs,neqs)
    where
     theX i = var top i
-    
+
     (defs,neqs) = lits 1 cl
-    
+
     lits i [] =
       ([],[])
-    
+
     lits i (Neg (s :=: Var x) : ls) =
       ((s,x):defs,neqs)
      where
@@ -237,7 +237,7 @@ prove flags cs =
                              return True
                    --lift $ putStrLn "OK"
                    return r
-                   
+
               | cl <- nonGroundCs
               , let (defs,neqs) = cclause cl
               ]
@@ -268,10 +268,10 @@ prove flags cs =
                _ ->
                  do --lift (print "no 2")
                     return False
-    
+
     nonGoodCases ((Var x,c):eqs) defs neqs undefs still sub add =
       nonGoodCasesSub x c eqs defs neqs undefs still sub add
-      
+
     nonGoodCases ((Fun f ts,c):eqs) defs neqs undefs still sub add =
       do --lift $ print ((Fun f ts,c):eqs,defs,neqs,undefs,still)
          st <- star `app` []
@@ -327,45 +327,45 @@ prove flags cs =
               ]
      where
       enums = fairEnums (S.toList still)
-     
+
       neqs' = S.fromList [ z | (x,y) <- neqs, z <- [x,y] ]
-     
+
       many = findOne
-      
+
       unTab =
         M.fromList [ (x,t) | (t,x) <- undefs ]
-      
+
       uns =
         S.fromList [ x | (_,x) <- undefs ]
-      
+
       acyclic = top degrees indeps
        where
         nodes =
-          [ (x, S.toList (free t `S.intersection` uns)) 
+          [ (x, S.toList (free t `S.intersection` uns))
           | (t,x) <- undefs
           ]
-        
+
         indeps =
           [ x
           | (x,_) <- nodes
           , M.lookup x degrees == Nothing
           ]
-        
+
         graph =
           M.fromList nodes
-        
+
         degrees =
           M.fromListWith (+)
           [ (y,1)
           | (x,ys) <- nodes
           , y <- ys
           ]
-        
+
         top degrees []     = M.null degrees
         top degrees (x:xs) =
           case M.lookup x graph of
             Just ys -> tops degrees ys xs
-        
+
         tops degrees []     xs = top degrees xs
         tops degrees (y:ys) xs =
           case M.lookup y degrees of
@@ -373,7 +373,7 @@ prove flags cs =
               | k == 1    -> tops (M.delete y degrees) ys (y:xs)
               | otherwise -> tops (M.insert y (k-1) degrees) ys xs
             Nothing       -> tops degrees ys xs
-      
+
       fairEnums xs =
         [ M.fromList (xs `zip` cs) | cs <- fair (length xs) cons ]
 
@@ -441,7 +441,7 @@ prove flags cs =
 
     nonGoodCases [] [] neqs undefs still sub add =
       do return False
-                     
+
 evalClauseSub :: Con -> Map Symbol Con -> Clause -> T Bool
 evalClauseSub true sub cl =
   do ls <- sequence [ literal l | l <- cl ]
@@ -449,7 +449,7 @@ evalClauseSub true sub cl =
  where
   term (Var x) =
     do return (M.lookup x sub)
-  
+
   term (Fun f ts) =
     do as <- sequence [ term t | t <- ts ]
        if all isJust as
@@ -458,23 +458,23 @@ evalClauseSub true sub cl =
                    []  -> return Nothing
                    y:_ -> return (Just y)
          else do return Nothing
-  
+
   atom (s :=: t) | t == truth =
     do a <- term s
        return (a =?= Just true)
-  
+
   atom (s :=: t) =
     do a <- term s
        b <- term t
        return (a =?= b)
-  
+
   Nothing =?= _       = Nothing
   _       =?= Nothing = Nothing
   Just x  =?= Just y  = Just (x == y)
-  
+
   literal (Pos a) = atom a
   literal (Neg a) = fmap not `fmap` atom a
-  
+
 addClauseSub :: Con -> Map Symbol Con -> Clause -> T ()
 addClauseSub true sub cl =
   do ls <- sequence [ literal l | l <- cl ]
@@ -482,23 +482,23 @@ addClauseSub true sub cl =
  where
   term (Var x) =
     do return (fromJust $ M.lookup x sub)
-  
+
   term (Fun f ts) =
     do as <- sequence [ term t | t <- ts ]
        f `app` as
-  
+
   atom (s :=: t) | t == truth =
     do a <- term s
        return (a T.:=: true)
-  
+
   atom (s :=: t) =
     do a <- term s
        b <- term t
        return (a T.:=: b)
-  
+
   literal (Pos a) = atom a
   literal (Neg a) = neg `fmap` atom a
-  
+
 addGroundAtom :: Atom -> T ()
 addGroundAtom (a :=: b) =
   do term a
@@ -507,10 +507,10 @@ addGroundAtom (a :=: b) =
  where
   term t | t == truth =
     do return Nothing
-  
+
   term (Var x) =
     do return Nothing
-  
+
   term (Fun f ts) =
     do mas <- sequence [ term t | t <- ts ]
        if any isNothing mas
@@ -532,7 +532,7 @@ writeModel file true fs ds =
          | f <- S.toList fs
          , show f `elem` interesting
          ]
-     
+
      -- attributes
      attrss <-
        sequence
@@ -551,7 +551,7 @@ writeModel file true fs ds =
          , show f `elem` interesting
          ]
      let attrs = concat attrss
-     
+
      -- arrows
      arrowss <-
        sequence
@@ -570,11 +570,11 @@ writeModel file true fs ds =
          , show f `elem` interesting
          ]
      let arrows = concat arrowss
-     
+
      let nodes = nub ( [ x | (x,_) <- attrs ]
                     ++ [ z | (x,y,_) <- arrows, z <- [x,y] ]
                      )
-     
+
      sequence_
        [ lift $ hPutStrLn h (shown x ++ " [label=\"" ++ lab ++ "\"];")
        | x <- nodes
@@ -582,7 +582,7 @@ writeModel file true fs ds =
              lab  | null attr = show x
                   | otherwise = show x ++ "\\n" ++ concat (intersperse "," (map show attr))
        ]
-          
+
      sequence_
        [ lift $ hPutStrLn h (shown x ++ " -> " ++ shown y ++ " [label=\"" ++ show f ++ "\"];")
        | (x,y,f) <- arrows
@@ -594,11 +594,11 @@ writeModel file true fs ds =
   showArgs f ts = show f ++ show ts
 
   --line f xs y = showArgs f xs ++ " = " ++ show y
-  
+
   isPred (_ ::: (_ :-> t)) = t == bool
-  isPred _                 = False 
-  
+  isPred _                 = False
+
   shown n = tail (show n)
-  
+
   interesting = words (map (\c -> if c == ',' then ' ' else c) ds)
-  
+

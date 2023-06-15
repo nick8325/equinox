@@ -20,32 +20,32 @@ import Flags(Method(InjNotSurj,SurjNotInj))
 import Control.Monad.Reader
 
 continueInjOnto method funs rflag = do
-        
+
                 settings <- ask
                 let
                         sig'                            =               sig settings
-                        pflag'                  =               pflag settings  
+                        pflag'                  =               pflag settings
                         noClash'                =               noClash settings
-                        ps                                      =               filter (leqfive . arity) (S.toList $ psymbs sig') 
+                        ps                                      =               filter (leqfive . arity) (S.toList $ psymbs sig')
                     --all predicates in the signature with arity <= 5
 
-                        relations               =       collectRelations rflag ps (hasEq sig') 
+                        relations               =       collectRelations rflag ps (hasEq sig')
                                                                                 --relations with two or more "X"-variables, with equality if it is present.
                                                                                 --after establishing reflexivity of a relation, relations with "X" and "Y"
                                                                                 --variables will be generated.
-                        subsets                 =               collectSubsets pflag' ps        --collect subset-predicates depending on flag given     
-        
+                        subsets                 =               collectSubsets pflag' ps        --collect subset-predicates depending on flag given
+
 --                      candidates  =           combine funs $ combine (map Just (concatMap genRelsXY relations)) (Nothing:(map Just subsets))
 
-{-              
+{-
                 liftIO $ do
                                                 putStrLn $ show relations
                                                 putStrLn $ show subsets
                                                 putStrLn $ show funs
-                                                let 
-                                                --      conj = form2conjecture (noClash settings) 0 (conjPimpliesRef r p)       
-                                                        provefile = tempdir settings ++ "check_all" 
-           
+                                                let
+                                                --      conj = form2conjecture (noClash settings) 0 (conjPimpliesRef r p)
+                                                        provefile = tempdir settings ++ "check_all"
+
                                                 system ("cp " ++ axiomfile settings ++ " " ++ provefile)
                                                 addAxioms noClash' (candidates) provefile
                                                 b <- prove "" provefile (elimit settings)
@@ -55,14 +55,14 @@ continueInjOnto method funs rflag = do
 combine xs ys = [(x,y) | x <- xs, y <- ys ]
 
 addAxioms noClash' candidates file = do
-                h' <- try $ openFile file AppendMode                    
-                case h' of 
+                h' <- try $ openFile file AppendMode
+                case h' of
                         Right h -> do
                                 hSetBuffering h NoBuffering
-                                hPutStrLn h  $ form2axioms (map mkAxiom candidates) noClash'    
-        --                      hPutStrLn h $ form2conjecture noClash' 1 (mkAxiom (head candidates)) 
-                                hClose h        
-                                equinox file    
+                                hPutStrLn h  $ form2axioms (map mkAxiom candidates) noClash'
+        --                      hPutStrLn h $ form2conjecture noClash' 1 (mkAxiom (head candidates))
+                                hClose h
+                                equinox file
 --                              eprove file 60
                         _       -> error "wsfsdzf"
 
@@ -70,20 +70,20 @@ mkAxiom (t,(r,p)) = (nt (conjNotInjOnto (Just t) Nothing p))
 
 -}
 
-        
+
         --      liftIO $ putStrLn $ show candidates
-        
-                (result,refl_rels) <- tryFullDomain funs relations [] 
+
+                (result,refl_rels) <- tryFullDomain funs relations []
                                                                 --while testing the full domain - collect all reflexive relations to avoid
                                                                 --testing them again!
                 case result of
                         []      -> do
-                                                                let testrels = deleteRels refl_rels relations 
+                                                                let testrels = deleteRels refl_rels relations
                                                                 (result,fsps) <- trySubdomains_Refl funs refl_rels subsets []
                                                                 --First test the relations that are reflexive on the full domain
                                                                 --and test the resulting candidate triples.
                                                                 --collect matching pairs of functions and subsets to reuse in next steps
-                                                                case result of 
+                                                                case result of
                                                                         None    -> trySubdomains fsps (nub [p | (_,p) <- fsps]) testrels testrels
                                                                         --Next, given pairs of functions and subsets, test all others relations
                                                                         --for reflexivity on these subsets, and test the resulting candidate triples.
@@ -91,17 +91,17 @@ mkAxiom (t,(r,p)) = (nt (conjNotInjOnto (Just t) Nothing p))
                         _               -> return $ toResult result
 
         where
-                combine xs ys = [(x,y) | x <- xs,y <- ys] 
-                tryFullDomain _ [] allrefls = return ([],allrefls)      
+                combine xs ys = [(x,y) | x <- xs,y <- ys]
+                tryFullDomain _ [] allrefls = return ([],allrefls)
                 tryFullDomain funs relations refls = do
 
-                        (psrs,rs) <- getPairs Nothing checkPR relations 
-                        --getPairs stops as soon as we find a relation that is reflexive on the full domain. 
+                        (psrs,rs) <- getPairs Nothing checkPR relations
+                        --getPairs stops as soon as we find a relation that is reflexive on the full domain.
                         --psrs are the matching pairs subset-relation pairs, rs are the relations to be checked the next round.
                         let
                                 newrefls = map snd psrs
                                 allrefls = newrefls ++ refls
-                        result <- (mappy (proveProperty method) $ 
+                        result <- (mappy (proveProperty method) $
                                                         [(Just fun,Just r,Nothing) | r <- newrefls, fun <- funs])
                         case result of
                                 []      ->      tryFullDomain funs rs allrefls
@@ -120,18 +120,18 @@ mkAxiom (t,(r,p)) = (nt (conjNotInjOnto (Just t) Nothing p))
                         case fsps' of
                                 []      -> return ([],fsps)
                                 _               -> do
-                                                                let 
+                                                                let
                                                                         candidates = zippy fsps' (zip (repeat (Just p)) refl_rels)
                                                                 result <- (mappy (proveProperty method) candidates)
                                                                 case result of
                                                                         []      ->  trySubdomains_Refl' unprocessed_funs refl_rels p (fsps++fsps')
-                                                                        _               ->  return (result,fsps ++ fsps')       
-                                                        
+                                                                        _               ->  return (result,fsps ++ fsps')
+
                 trySubdomains _ [] _ _ = return None
-                trySubdomains fsps (p:ps) relations [] = trySubdomains fsps ps relations relations 
+                trySubdomains fsps (p:ps) relations [] = trySubdomains fsps ps relations relations
                 trySubdomains fsps (p:ps) relations rs = do
-                        (psrs,rs') <- getPairs p checkPR rs 
-                        case psrs of 
+                        (psrs,rs') <- getPairs p checkPR rs
+                        case psrs of
                                 []      -> trySubdomains fsps ps relations rs'
                                 _               -> do
                                                         let candidates = zippy fsps psrs
@@ -139,11 +139,11 @@ mkAxiom (t,(r,p)) = (nt (conjNotInjOnto (Just t) Nothing p))
                                                         case result of
                                                                 []      -> trySubdomains fsps (p:ps) relations rs'
                                                                 _               -> return $ toResult result
-                                                                                                        
+
                 collectMatchingFunsAndSubset p funs =
                         getPairs (Just p) checkFP funs
-                        
-                collectMatchingRelationsAndSubset p rs = 
+
+                collectMatchingRelationsAndSubset p rs =
                         getPairs (Just p) checkPR rs
 
 toResult []                                                                                                     = None
@@ -153,35 +153,35 @@ toResult [(Just f, Just r, Just p)] = TFF f r p
 deleteRels :: [Form] -> [Form] -> [Form]
 deleteRels rels1 rels2 = delSymbols rels2 (S.toList (symbols rels1))
 delSymbols [] _ = []
-delSymbols (r@(Atom ( (Fun s ts) :=: _)):rs) ss = if elem s ss 
+delSymbols (r@(Atom ( (Fun s ts) :=: _)):rs) ss = if elem s ss
         then delSymbols rs ss else r:(delSymbols rs ss)
 delSymbols (r:rs) ss = delSymbols rs ss
 -------------------------------------------------------------------------------
 zippy [] _ = []
 --zip together triples from pairs with matching "p's"
-zippy ((f,p):fsps) psrs = 
+zippy ((f,p):fsps) psrs =
    [(Just f,Just r,p') | (p',r) <- psrs, p' == p]  ++ zippy fsps psrs
 
-getPairs p checkfun ts_or_rs = 
+getPairs p checkfun ts_or_rs =
         mapUntilSuccess (checkfun p) ts_or_rs
 -------------------------------------------------------------------------------
 
 checkPR :: Maybe Form -> Form -> Settings [(Maybe Form, Form)]
 checkPR p r  = do
         settings <- ask
-        let 
+        let
                         vb                                              = verbose settings
-                        pr                                              = prover settings      
+                        pr                                              = prover settings
         if r == equalityX then return $ zip (repeat p) (genRelsXY r)
                 else
                         liftIO $ do
-                                                let 
-                                                        conj = form2conjecture (noClash settings) 0 (conjPimpliesRef r p)       
-                                                        provefile = tempdir settings ++ "checkpr" 
-           
+                                                let
+                                                        conj = form2conjecture (noClash settings) 0 (conjPimpliesRef r p)
+                                                        provefile = tempdir settings ++ "checkpr"
+
                                                 system ("cp " ++ axiomfile settings ++ " " ++ provefile)
                                                 maybePrint vb "Checking reflexivity of " (Just r)
-                                                maybePrint vb "under " p                                        
+                                                maybePrint vb "under " p
                                                 b <- prove pr conj provefile (elimit settings)
                                                 removeFile provefile
                                                 if b then return (zip (repeat p) (genRelsXY r)) else return []
@@ -190,13 +190,13 @@ checkPR p r  = do
 checkFP :: Maybe Form -> Term -> Settings [(Term,Maybe Form)]
 checkFP p f  = do
         settings <- ask
-        let 
+        let
                         conj                    = form2conjecture (noClash settings) 0 (conjPClosedUnderF f p)
                         provefile = tempdir settings ++ "checkfp"
                         vb                              = verbose settings
                         pr                              = prover settings
         liftIO $ do
-                                                        system $ "cp " ++ axiomfile settings ++ " " ++ provefile        
+                                                        system $ "cp " ++ axiomfile settings ++ " " ++ provefile
                                                         maybePrint vb "Checking " p
                                                         maybePrint vb "closed under " (Just f)
                                                         b <- prove pr conj provefile (elimit settings)
@@ -207,15 +207,15 @@ checkFP p f  = do
 
 --injectivity and non-surjectivity
 
-conjInjNotOnto (Just fun) (Just rel) pr = 
-        let     
+conjInjNotOnto (Just fun) (Just rel) pr =
+        let
                 z    =   Var Sym.z
                 x    =   Var Sym.x
                 y    =   Var Sym.y
         in
          existsFun "F" fun $ \f ->
                 existsRel "R" rel $ \r ->
-         
+
                  case pr of
 
                         Nothing         -> --no limiting predicate!
@@ -229,7 +229,7 @@ conjInjNotOnto (Just fun) (Just rel) pr =
                                         (forEvery x (nt (r z (f x)))))
 
                         Just p'         -> --limiting predicate!
-                         existsPred "P" p' $ \p -> 
+                         existsPred "P" p' $ \p ->
                                 (forEvery [x] ( --reflexivity + p closed under f
                                         (nt (p x)) \/ ( p (f x) /\ r x x)
                                 )) --p(X) ==> p(f(X)) & r(X,X)
@@ -241,7 +241,7 @@ conjInjNotOnto (Just fun) (Just rel) pr =
                                 exist y (
                                         p y /\ forEvery x ((nt (p x)) \/ nt (r y (f x)))
                                 )) --Exists y : p(Y) & forall x (p(X) ==> ~r(Y,f(X)))
-                                /\ 
+                                /\
                                 forEvery [x,y]  --injectivity of f by r in p
                                         ((nt (p x /\ p y)) \/ ((nt (r (f x) (f y))) \/ r x y))
             --p(X) & p(Y) => (r(f(X),f(Y) => r(X,Y)))
@@ -249,15 +249,15 @@ conjInjNotOnto (Just fun) (Just rel) pr =
 
 --surjectivity and non-injectivity
 conjNotInjOnto (Just fun) _ pr =
-        let 
+        let
                         x    =   Var Sym.x
                         y    =   Var Sym.y
         in
 
-        existsFun "F" fun $ \f -> 
+        existsFun "F" fun $ \f ->
 
                 case pr of
-                        Nothing ->  
+                        Nothing ->
                                 exist [x,y] ( --f not injective
                                         nt (x `eq` y) /\ (f x `eq` f y)
                                 )
@@ -265,8 +265,8 @@ conjNotInjOnto (Just fun) _ pr =
                                 forEvery y (exist x ( --f surjective
                                 f x `eq` y))
 
-                        Just p' -> 
-                                existsPred "P" p' $ \p ->                               
+                        Just p' ->
+                                existsPred "P" p' $ \p ->
                                         forEvery x (
                                                 (nt (p x)) \/ p (f x) --p closed under f
                                         )
@@ -280,19 +280,19 @@ conjNotInjOnto (Just fun) _ pr =
                                         )
 
 --r reflexive in p
-conjPimpliesRef rel (Just pr) = 
-        existsPred "P" pr $ \p -> 
+conjPimpliesRef rel (Just pr) =
+        existsPred "P" pr $ \p ->
                 existsRel "R" rel $ \r ->
                         forEvery x (
                                 r x x \/ nt (p x)
                         )
  where
   x = Var Sym.x
- 
+
 --r reflexive
-conjPimpliesRef rel Nothing = 
+conjPimpliesRef rel Nothing =
         existsRel "R" rel $ \r ->
-                forEvery x (            
+                forEvery x (
                         r x x
                 )
  where
@@ -300,8 +300,8 @@ conjPimpliesRef rel Nothing =
 
 --p closed under f
 conjPClosedUnderF fun (Just pr) =
-        existsPred "P" pr $ \p -> 
-                        (existsFun "F" fun $ \f ->      
+        existsPred "P" pr $ \p ->
+                        (existsFun "F" fun $ \f ->
                         forEvery x (
                                 p (f x) \/ nt (p x)
                         ))

@@ -58,7 +58,7 @@ discr f n = ceiling (f (fromIntegral n))
 
 main :: IO ()
 main =
-  sequence_ $ take 400 
+  sequence_ $ take 400
     [ putStrLn (show n ++ ": " ++ show c ++ " (" ++ show v ++ ") " ++ s)
     | (n,(s,c,v)) <- [0..] `zip` costs
     ]

@@ -23,16 +23,16 @@ nodes g = S.fromList [ y | (x,xs) <- M.toList g, y <- x:xs ]
 follow :: Ord a => Graph a -> a -> [a]
 follow g x = case M.lookup x g of
                Nothing -> []
-               Just xs -> xs  
+               Just xs -> xs
 
 topsort :: Ord a => Graph a -> (Set a, [a])
 topsort g = (cyc, deps)
  where
   (cyc, deps, _) = process S.empty S.empty (S.toList (nodes g))
- 
+
   process seen busy [] =
     (S.empty, [], seen)
-  
+
   process seen busy (x:xs) | x `S.member` seen =
     process seen busy xs
 

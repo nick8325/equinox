@@ -103,14 +103,14 @@ prove flags cs =
  where
   put   v s = when (v <= verbose flags) $ lift $ do putStr s;   hFlush stdout
   putLn v s = when (v <= verbose flags) $ lift $ do putStrLn s; hFlush stdout
-  
+
   syms = symbols cs
-  
+
   fs' = S.filter (\f ->
     case f of
       _ ::: (_ :-> t) -> t /= bool
       _               -> False) syms
-  
+
   star = prim "*" ::: ([] :-> top)
 
   noConstants =
@@ -129,7 +129,7 @@ cegar mk refine solve =
               cegar (subtract 1 `fmap` mk) refine solve
              else
               return (Just True)
-       
+
        _ ->
          do return mb
 
@@ -160,51 +160,51 @@ convert c = conv 1 [] [] [] (norm c [] [])
     unrVars =
       realVars
         `S.difference` restrVars
-    
+
     restrVars = fix expand s0
      where
       s0 =
         free [ t | (_,t) <- lits ]
           `S.union` S.fromList [ x | (x,_) <- lits ]
-      
+
       expand s =
         s `S.union` S.unions [ free t | (x,t) <- defs, x `S.member` s ]
-  
+
       fix f x | x == fx   = x
               | otherwise = fix f fx
              where
               fx = f x
-  
+
     dxs = S.fromList [ x | (x,_) <- defs ]
-  
+
     topSort defd ((x,t):ds) ds' | (free t `S.intersection` dxs) `S.isSubsetOf` defd =
       (x,t) : topSort (x `S.insert` defd) ds ds'
-  
+
     topSort defd (d:ds) ds' =
       topSort defd ds (d:ds')
-  
+
     topSort defd [] [] =
       []
-  
+
     topSort defd [] ds' =
       topSort defd ds' []
-  
+
   conv i defs lits eqs (Neg (Var x :=: t) : ls)
     | not (cyclic S.empty (S.toList (free t))) && x `notElem` map fst defs =
       conv i ((x,t):defs) lits eqs ls
    where
     cyclic vis [] =
       False
-    
+
     cyclic vis (y:ys) | x == y =
       True
-    
+
     cyclic vis (y:ys) | y `S.member` vis =
       cyclic vis ys
-    
+
     cyclic vis (y:ys) =
       cyclic (y `S.insert` vis) (concat [ S.toList (free t) | (z,t) <- defs, y == z ] ++ ys)
-    
+
   conv i defs lits eqs (Neg (Var x :=: t) : ls) =
     conv i defs ((x,t):lits) eqs ls
 
@@ -271,13 +271,13 @@ refine cons liberal unrestr cl = match False [] (sortW (defs cl ++ lits cl)) M.e
               || (unrestr && x `S.member` (unrVars cl)))
           (S.toList (realVars cl)) = instantiate cons assign cl
     | otherwise                    = return False
-  
+
   match cheated ((c,Var x):as) ls assign =
     case M.lookup x assign of
       Just c'
         | c /= c'   -> return False
         | otherwise -> match cheated as ls assign
-      
+
       Nothing
         | and [ M.lookup y assign /= Just c
               | y <- matches x (eqs cl)
@@ -325,7 +325,7 @@ cmp :: (a,Term) -> (a,Term) -> Ordering
 (_,t1) `cmp` (_,t2) = weight t1 `compare` weight t2
  where
   weight (Var _)    = -1
-  weight (Fun _ xs) = length xs  
+  weight (Fun _ xs) = length xs
 
 mergeBy :: (a -> a -> Ordering) -> [a] -> [a] -> [a]
 mergeBy cmp xs [] = xs
@@ -342,14 +342,14 @@ instantiate cons sub cl = inst vs sub
        | v <- S.toList (unrVars cl)
        , not (v `M.member` sub)
        ]
- 
+
   inst (v:vs) sub =
     do lift $ print "unr var"
        tryAll
          [ inst vs (M.insert v c sub)
          | c <- cons
          ]
- 
+
   inst [] sub =
     do mb <- eval sub
        case mb of
@@ -391,7 +391,7 @@ instantiate cons sub cl = inst vs sub
    where
     defns sub [] =
       do return sub
-    
+
     defns sub ((x,t):ds) =
       do mc <- term sub t
          case mc of
@@ -402,20 +402,20 @@ instantiate cons sub cl = inst vs sub
       do ma <- term sub (Var x)
          mb <- term sub t
          return (ma =? mb)
-         
+
     eqlit sub (x,y) =
       do ma <- term sub (Var x)
          mb <- term sub (Var y)
          return (ma =? mb)
-    
+
     Nothing =? Nothing = Nothing
     Nothing =? Just _  = Just False
     Just _  =? Nothing = Just False
-    Just a  =? Just b  = Just (a == b)   
-    
+    Just a  =? Just b  = Just (a == b)
+
     term sub (Var x) =
       do return (M.lookup x sub)
-    
+
     term sub (Fun f ts) =
       do mas <- sequence [ term sub t | t <- ts ]
          if any isNothing mas
@@ -424,7 +424,7 @@ instantiate cons sub cl = inst vs sub
                    case [ y | (xs,y) <- tab, map Just xs == mas ] of
                      y:_ -> return (Just y)
                      _   -> return Nothing
-     
+
 term :: Map Symbol Con -> Term -> T (Maybe Con)
 term sub (Var x) =
   return (M.lookup x sub)

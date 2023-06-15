@@ -7,13 +7,13 @@ import Data.Set as S( Set )
 import qualified Data.Set as S
 import Control.Applicative
 
-import Flags 
+import Flags
 
 
 newtype Settings a = Settings { unSettings :: ReaderT MethodSettings IO a }
    deriving (Functor, Applicative, Monad, MonadReader MethodSettings, MonadIO )
 
-data MethodSettings = MSet 
+data MethodSettings = MSet
    { axiomfile :: FilePath
    , tempdir   :: FilePath
    , forms     :: [Form]
@@ -26,7 +26,7 @@ data MethodSettings = MSet
    , depthflag :: Int
    , elimit    :: Int
    , prover    :: Prover
-   
+
   }
 
 runWithSettings :: MethodSettings -> Settings a  -> IO a
@@ -36,9 +36,9 @@ data Signature = Sig {psymbs :: Set Symbol, fsymbs :: Set Symbol,  hasEq :: Bool
         deriving (Eq,Show)
 
 getSignature :: [Form] -> String -> Signature
-getSignature fs t = Sig 
+getSignature fs t = Sig
         (S.filter isPredSymbol syms)
-        (case t of 
+        (case t of
                         "-"                             ->      (S.filter isFunSymbol syms)
                         s                                       ->      S.fromList $ getSymb s (S.toList syms)
         )
@@ -52,12 +52,11 @@ getSignature fs t = Sig
                 hasEquality (Equiv f1 f2) = hasEquality f1 || hasEquality f2
                 hasEquality (ForAll (Bind s f)) = hasEquality f
                 hasEquality (Exists (Bind s f)) = hasEquality f
-  
+
 -------------- collecting symbols ---------------------------------------------
 
 getSymb s xs = filter (((==) s).show.symbolname) xs
-symbolname (r ::: _) = r        
+symbolname (r ::: _) = r
 
 -------------------------------------------------------------------------------
-
 

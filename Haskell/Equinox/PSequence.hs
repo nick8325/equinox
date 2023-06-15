@@ -53,7 +53,7 @@ psequence n ios =
  where
   cmp :: Ord a => (a, b) -> (a, b) -> Ordering
   (w1,_) `cmp` (w2,_) = w2 `compare` w1
- 
+
   serve i st =
     do mio <- takeFromStealQueue i st
        case mio of
@@ -61,7 +61,7 @@ psequence n ios =
          Just io -> do io
                        serve i st
 
-  
+
 
   results k [] _ _ =
     do return []
@@ -69,7 +69,7 @@ psequence n ios =
   results k ios futs chan =
     do putStr " "
        wait k ' ' ios futs chan
-  
+
   wait k c ios futs chan =
     do if c /= c' then
          do putStr ['\b',c']
@@ -81,7 +81,7 @@ psequence n ios =
          Just x ->
            do xs <- results (k+1) (tail ios) futs chan
               return (x:xs)
-         
+
          Nothing ->
            do (n,p) <- readChan chan
               let f (Left c)  Nothing       = Just (c,Nothing)
@@ -130,7 +130,7 @@ takeFromStealQueue k (SQ mvars) = tryTakeMVars (shift k mvars)
 
   steal [] =
     do return []
-  
+
   steal (mvar:mvars) =
     do --putStr ("<p" ++ show k ++ " steals ")
        xs <- takeMVar mvar

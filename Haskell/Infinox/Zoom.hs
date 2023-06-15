@@ -11,27 +11,27 @@ import Data.List
 
 zoom :: FilePath -> [Form] -> String -> Int -> IO [Form]
 zoom dir fs noClash plimit   = do
-        cs <- zoom' dir fs  (shrink fs) noClash plimit 0 
-        return $ sort cs 
+        cs <- zoom' dir fs  (shrink fs) noClash plimit 0
+        return $ sort cs
 
 zoom' :: FilePath -> [Form] -> [[Form]] -> String -> Int -> Int -> IO [Form]
 zoom' dir best [] _ _ _  = return best
-zoom' dir best fs noClash plim n  = do  
-   (f,count) <- smallestUnsat dir best fs noClash plim n 
+zoom' dir best fs noClash plim n  = do
+   (f,count) <- smallestUnsat dir best fs noClash plim n
    if f == best then return f else do
                 f' <- permute f
-                zoom' dir f (shrink f') noClash plim count 
+                zoom' dir f (shrink f') noClash plim count
 
 permute :: Eq a => [a] -> IO [a]
-permute as = do 
+permute as = do
         g <- getStdGen
         permute' g as
 
 permute' :: Eq a => StdGen -> [a] -> IO [a]
 permute' _ [] = return []
 permute' g  xs = do
-        let 
-                (a,g')          = randomR (0,(length xs) -1) g 
+        let
+                (a,g')          = randomR (0,(length xs) -1) g
                 el                              = xs !! a
         xs'                     <- permute' g' (delete el xs)
         return (el:xs')
@@ -44,11 +44,11 @@ smallestUnsat dir best (f:fs) noClash plim n  = do
     hClose h
     b <- finiteModel (dir ++ "zoom"++(show n)) plim
     if b then do
-         smallestUnsat dir best fs noClash plim (n+1)  
+         smallestUnsat dir best fs noClash plim (n+1)
       --if finite model - discard f and try the other shrinked lists
      else return (f,n+1) --if no finite model - return f
 
-        
+
 shrink :: [a] -> [[a]]
 shrink xs = removeChunks xs
  where
@@ -66,11 +66,8 @@ shrink xs = removeChunks xs
       xs1 = take n1 xs
       n2  = n - n1
       xs2 = drop n1 xs
-  
+
       []     `ilv` ys     = ys
       xs     `ilv` []     = xs
       (x:xs) `ilv` (y:ys) = x : y : (xs `ilv` ys)
-
-
-
 

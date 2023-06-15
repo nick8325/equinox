@@ -29,6 +29,7 @@ import Data.Map as M( Map )
 import qualified Data.Map as M
 import Data.List
 import Data.Maybe
+import Control.Monad
 import Control.Monad.State
 
 import Name

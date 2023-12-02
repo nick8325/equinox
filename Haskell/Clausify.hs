@@ -374,13 +374,13 @@ instance Functor M where
   fmap f (M h) = M (\s n -> let (x,n') = h s n in (f x, n'))
 
 instance Applicative M where
-  pure = return
+  pure x =
+    M (\s n -> (x, n))
+
   (<*>) = liftM2 ($)
 
 instance Monad M where
-  return x =
-    M (\s n -> (x, n))
-  
+  return = pure
   M h >>= f =
     M (\s n -> let (x,n') = h s n; M h' = f x in h' s n')
 

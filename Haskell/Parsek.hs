@@ -148,13 +148,12 @@ instance Functor (Parser s) where
     Parser (\fut -> f (fut . p))
 
 instance Applicative (Parser s) where
-  pure = return
+  pure a =
+    Parser (\fut -> fut a)
   (<*>) = liftM2 ($)
 
 instance Monad (Parser s) where
-  return a =
-    Parser (\fut -> fut a)
-
+  return = pure
   Parser f >>= k =
     Parser (\fut -> f (\a -> let Parser g = k a in g fut))
 

@@ -303,15 +303,15 @@ newtype T s a =
 instance Functor (T s) where fmap = liftM
 
 instance Applicative (T s) where
-  pure = return
-  (<*>) = liftM2 ($)
-
-instance Monad (T s) where
-  return x =
+  pure x =
     MkT (\idfs preds funs vars fail ok ->
       ok x
     )
 
+  (<*>) = liftM2 ($)
+
+instance Monad (T s) where
+  return = pure
   MkT m1 >>= k =
     MkT (\idfs preds funs vars fail ok ->
       m1 idfs preds funs vars fail (\a ->

@@ -83,12 +83,12 @@ instance Functor T where
   fmap f (MkT m) = MkT (fmap (\(x,s) -> (f x,s)) . m)
 
 instance Applicative T where
-  pure = return
+  pure x = MkT (\s -> return (x,s))
+
   (<*>) = liftM2 ($)
 
 instance Monad T where
-  return x = MkT (\s -> return (x,s))
-
+  return = pure
   MkT m1 >>= k = MkT (\s0 ->
     do (x,s1) <- m1 s0
        let MkT m2 = k x

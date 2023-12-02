@@ -170,12 +170,12 @@ instance Functor C where
   fmap f (MkC m) = MkC (fmap (\(x,s) -> (f x,s)) . m)
 
 instance Applicative C where
-  pure = return
+  pure x = MkC (\s -> return (x,s))
+
   (<*>) = liftM2 ($)
 
 instance Monad C where
-  return x = MkC (\s -> return (x,s))
-
+  return = pure
   MkC m1 >>= k = MkC (\s0 ->
     do (x,s1) <- m1 s0
        let MkC m2 = k x

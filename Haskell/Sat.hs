@@ -113,13 +113,13 @@ toCBool False = 0
 newtype S a    = MiniSatM ((M.Solver, Inst) -> IO a)
 
 instance Applicative S where
-  pure = return
+  pure x =
+    MiniSatM (const (return x))
+
   (<*>) = liftM2 ($)
 
 instance Monad S where
-  return x =
-    MiniSatM (const (return x))
-
+  return = pure
   MiniSatM f >>= g =
     MiniSatM (\s -> f s >>= \x -> case g x of { MiniSatM m -> m s })
 
